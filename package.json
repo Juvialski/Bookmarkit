@@ -21,6 +21,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "build:android-test": "node scripts/build-android-test.mjs",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
