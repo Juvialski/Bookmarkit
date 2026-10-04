@@ -1,4 +1,52 @@
-# Emulator/simulator install readiness validation — 2026-10-04
+# Offline catalog validation — 2026-10-04
+
+Base: `77c82d26a6d2f83813fcb834a4183e8e66aed68b`, fetched from live origin/main before work and again before final validation. This phase adds only bundled ISBN metadata and provider-failure fallback. Existing conditional screen flow, provider merging, scan gate, camera and session-cache behavior are retained. No new navigation or future product features.
+
+## Catalog and automated evidence
+
+- Expo-compatible `expo-sqlite ~57.0.3`; SDK 57 SQLiteProvider imports the bundled `.db` into a separate versioned catalog database. ISBN-13 is the WITHOUT ROWID primary key; lookup uses a bound parameter. No user tables or writes.
+- Source: checked-in Open Library search/seed snapshot plus two explicitly sourced series/standalone annotations in `catalog/curated.json`. Generation uses Python standard library and does not need internet unless `--refresh` is explicitly selected.
+- 1,106 distinct Open Library works (books), 7,916 unique ISBN-13 rows. Raw SQLite: **823,296 bytes**; gzip level 9 with mtime 0: **191,226 bytes** (not shipped compressed). Mean **104.004 bytes per ISBN row**, including indexes and metadata. Snapshot JSON: 478,700 bytes.
+- Catalog SHA256: `b54cdd273c17760cd18629d6914632b32985897837697f9014115351d11aa2b8`. Metadata version `v1`, generated date `2026-10-04` (UTC), source `https://openlibrary.org/search.json`.
+- Rough warm local lookup: **0.08–0.10 ms/query** across 10,000 parameterized ISBN queries using local Python 3.14/SQLite on Windows. This is a local database measurement, not emulator/native bridge latency or end-to-end provider-fallback latency. No large-catalog extrapolation.
+- TypeScript tests: **40/40 passed**, including local hit/miss, malformed rows, missing cover/rating, rating normalization, conservative series, actual adapter failure simulations, both providers failing with local hit/miss, timeouts, online success and partial success precedence.
+- Python tests: **3/3 passed** in about 0.2 seconds. Tiny duplicate/ISBN-10/ISBN-13 fixture, whitespace/authors, explicit/ambiguous series rules matching the online adapter, metadata, deterministic rebuild, primary-key query plan, bundled integrity check, seed assertions, and full semantic comparison with regeneration. No live internet in tests.
+- Typecheck and Expo lint passed. SDK dependency check passed. Expo Doctor **21/21 passed**. Expo config introspection passed; no manual native changes. Existing light-theme expo-system-ui advisory remains.
+- Final Android export passed (637 modules); iOS export passed (639 modules), both bundling the 823,296-byte catalog. These are JS/asset exports, not an iOS native build or simulator run.
+- Fast CI adds only local Python catalog checks to existing tests/typecheck/lint/dependency checks. No emulator/native builds or dataset downloads.
+
+## Android executable acceptance
+
+Pixel_9_Pro AVD, Android 17/API 37, x86_64, 1280 × 2856. Generated native files through Expo prebuild only; built standalone release APK with `npx expo run:android --variant release --no-bundler` and process-local Android SDK/JBR paths. Native build succeeded; generated debug signing is for local acceptance. APK is in ignored `android/app/build/outputs/apk/release/app-release.apk`. No EAS credentials or store release used.
+
+Online, real providers on the installed app:
+
+- `9780140328721`: Fantastic Mr. Fox / Roald Dahl, visible cover, Open Library 4.0 / 121 ratings.
+- Scan Another returned to scanner; `9780765326355`: The Way of Kings / Brandon Sanderson, visible cover, Open Library 4.5 / 166 ratings.
+- Both preserve Google's live rate-limit warning and online unknown-series status; neither displays Offline catalog. Live Google success remains unconfirmed; mocked success/merge coverage passes.
+
+Genuine offline condition: `adb shell svc wifi disable` and `adb shell svc data disable`, then confirm settings 0/0, **Active default network: none**, and an upstream probe reporting **Network is unreachable**. Force-stop/relaunch clears the session cache before offline lookup; all results below came from bundled SQLite rather than live APIs or a mocked UI.
+
+| ISBN | Observed offline result |
+| --- | --- |
+| 9780140328721 | Fantastic Mr. Fox; Roald Dahl; 4.0 / 121; unknown series |
+| 9780765326355 | The Way of Kings; Brandon Sanderson; Stormlight Archive · Book 1; 4.5 / 166 |
+| 9780765320308 | Warbreaker; Brandon Sanderson; Standalone book; 4.3 / 23 |
+| 9780140430776 | American notes; Charles Dickens, Diana C. Archibald; Not rated; unknown series |
+| 9780547928227 | The Hobbit; J.R.R. Tolkien; 4.3 / 500; unknown series |
+| 9791032300336 | Clear Internet unavailable / ISBN not in offline catalog message; scanner/manual controls retained |
+
+All five show the Offline catalog/stored-ratings label, Cover unavailable placeholder and reachable Scan Another. Scan Another returned to scanner between lookups. Warbreaker additionally passed after clearing all emulator app data and launching while offline: first-run asset import required no internet. Manual entry works with camera permission absent. Screenshots and UI hierarchy text captures are retained locally in ignored `dist/acceptance/`. Targeted AndroidRuntime/ReactNativeJS error logs were empty.
+
+## Limits
+
+The offline catalog is deliberately small and incomplete. Search rows use work-level titles/authors, which can differ from edition/language details of ISBN variants; seven exact edition seeds have more precise source records. Missing series stays unknown except for explicit evidence; no offline cover images are shipped. Stored ratings change over time. Provider-first fallback can wait for existing deadlines (~10–11 seconds with stalled requests), and the existing five-minute session cache can retain a clearly labeled offline result after reconnecting.
+
+iOS config/export passed on Windows; macOS/iOS Simulator was unavailable. Physical Android/iPhone testing remains deferred and does not block this phase. No physical barcode capture is claimed. Recommended next phase: improve edition-level catalog metadata and expand bounded emulator regression coverage before increasing catalog size.
+
+---
+
+# Earlier emulator/simulator install readiness validation — 2026-10-04
 
 Base: `25b740f859c6e3413698eeb475f79be9463bba2e` (merged PR #2). Live origin/main was fetched before work. This phase adds no product features or dependencies and leaves fast CI unchanged.
 

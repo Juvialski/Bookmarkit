@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { BackHandler } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { BookResult } from './src/models/book';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { BookResultScreen } from './src/screens/BookResultScreen';
-import { lookupBookForSession } from './src/services/bookLookup';
+import { createCachedLookup, lookupBook } from './src/services/bookLookup';
+import { createLocalCatalog } from './src/services/localCatalog';
 import { createScanGate } from './src/utils/isbn';
 export default function App() {
+  return <SQLiteProvider databaseName="catalog-v1.db" assetSource={{ assetId: require('./assets/catalog-v1.db') }}><BookScanner /></SQLiteProvider>;
+}
+function BookScanner() {
+  const db = useSQLiteContext();
+  const lookupBookForSession = useMemo(() => createCachedLookup(isbn => lookupBook(isbn, undefined, createLocalCatalog(db))), [db]);
   const [book, setBook] = useState<BookResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
