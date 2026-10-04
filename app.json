@@ -8,7 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.juvialski.bookmarkit"
+      "bundleIdentifier": "com.juvialski.bookmarkit",
+      "infoPlist": {
+        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": false }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,6 +31,7 @@
         "expo-camera",
         {
           "cameraPermission": "Allow Bookmarkit to scan ISBN barcodes.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ]

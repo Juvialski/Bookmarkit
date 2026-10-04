@@ -1,46 +1,37 @@
-# Scanner hardening validation — 2026-10-04
+# Phone install readiness validation — 2026-10-04
 
-Base: `f633276` (merged MVP PR #1, current main at phase start). Exact final head and CI evidence are supplied in the PR handoff.
+Base: `25b740f859c6e3413698eeb475f79be9463bba2e` (merged PR #2). Live origin/main was fetched before work. This phase adds no product features or dependencies and leaves fast CI unchanged.
 
-## Audit and changes
+## Audit and fixes
 
-Audited App, both screens, scan gate/ISBN validation, provider adapters, result merge, config, tests, README and CI on live main. Retained working synchronous scan gate, rear-camera EAN-13 filter, loading/result unmount and permission Settings recovery. Found error-state camera stayed mounted, non-book detections produced distracting errors, permission actions could reject without recovery, Google failures were generic/unretried, malformed Google payloads looked like not-found, covers were not validated, author calls could duplicate and there was no cache. Series parsing on main already supported the four requested baseline examples, but accepted mismatched parentheses and could miss conflicts across edition/work metadata.
+Reviewed app/EAS configuration, SDK 57 dependencies, App and both screens, scan gate, cache, provider adapters, environment handling, README and CI against SDK 57 documentation. Retained synchronous duplicate protection, camera unmount during lookup/result/error/background, permission refresh on return, bounded provider calls and scrollable results with wrapping text/cover fallback. Existing conditional screen flow was preserved; no navigation migration.
 
-Fixed those findings; added bounded Google retry/public optional key, deterministic documented merge, conservative series punctuation/no. support, short-lived bounded cache, scan guide/torch and focused mocked tests. Preserved the existing simple two-screen conditional flow; no navigation-framework migration or future-phase features.
+- Enabled iPhone camera autofocus explicitly (SDK 57 defaults to off), to help focus physical barcodes at different distances.
+- Enabled iOS ScrollView keyboard insets and drag dismissal so manual entry and lookup stay reachable. Android native introspection confirms adjustResize. SafeAreaView bounds both screens; hardware keyboard/layout acceptance remains pending.
+- Disabled the unused iOS microphone description through expo-camera's installed plugin (supports false); Android audio permission was already disabled.
+- Removed unrestricted iOS ATS loads through app config. All provider requests and accepted cover URLs use HTTPS.
 
-## Automated/local
+## Confirmed local checks
 
-- `npm ci`: passed. Final lockfile reproducibility is also checked by CI.
-- `npm test`: 32 mocked/fixture tests pass, including valid 978/979, bad checksum, duplicate/different ISBN gate and reset, exact ISBN, missing rating/cover, 429/5xx retry bounds, optional key, malformed/empty payloads, timeout, Open Library 404/secondary failures/request deduplication, merge/error precedence, series ambiguity and cache hit/expiry/eviction/error behavior.
-- `npm run typecheck`: passed.
-- `npx expo install --check`: compatible SDK 57 dependencies.
-- `npx expo-doctor`: 21/21 checks passed.
-- `npx expo config --type introspect`: passed; iOS camera usage description and Android CAMERA permission present; Android RECORD_AUDIO absent. Camera plugin supplies an unused iOS microphone description; scanner does not request microphone access. Android light-interface config emits the pre-existing expo-system-ui advisory; not a camera/export failure.
-- `npx expo export --platform android`: passed (603 modules).
-- `npx expo export --platform ios`: passed (605 modules).
-- `npm run lint`: passed without warnings. Final revision review and exact-head CI results are recorded in the PR handoff.
-- npm reports 23 existing toolchain audit findings (7 moderate, 16 high); no forced SDK changes.
+- npm ci: passed; lockfile unchanged. npm reports 23 existing toolchain findings (7 moderate, 16 high); no forced SDK changes.
+- npm test: 32/32 passed. Includes duplicate gate, invalid ISBN, partial provider failure, cache, series ambiguity, bounded rate-limit retries and simulated abort/timeout behavior.
+- npm run typecheck: passed.
+- npm run lint: passed, no warnings.
+- npx expo install --check: dependencies up to date for SDK 57.
+- npx expo-doctor: 21/21 passed.
+- npx expo config --type introspect: passed, including rerun after configuration changes. Both identifiers com.juvialski.bookmarkit; Bookmarkit display name; Android portrait/CAMERA/INTERNET, no RECORD_AUDIO, adjustResize and adaptive icon assets configured; iOS camera explanation, no microphone explanation, ATS arbitrary loads false. iPhone portrait and iPad support retained. Android light-theme expo-system-ui advisory is pre-existing.
+- Android export: passed, 603 modules; iOS export: passed, 605 modules. Both are Hermes JS bundles in ignored dist/, not APK/IPA binaries.
 
-These checks validate code and JS bundles, not native binaries or actual camera behavior. No phone, UI automation or hardware acceptance was performed. Scanner lifecycle/permission changes still require the README checklist on both platforms.
+## Live provider smoke
 
-## Live provider smoke (Node on this computer)
+Two ISBNs, sequential, actual adapters without a key. Google returned typed rate-limit failures after its one bounded retry for both. Open Library returned Fantastic Mr. Fox / Roald Dahl (9780140328721), cover URL, rating 3.9504 / 121; The Way of Kings / Brandon Sanderson (9780765326355), cover URL, rating 4.5120 / 166. Both series unknown. Ratings are dated observations; covers were not visually verified. Google success, partial failure and explicit series are covered by mocks; live Google success remains unconfirmed. Timeout behavior is mocked, not an induced live outage.
 
-After mocked tests, two ISBNs were checked sequentially using the actual adapters, without a key. Google performs only its single bounded retry. No live response is used as a CI assertion.
+## Native build blockers
 
-| ISBN | Google Books | Open Library |
-| --- | --- | --- |
-| 9780140328721 | 429 after retry; typed rate-limit failure | Fantastic Mr. Fox; Roald Dahl; cover URL present; work rating 3.9504 / 121; series unknown |
-| 9780765326355 | 429 after retry; typed rate-limit failure | The Way of Kings; Brandon Sanderson; cover URL present; work rating 4.5120 / 166; series unknown |
+npx eas-cli@latest whoami exited 1: Not logged in. No linked extra.eas.projectId exists. No authenticated build was submitted, no credentials guessed, and no account created. Android preview already targets APK/internal distribution; iOS preview targets internal distribution. No APK/IPA or build/artifact URL exists. Apple credential availability cannot be inspected without EAS authentication; iOS signing and registered-device installation remain unconfirmed. This Windows session has no physical phone access.
 
-Ratings are a dated observation. Cover URLs were returned but image display was not physically verified. Google live success remains blocked by rate limiting; exact-match success and fallback behavior pass mocks. Explicit series fixtures pass, but these live editions supply no accepted series statement.
+Next user action: `npx eas-cli@latest login` with an existing Expo account. Then `npx eas-cli@latest init` to select/create the intended project, `npx eas-cli@latest build --platform android --profile preview`, and, with Apple signing/device registration available, `npx eas-cli@latest build --platform ios --profile preview`. Do not submit to stores. See README for acceptance steps and official EAS setup links.
 
-## Native/cloud build preflight
+## Not yet confirmed
 
-- `npx eas-cli@latest whoami`: exit 1, **Not logged in**. No EXPO_TOKEN/EAS authentication environment variable was available. The starting repository had neither eas.json nor extra.eas.projectId. Added only a preview profile for future Android APK/internal iOS builds; did not register a project or initiate credential prompts.
-- Android local: `adb` and `java` unavailable on PATH; no connected phone session. Cannot build/install locally here.
-- iOS local: Windows host, no macOS/Xcode/Apple signing environment. Cannot build/install locally here.
-- No non-interactive authenticated build environment is usable, so cloud native builds could not be submitted. No APK, IPA, TestFlight build or signed installable artifact was produced. Hermes exports are only JS bundles.
-
-## Handoff
-
-Open one PR for review; do not merge. Next: check out the PR head, `npm ci`, `npm start`, run README's checklist in SDK 57-compatible Expo Go on physical Android and iPhone. Then authenticate/configure EAS and Apple signing as appropriate to produce native preview binaries. Public provider availability, physical scanning/permission/torch behavior, and signed native builds remain external acceptance blockers. No offline-data or product-expansion phase was started.
+Physical Android/iPhone camera detection, permission recovery, torch, keyboard/small-screen layout, native startup and installation have not been tested. Run every README acceptance item separately on Android and iPhone; record device/OS, commit and result. No hardware or native-build success is claimed. Exact PR head and GitHub CI result are supplied in the PR handoff.
