@@ -2,7 +2,9 @@
 
 A small Android/iOS ISBN scanner: Expo SDK 57, React Native and TypeScript. Google Books and Open Library are called directly. No backend, accounts, persistent history or offline catalog.
 
-## Test on a phone
+## Current test target: emulators/simulators
+
+For the current development phases, acceptance is emulator/simulator-based. Physical Android/iPhone testing is intentionally deferred and is not a blocker yet.
 
 Install Node.js 22.13+ (Node 24 works), then:
 
@@ -11,7 +13,7 @@ npm ci
 npm start
 ```
 
-Use an SDK 57-compatible Expo Go app and the same network as this computer. Android: scan the terminal QR code inside Expo Go. iPhone: scan it with Camera and open Expo Go. If LAN access fails, try `npx expo start --tunnel`. A simulator can test manual entry; camera acceptance requires physical phones.
+Android emulator is the primary executable acceptance target for now. On macOS, an iOS Simulator can validate startup, layout, manual ISBN lookup, provider behavior and non-hardware flows. Camera/barcode behavior that requires real hardware is deferred. Expo Go/physical-phone instructions can still be used later when hardware acceptance begins.
 
 Grant camera permission, then scan the ISBN barcode on the back cover. Manual ISBN entry works without camera permission. Permanently denied permission offers **Open settings**; permission is refreshed on return. Camera startup errors offer retry and manual lookup.
 
@@ -43,9 +45,9 @@ Android: install the APK from the successful EAS build page. iPhone: internal di
 - Missing author, rating, cover and series have placeholders. Failed cover loading also falls back to a placeholder. Service, connection, timeout and rate-limit messages use plain language.
 - In-memory cache: normalized ISBN, at most 20 books, five-minute expiry; partial successes expire after 30 seconds. Failed/not-found lookups are not cached. Closing the app clears it. This is not offline storage.
 
-## Physical-device checklist (Android and iPhone separately)
+## Future physical-device checklist (deferred)
 
-Run on Android and iPhone separately; record device/OS, commit, pass/fail and observations. Hardware acceptance is still pending.
+This checklist is intentionally deferred and does not block current development. Current acceptance should use Android Emulator and, when available, iOS Simulator. Preserve this list for the later hardware-validation phase.
 
 1. Fresh launch; allow camera permission.
 2. Scan a physical 978 ISBN; keep it visible and verify only one lookup/result.
@@ -75,4 +77,4 @@ npx expo export --platform ios
 
 CI runs mocked tests, TypeScript, lint and dependency compatibility checks. Exports and doctor are local release-readiness checks. Manual live smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
 
-Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Current readiness fixes enable iPhone autofocus, keyboard-aware manual entry, camera-only permissions and HTTPS-only iOS transport. Next: authenticate EAS to generate signed previews and run the checklist on real Android/iPhone. See VALIDATION.md for current evidence.
+Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Current readiness fixes enable iPhone autofocus, keyboard-aware manual entry, camera-only permissions and HTTPS-only iOS transport. For now, continue emulator/simulator-based validation; physical Android/iPhone acceptance is deferred. See VALIDATION.md for current evidence.
