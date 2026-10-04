@@ -6,7 +6,7 @@ import { normalizeOpenLibrary, openLibrary, parseSeriesStatement } from '../src/
 import { lookupBook, createCachedLookup } from '../src/services/bookLookup';
 import { Fetcher, json, ProviderError } from '../src/services/providers/shared';
 import { goodreadsSearchUrl } from '../src/utils/goodreads';
-import { visibleRatings } from '../src/utils/ratings';
+import { primaryRating, visibleRatings } from '../src/utils/ratings';
 import { isbn, hardcoverBook, edition, authors, ratings } from './fixtures';
 
 const success = async () => normalizeHardcover(hardcoverBook, isbn);
@@ -36,6 +36,7 @@ test('both ratings stay separate, Hardcover metadata takes precedence', async ()
   const result = await lookupBook(isbn, [success, ol]);
   assert.deepEqual(result.ratings.map(r => r.provider), ['Hardcover', 'Open Library']);
   assert.deepEqual(visibleRatings(result.ratings).map(r => r.average), [4.5, 4.3]);
+  assert.equal(primaryRating(result.ratings)?.provider, 'Hardcover');
   assert.equal(result.hardcoverId, '123'); assert.equal(result.incomplete, false);
 });
 test('either source can fail or miss without empty cards or provider warnings', async () => {
@@ -45,6 +46,7 @@ test('either source can fail or miss without empty cards or provider warnings', 
     assert.equal(result.warnings.length, 0); assert.equal(visibleRatings(result.ratings).length, 1);
   }
   assert.deepEqual(visibleRatings([{ provider: 'Hardcover' }, { provider: 'Open Library', average: 4, unavailable: true }]), []);
+  assert.equal(primaryRating([{ provider: 'Open Library', average: 4.2 }])?.provider, 'Open Library');
 });
 test('not found, offline and invalid input remain distinct', async () => {
   await assert.rejects(lookupBook(isbn, [async () => null, async () => null]), /No book found/);
