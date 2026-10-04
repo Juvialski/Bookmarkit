@@ -33,13 +33,15 @@ Pixel_9_Pro emulator, Android 17/API 37, x86_64, 1280×2856. `python scripts/and
 - Restored Wi-Fi/data and cold-launched. `9780140328721`: Fantastic Mr. Fox / Roald Dahl, TYPE UNKNOWN, 4.0 / 121 ratings; online cover returned. Network restoration also runs in the smoke script's finally block.
 - Targeted AndroidRuntime/ReactNativeJS error log was empty. Source inspection and existing tests confirm no Google Books runtime provider and no Goodreads scraping.
 
-The first smoke run captured connectivity immediately after disabling interfaces; a second connectivity capture confirmed no active default network during offline acceptance. The checked-in harness now waits for this condition before lookup.
+The first smoke run captured connectivity immediately after disabling interfaces; a second connectivity capture confirmed no active default network during offline acceptance. The checked-in harness waits for this condition before lookup.
 
 ## Distribution automation
 
 Workflow **Android test APK**, `.github/workflows/android-test-apk.yml`: manual workflow_dispatch; Node 22.22.0, Temurin JDK 21, Android SDK, lockfile `npm ci`, checks, CNG, Gradle release APK and artifact upload. Optional repository variable `EXPO_PUBLIC_BOOK_API_BASE_URL` must be HTTPS. Dotenv loading is disabled for portable phone builds. No proxy is configured in the tested APK; Open Library and catalog fallback work.
 
 The workflow also runs for PR changes to its own file/build script/app config, allowing premerge artifact validation. After merge, dispatch it on `main`. Artifact **bookmarkit-android-test** contains APK and SHA256, retained 30 days. Download from the successful run's Artifacts section and unzip. The initial setup action requested retired Android SDK package `tools`; corrected to `platform-tools`.
+
+Verified successful [Actions build and artifact](https://github.com/Juvialski/Bookmarkit/actions/runs/37205249952/artifacts/11303834422), source `27bd909`. Downloaded the artifact and verified its checksum, signature and catalog. Actions APK is 101,860,186 bytes; SHA256 `631010c703406a2a3133bdede14937cb70b356ee5eecb76ec90140c1690a3929`. Its 1,292,860-byte Hermes JavaScript bundle and SQLite catalog are byte-identical to the emulator-tested local APK, and its signing certificate matches. APK container hashes differ between independent builds. Later source changes only improve build failure cleanup, smoke timing and documentation; mobile runtime/catalog/config stay identical.
 
 ## Limitations
 
