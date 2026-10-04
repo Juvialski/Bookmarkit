@@ -1,19 +1,30 @@
 import { ProviderBook } from '../../models/book';
 import { Fetcher, json, object, rating, string, strings } from './shared';
+
+export function parseSeriesStatement(value: string): { name: string; position: string } | null {
+  const match = value.trim().match(/^(.+?)\s*(?:[;,:-]\s*)?(?:\(\s*)?(?:#\s*|(?:book|vol\.?|volume)\s+)(\d+(?:\.\d+)?)(?:\s*\))?\s*$/i);
+  if (!match) return null;
+  const name = match[1].trim();
+  return name ? { name, position: match[2] } : null;
+}
+
 export function normalizeOpenLibrary(edition: unknown, work: unknown, authors: unknown[], ratings: unknown, isbn: string): ProviderBook | null {
   const e = object(edition), w = object(work);
   const title = string(e.title) || string(w.title);
   if (!title) return null;
   const coverId = [...(Array.isArray(e.covers) ? e.covers : []), ...(Array.isArray(w.covers) ? w.covers : [])].find(id => Number.isInteger(id) && id > 0);
-  // Edition series statements vary widely. Accept only an explicit single name
-  // with a numbered book/volume statement, never infer from title or subjects.
-  const series = strings(e.series);
-  const match = series.length === 1 ? series[0].match(/^(.+?)\s*;\s*(?:book|vol\.?|volume)\s+(\d+(?:\.\d+)?)$/i) : null;
+  // Series statements vary widely. Accept only a single explicit statement with
+  // a numbered marker such as "#1", "book 1", "vol. 1", or "volume 1".
+  // Never infer a series from the title or subjects.
+  const editionSeries = strings(e.series);
+  const workSeries = strings(w.series);
+  const series = editionSeries.length ? editionSeries : workSeries;
+  const parsedSeries = series.length === 1 ? parseSeriesStatement(series[0]) : null;
   const summary = object(object(ratings).summary);
   const workId = Array.isArray(e.works) ? string(object(e.works[0]).key) : undefined;
   return { isbn, title, authors: authors.map(a => string(object(a).name)).filter((a): a is string => !!a),
     coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg?default=false` : undefined,
-    workId, seriesStatus: match ? 'series' : 'unknown', seriesName: match?.[1], seriesPosition: match?.[2],
+    workId, seriesStatus: parsedSeries ? 'series' : 'unknown', seriesName: parsedSeries?.name, seriesPosition: parsedSeries?.position,
     rating: { provider: 'Open Library', ...rating(summary.average, summary.count) } };
 }
 export async function openLibrary(isbn: string, fetcher: Fetcher = fetch): Promise<ProviderBook | null> {
