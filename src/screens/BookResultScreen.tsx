@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Button, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Button, Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookResult } from '../models/book';
+import { goodreadsSearchUrl } from '../utils/goodreads';
+import { visibleRatings } from '../utils/ratings';
 export function BookResultScreen({ book, onScanAnother }: { book: BookResult; onScanAnother: () => void }) {
   const [coverFailed, setCoverFailed] = useState(false);
   return <SafeAreaView style={styles.page}><ScrollView contentContainerStyle={styles.content}>
@@ -11,8 +13,9 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
     <Text style={styles.author}>{book.authors.length ? book.authors.join(', ') : 'Author unavailable'}</Text>
     {book.source === 'offline-catalog' && <Text style={styles.detail}>Offline catalog · Stored Open Library ratings, not live</Text>}
     <Text style={styles.series}>{book.seriesStatus === 'series' && book.seriesName ? `${book.seriesName}${book.seriesPosition ? ` · Book ${book.seriesPosition}` : ''}` : book.seriesStatus === 'standalone' ? 'Standalone book' : 'Series information unavailable'}</Text>
-    {book.ratings.map(r => <View key={r.provider} style={styles.rating}><Text style={styles.provider}>{r.provider}</Text><Text style={styles.score}>{r.unavailable ? 'Rating unavailable' : r.average !== undefined ? `★ ${r.average.toFixed(1)}` : 'Not rated'}</Text>{r.average !== undefined && <Text style={styles.detail}>{r.count !== undefined ? `${r.count.toLocaleString()} ratings` : 'Rating count unavailable'}</Text>}{r.provider === 'Open Library' && r.average !== undefined && <Text style={styles.detail}>Work-level rating across editions</Text>}</View>)}
+    {visibleRatings(book.ratings).map(r => <View key={r.provider} style={styles.rating}><Text style={styles.provider}>{r.provider}</Text><Text style={styles.score}>★ {r.average!.toFixed(1)}</Text>{r.count !== undefined && <Text style={styles.detail}>{r.count.toLocaleString()} ratings</Text>}{book.source === 'offline-catalog' && <Text style={styles.detail}>Stored offline</Text>}</View>)}
     {book.warnings.map(warning => <Text key={warning} style={styles.detail}>{warning}</Text>)}
+    <Button title="Search on Goodreads" onPress={() => { void Linking.openURL(goodreadsSearchUrl(book.isbn)).catch(() => {}); }} />
     <Text style={styles.detail}>ISBN {book.isbn}</Text><Button title="Scan Another" onPress={onScanAnother} />
   </ScrollView></SafeAreaView>;
 }

@@ -1,6 +1,6 @@
 # Bookmarkit
 
-A small Android/iOS ISBN scanner: Expo SDK 57, React Native and TypeScript. Google Books and Open Library are called directly, with a small bundled SQLite catalog for offline fallback. No backend, accounts or persistent history.
+A small Android/iOS ISBN scanner: Expo SDK 57, React Native and TypeScript. Hardcover ratings come through a tiny server-side proxy; Open Library is called directly and supplies the bundled SQLite offline catalog. No accounts or persistent history.
 
 ## Current test target: emulators/simulators
 
@@ -17,9 +17,9 @@ Android emulator is the primary executable acceptance target for now. On macOS, 
 
 Grant camera permission, then scan the ISBN barcode on the back cover. Manual ISBN entry works without camera permission. Permanently denied permission offers **Open settings**; permission is refreshed on return. Camera startup errors offer retry and manual lookup.
 
-### Optional Google Books key
+### Optional Hardcover backend
 
-Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY`, then reload the app. Lookup works without it. The key is only appended when nonblank. This is a **public client key embedded in the bundle**, not a secret. Restrict its Google API access/quota appropriately; never commit keys or use private credentials. See [Expo public environment configuration](https://docs.expo.dev/guides/environment-variables/) and [Google Books API usage](https://developers.google.com/books/docs/v1/using).
+Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_BOOK_API_BASE_URL` to the proxy's HTTPS URL. Android Emulator local testing can use `http://10.0.2.2:3001`; rebuild the native app after changing local HTTP configuration. This URL is public and embedded in the app. **HARDCOVER_API_TOKEN belongs only in the server environment**, never in Expo public variables or mobile code. See [server setup, query and mock instructions](server/README.md) and [Expo environment configuration](https://docs.expo.dev/guides/environment-variables/). Without a proxy/token, Open Library and the catalog still work. Google Books is removed from runtime entirely.
 
 ### Installable builds
 
@@ -38,18 +38,18 @@ Android: install the APK from the successful EAS build page. iPhone: internal di
 
 - Rear camera, EAN-13 only, checksum-valid 978/979 ISBNs only. Manual entry allows spaces/hyphens. A synchronous gate rejects duplicate or different barcodes while lookup/result is active.
 - Camera unmounts during lookup, errors, background state and results. Scan Another remounts it; returning from background refreshes permissions and clears mount failure/torch state. A minimal guide and torch toggle help scanning.
-- Google requires an exact ISBN identifier. It gets at most two attempts: one retry after 500 ms for 429 or 5xx only, with a five-second timeout per attempt. Network, timeout and malformed responses are not retried.
+- Hardcover proxy and Open Library run in parallel. Hardcover uses an exact ISBN edition match and its parent work rating, with a six-second mobile deadline and no retries. The proxy independently bounds its upstream request to five seconds.
 - Open Library resolves the ISBN edition, linked work, work ratings and up to eight unique authors. Secondary request failures preserve the identified edition. Its individual requests time out after ten seconds.
-- Merge order: exact Google ISBN volume title first, then Open Library ISBN edition; first nonempty authors and valid HTTPS cover in that same order. Ratings remain separate; Open Library ratings span editions. Partial failure never erases another provider's book.
-- Series requires one explicit numbered statement in edition/work series metadata. Examples: `The Stormlight Archive #1`, `Series ; book 2`, `Series, Vol. 3`, `Series (Volume 4)`, `Series : no. 5`, `Series (#6)`. Conflicts and unnumbered metadata stay unknown. Titles/subjects never establish series or standalone status.
-- Missing author, rating, cover and series have placeholders. Failed cover loading also falls back to a placeholder. Service, connection, timeout and rate-limit messages use plain language.
-- In-memory cache: normalized ISBN, at most 20 books, five-minute expiry; partial successes expire after 30 seconds. Failed/not-found lookups are not cached. Closing the app clears it. This is not offline storage.
+- Merge order: exact Hardcover ISBN edition title first, then Open Library ISBN edition; first nonempty authors and valid HTTPS cover in that same order. Ratings remain separate and are never averaged. Both sources provide work-level ratings across editions. Only available ratings create cards; no empty provider cards or Google quota warnings. A failed optional provider never erases another provider's book.
+- Hardcover series requires structured non-compilation featured series with a positive position. Open Library requires one explicit numbered statement in edition/work metadata. Examples: `The Stormlight Archive #1`, `Series ; book 2`, `Series, Vol. 3`. Conflicting name or position stays unknown; neither provider silently overrides the other. Unnumbered metadata stays unknown. Titles/subjects never establish series or standalone status. Curated local series/standalone data applies when online identification fails and the catalog supplies the result.
+- Missing author, cover and series have placeholders; missing ratings have no cards. Failed cover loading falls back to a placeholder. Search on Goodreads opens the user's browser with the scanned ISBN. No Goodreads requests or rating ingestion occur in the app; browser-open failures are quiet.
+- In-memory cache: normalized ISBN, at most 20 books, five-minute expiry; partial failures and offline results expire after 30 seconds, allowing reconnection to refresh promptly. Complete results, including legitimate provider misses or missing ratings, use the normal TTL. Failed lookups are not cached. Closing the app clears it. No persistent network cache.
 
 ## Small offline catalog
 
 Offline currently means ISBN metadata lookup for **1,106 Open Library works / 7,916 indexed ISBN-13s** in `assets/catalog-v1.db`. The file is **823,296 bytes** (804 KiB); gzip measured **191,226 bytes** (measurement only; the app bundles raw SQLite). Average storage is **104.00 bytes per ISBN row**. A local Python SQLite test measured about **0.10 ms** per warm indexed lookup over 10,000 queries; this excludes native initialization, UI and provider waiting.
 
-Providers run normally first. If neither returns a usable book, including actual network failures/timeouts, the app queries the catalog with a bound ISBN parameter. Partial provider success wins. A local hit displays **Offline catalog** and identifies ratings as stored Open Library data, not live ratings. A local miss after provider failure explains that the ISBN is outside the catalog. No network-state detector is required. Existing provider deadlines mean fallback can take roughly 10–11 seconds on a silently stalled connection; actual network failures can return sooner.
+Providers run normally first. If neither returns a usable book, including actual network failures/timeouts, the app queries the catalog with a bound ISBN parameter. Partial provider success wins. A local hit displays **Offline catalog** and labels available Open Library ratings **Stored offline**. A local miss after provider failure explains that the ISBN is outside the catalog. No network-state detector is required. Open Library's edition and follow-up deadlines can total roughly 20 seconds in the worst case; immediate network failures fall back sooner. Hardcover is never required for offline operation; no Hardcover data is bundled.
 
 The catalog is separate from future app/user data. It is copied from the bundled asset to a versioned SQLite database on first launch. There are no downloads, updates or user writes. Change both the asset filename and database name when shipping a new catalog version, to avoid retaining an older installed copy. Build date/version/source are stored in the `metadata` table; no per-book freshness is claimed.
 
@@ -81,7 +81,7 @@ Build/install a standalone APK with the native SQLite module (`npx expo run:andr
 | 9780140430776 | American notes; unrated, multiple authors |
 | 9791032300336 | Valid checksum fixture outside this catalog; clear miss |
 
-Confirm title/authors, rating or Not rated, series status, missing-cover placeholder and Scan Another. Restore Wi-Fi/mobile data afterward. Physical devices remain deferred. iOS config/export is validated on Windows; iOS Simulator acceptance requires macOS.
+Confirm title/authors, available rating cards (unrated books have no cards), series status, missing-cover placeholder, Goodreads action and Scan Another. Restore Wi-Fi/mobile data afterward. Physical devices remain deferred. iOS config/export is validated on Windows; iOS Simulator acceptance requires macOS.
 
 ## Future physical-device checklist (deferred)
 
@@ -95,7 +95,7 @@ This checklist is intentionally deferred and does not block current development.
 6. Toggle torch on supported hardware.
 7. Deny camera permission; recover through Settings and return.
 8. Use manual ISBN lookup with keyboard open on a small screen; ensure input and button remain reachable.
-9. Test weak/no internet; reconnect and retry. Confirm partial provider failure still shows the identified book (Google rate limiting may provide this naturally).
+9. Test weak/no internet; reconnect and retry. Confirm Hardcover failure still shows an identified Open Library book and vice versa.
 10. Present malformed/non-book EAN; verify no lookup. Also try invalid manual input.
 11. Check long titles/authors and missing/failed covers; scroll to Scan Another. Check Android Back during lookup/results and safe areas around system UI.
 
@@ -104,6 +104,9 @@ This checklist is intentionally deferred and does not block current development.
 ```sh
 npm ci
 npm test
+npm --prefix server ci
+npm --prefix server test
+npm --prefix server run check
 python scripts/test_catalog.py
 npm run typecheck
 npm run lint
@@ -114,6 +117,6 @@ npx expo export --platform android
 npx expo export --platform ios
 ```
 
-CI runs mocked tests, local catalog fixture/integrity/regeneration checks, TypeScript, lint and dependency compatibility checks. No live dataset downloads, emulator jobs or native builds run in CI. Exports and doctor are local release-readiness checks. Manual live smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
+CI runs mocked mobile/backend tests, local catalog fixture/integrity/regeneration checks, TypeScript, lint, backend syntax and dependency compatibility checks. Backend has no dependencies to install in CI. No live API calls, dataset downloads, emulator jobs, native/EAS builds or deployment run in CI. Exports and doctor are local checks. Manual provider smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
 
 Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Current readiness fixes enable iPhone autofocus, keyboard-aware manual entry, camera-only permissions and HTTPS-only iOS transport. For now, continue emulator/simulator-based validation; physical Android/iPhone acceptance is deferred. See VALIDATION.md for current evidence.

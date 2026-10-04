@@ -37,7 +37,8 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withLocalBookApi.js"
     ]
   }
 }
