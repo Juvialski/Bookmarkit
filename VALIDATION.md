@@ -1,4 +1,4 @@
-# Phone install readiness validation — 2026-10-04
+# Emulator/simulator install readiness validation — 2026-10-04
 
 Base: `25b740f859c6e3413698eeb475f79be9463bba2e` (merged PR #2). Live origin/main was fetched before work. This phase adds no product features or dependencies and leaves fast CI unchanged.
 
@@ -32,9 +32,9 @@ npx eas-cli@latest whoami exited 1: Not logged in. No linked extra.eas.projectId
 
 Next user action: `npx eas-cli@latest login` with an existing Expo account. Then `npx eas-cli@latest init` to select/create the intended project, `npx eas-cli@latest build --platform android --profile preview`, and, with Apple signing/device registration available, `npx eas-cli@latest build --platform ios --profile preview`. Do not submit to stores. See README for acceptance steps and official EAS setup links.
 
-## Not yet confirmed
+## Current acceptance boundary
 
-Physical Android/iPhone camera detection, permission recovery, torch and keyboard/small-screen layout have not been tested. Android native installation/startup and selected flows have now been tested on an emulator as described below. Run every README acceptance item separately on Android and iPhone; record device/OS, commit and result. No hardware or native-build success is claimed. Exact PR head and GitHub CI result are supplied in the PR handoff.
+For now, project acceptance is emulator/simulator-based. Physical Android/iPhone testing is intentionally deferred and is not a blocker for current phases. Android native installation/startup and selected flows have been tested on an emulator as described below. iOS validation is currently limited to configuration/export on this Windows environment; use an iOS Simulator when macOS is available. Hardware-only behaviors such as real barcode capture, actual torch illumination and Settings permission recovery remain future validation items.
 
 ## Android emulator follow-up
 
@@ -53,4 +53,4 @@ Pixel_9_Pro, Android 17/API 37, x86_64 emulator:
 - Result and controls fit the tested viewport; emulator input used the floating/hardware keyboard, so full software keyboard and small-phone acceptance remain pending.
 - No AndroidRuntime/ReactNativeJS error entries observed in the targeted logcat read.
 
-Screenshots retained locally in `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\result.png` and `camera.png`. Physical barcode/duplicate detection, actual torch illumination, denial/Settings recovery, offline/weak-network hardware behavior and iPhone acceptance remain pending. No physical camera success is claimed. EAS authentication/Apple signing blockers remain. Follow-up typecheck/lint passed; normal PR CI stays unchanged.
+Screenshots retained locally in `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\result.png` and `camera.png`. Physical barcode/duplicate detection, actual torch illumination, denial/Settings recovery, hardware network behavior and real-iPhone acceptance are deliberately deferred. They do not block the current emulator/simulator development phases. No physical camera success is claimed. EAS authentication/Apple signing blockers remain. Follow-up typecheck/lint passed; normal PR CI stays unchanged.
