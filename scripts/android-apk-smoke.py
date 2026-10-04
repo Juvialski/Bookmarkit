@@ -115,7 +115,13 @@ try:
     report['goodreads'] = 'External browser received exact ISBN Goodreads URL'
     shell('svc', 'wifi', 'disable')
     shell('svc', 'data', 'disable')
-    report['offline_network'] = shell('dumpsys', 'connectivity')
+    for _ in range(15):
+        connectivity = shell('dumpsys', 'connectivity')
+        if 'Active default network: none' in connectivity:
+            break
+        time.sleep(1)
+    assert 'Active default network: none' in connectivity, 'Emulator still has a network'
+    report['offline_network'] = connectivity
     (out / 'offline-connectivity.txt').write_text(report.pop('offline_network'), encoding='utf-8')
     launch()
     report['offline_series'] = texts(lookup('9780765326355', 'The Way of Kings', 'offline-series'))

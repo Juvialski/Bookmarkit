@@ -1,6 +1,6 @@
 # Android phone test
 
-1. Download `bookmarkit-android-test.apk` from the linked test release, or unzip the **bookmarkit-android-test** artifact in a successful **Android test APK** Actions run.
+1. [Download bookmarkit-android-test.apk](https://github.com/Juvialski/Bookmarkit/releases/download/android-test-2026-10-04/bookmarkit-android-test.apk), or unzip the **bookmarkit-android-test** artifact in a successful **Android test APK** Actions run.
 2. Transfer/open the APK on your Android phone.
 3. Allow installation from that browser/file manager if Android asks.
 4. Install **Bookmarkit** and open it.
