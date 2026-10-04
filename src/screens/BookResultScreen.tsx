@@ -9,8 +9,7 @@ function typeText(book: BookResult) {
   if (book.seriesStatus === 'series' && book.seriesName) {
     return `${book.seriesName}${book.seriesPosition ? ` · Book ${book.seriesPosition}` : ''}`;
   }
-  if (book.seriesStatus === 'standalone') return 'Standalone';
-  return 'Series status unknown';
+  return '';
 }
 
 export function BookResultScreen({ book, onScanAnother }: { book: BookResult; onScanAnother: () => void }) {
@@ -28,26 +27,22 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
     <Text style={styles.author}>{book.authors.length ? book.authors.join(', ') : 'Author unavailable'}</Text>
 
     <View style={styles.infoCard}>
-      <Text style={styles.label}>Type</Text>
-      <Text style={styles.type}>{typeText(book)}</Text>
+      <Text style={styles.type}>{book.seriesStatus === 'series' ? 'SERIES' : book.seriesStatus === 'standalone' ? 'STANDALONE' : 'TYPE UNKNOWN'}</Text>
+      {book.seriesStatus === 'series' && <Text style={styles.type}>{typeText(book)}</Text>}
     </View>
 
     <View style={styles.ratingCard}>
       <Text style={styles.label}>Rating</Text>
       <Text style={styles.score}>{rating ? `★ ${rating.average!.toFixed(1)}` : 'Not rated'}</Text>
       {rating && <Text style={styles.detail}>
-        {rating.provider}{rating.count !== undefined ? ` · ${rating.count.toLocaleString()} ratings` : ''}
-        {book.source === 'offline-catalog' ? ' · stored offline' : ''}
+        {rating.provider}{rating.count !== undefined && rating.count > 0 ? ` · ${rating.count.toLocaleString()} ratings` : ''}
       </Text>}
     </View>
 
     <View style={styles.goodreads}>
-      <Text style={styles.label}>Goodreads</Text>
-      <Text style={styles.detail}>Open Goodreads for its current community rating and book page.</Text>
       <Button title="View on Goodreads" onPress={() => { void Linking.openURL(goodreadsSearchUrl(book.isbn)).catch(() => {}); }} />
     </View>
 
-    {book.source === 'offline-catalog' && <Text style={styles.detail}>Offline catalog data</Text>}
     <Text style={styles.isbn}>ISBN {book.isbn}</Text>
     <Button title="Scan Another" onPress={onScanAnother} />
   </ScrollView></SafeAreaView>;

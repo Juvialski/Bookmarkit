@@ -2,6 +2,7 @@
 import argparse
 import gzip
 import json
+import math
 import re
 import sqlite3
 import time
@@ -12,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / 'catalog/source.json'
-OUTPUT = ROOT / 'assets/catalog-v1.db'
+OUTPUT = ROOT / 'assets/catalog-v2.db'
 
 def isbn13(value):
     s = re.sub(r'[\s-]', '', str(value))
@@ -28,13 +29,20 @@ def text(value):
     return ' '.join(value.split()) if isinstance(value, str) else ''
 
 def parse_series(values):
-    # Match the online adapter's numbered-statement rules, including parentheses.
-    if not isinstance(values, list) or len(values) != 1 or not isinstance(values[0], str): return None
-    match = re.fullmatch(r'(.+?)(?:\s*[;,:-]\s*|\s+)(?:\((?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?)\)|(?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?))\s*[.;]?', values[0].strip(), re.I)
+    # Consistent explicit statements agree; any absent/ambiguous statement fails closed.
+    if not isinstance(values, list) or not values: return None
+    parsed = [parse_series_statement(value) for value in values]
+    if not all(parsed): return None
+    keys = {(text(name).lower(), float(position)) for name, position in parsed}
+    return parsed[0] if len(keys) == 1 else None
+
+def parse_series_statement(value):
+    if not isinstance(value, str): return None
+    match = re.fullmatch(r'(.+?)(?:\s*[;,:-]\s*|\s+)(?:\((?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?)\)|(?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?))\s*[.;]?', value.strip(), re.I)
     if not match: return None
     name = match[1].strip().rstrip(';,:-').strip()
     position = match[2] or match[3]
-    if not name or re.search(r'[#()]|\b(?:book|vol\.?|volume|no\.?)\s+\d', name, re.I) or float(position) <= 0: return None
+    if not name or re.search(r'[#()]|\b(?:book|vol\.?|volume|no\.?)\s+\d', name, re.I) or not math.isfinite(float(position)) or float(position) <= 0: return None
     return name, position
 
 def fetch(url):
@@ -54,7 +62,7 @@ def refresh():
     records.extend(fetch('https://openlibrary.org/search.json?' + query)['docs'])
     # Exact editions take priority over work-level search records.
     seeds = []
-    for isbn in ['9780140328721', '9780765326355', '9780547928227', '9780061120084', '9780451524935', '9780060530921', '9780765320308']:
+    for isbn in ['9780140328721', '9780765326355', '9780547928227', '9780061120084', '9780451524935', '9780060530921', '9780765320308', '9780765326362', '9781250899651', '9781250899699']:
         edition = fetch(f'https://openlibrary.org/isbn/{isbn}.json')
         work_key = edition.get('works', [{}])[0].get('key')
         work = fetch('https://openlibrary.org' + work_key + '.json') if work_key else {}
@@ -77,24 +85,26 @@ def build(source=SOURCE, output=OUTPUT):
         title = text(record.get('title'))
         authors = list(dict.fromkeys(text(a) for a in record.get('author_name', []) if text(a)))
         if not title: continue
-        override = next((curated[i] for i in record.get('isbn', []) if i in curated), {})
-        series = override.get('series', record.get('series', []))
-        parsed = parse_series(series)
         average, count = record.get('ratings_average'), record.get('ratings_count')
         count = count if type(count) is int and count >= 0 else None
         average = average if type(average) in (float, int) and 0 < average <= 5 and count != 0 else None
         for isbn in sorted({isbn13(value) for value in record.get('isbn', [])} - {None})[:8]:
             if isbn and isbn not in rows:
+                override = curated.get(isbn, {})
+                if override and (not override.get('source', '').startswith('https://') or not text(override.get('evidence'))):
+                    raise ValueError('Curated annotations require HTTPS source and evidence')
+                parsed = parse_series(override.get('series', record.get('series', [])))
                 rows[isbn] = (isbn, title, json.dumps(authors, ensure_ascii=False), record.get('key'),
                               'series' if parsed else 'standalone' if override.get('series_status') == 'standalone' else 'unknown', parsed[0] if parsed else None,
-                              parsed[1] if parsed else None, average, count)
+                              parsed[1] if parsed else None, average, count, 'curated' if override else 'open-library' if parsed else 'unknown')
     output = Path(output)
     if output.exists(): output.unlink()
     with closing(sqlite3.connect(output)) as db:
-        db.execute('CREATE TABLE books (isbn13 TEXT PRIMARY KEY, title TEXT NOT NULL, authors TEXT NOT NULL, work_id TEXT, series_status TEXT NOT NULL, series_name TEXT, series_position TEXT, rating REAL, rating_count INTEGER) WITHOUT ROWID')
+        db.execute('CREATE TABLE books (isbn13 TEXT PRIMARY KEY, title TEXT NOT NULL, authors TEXT NOT NULL, work_id TEXT, series_status TEXT NOT NULL, series_name TEXT, series_position TEXT, rating REAL, rating_count INTEGER, classification_source TEXT NOT NULL) WITHOUT ROWID')
         db.execute('CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID')
-        db.executemany('INSERT INTO books VALUES (?,?,?,?,?,?,?,?,?)', [rows[k] for k in sorted(rows)])
+        db.executemany('INSERT INTO books VALUES (?,?,?,?,?,?,?,?,?,?)', [rows[k] for k in sorted(rows)])
         db.executemany('INSERT INTO metadata VALUES (?,?)', [(k, data[k]) for k in ['version', 'generated_date', 'source']])
+        db.execute('INSERT INTO metadata VALUES (?,?)', ('catalog_schema', 'v2'))
         db.commit()
         db.execute('VACUUM')
     return rows

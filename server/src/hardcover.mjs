@@ -63,7 +63,7 @@ async function boundedJson(response) {
 }
 
 export function createHardcoverLookup({ token = '', fetcher = fetch, now = Date.now, maxSize = 256,
-  successTtlMs = 6 * 60 * 60 * 1000, missTtlMs = 5 * 60 * 1000, timeoutMs = 5000, maxConcurrent = 4 } = {}) {
+  successTtlMs = 6 * 60 * 60 * 1000, missTtlMs = 5 * 60 * 1000, timeoutMs = 2000, maxConcurrent = 4 } = {}) {
   const cache = new Map(), pending = new Map();
   return async function lookup(isbn) {
     if (!validIsbn(isbn)) throw new LookupError(400);

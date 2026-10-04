@@ -4,6 +4,50 @@
   "source": "https://openlibrary.org/search.json",
   "records": [
     {
+      "key": "/works/OL28687656W",
+      "title": "Tress of the Emerald Sea",
+      "isbn": [
+        "9781250899651"
+      ],
+      "author_name": [
+        "Brandon Sanderson"
+      ],
+      "series": [],
+      "edition_key": "/books/OL42777082M",
+      "ratings_average": 4.6,
+      "ratings_count": 10
+    },
+    {
+      "key": "/works/OL31146657W",
+      "title": "Yumi and the Nightmare Painter",
+      "isbn": [
+        "9781250899699"
+      ],
+      "author_name": [
+        "Brandon Sanderson"
+      ],
+      "series": [],
+      "edition_key": "/books/OL42777186M",
+      "ratings_average": 4.75,
+      "ratings_count": 12
+    },
+    {
+      "key": "/works/OL16813053W",
+      "title": "Words of Radiance",
+      "isbn": [
+        "9780765326362"
+      ],
+      "author_name": [
+        "Brandon Sanderson"
+      ],
+      "series": [
+        "The Stormlight Archive"
+      ],
+      "edition_key": "/books/OL32229560M",
+      "ratings_average": 4.6938775510204085,
+      "ratings_count": 98
+    },
+    {
       "key": "/works/OL45804W",
       "title": "Fantastic Mr. Fox",
       "isbn": [

@@ -30,6 +30,10 @@ test('absent and malformed ratings and series stay conservative', () => {
 test('malformed records fail closed', () => {
   for (const bad of [null, {}, { ...row, title: '' }, { ...row, authors: '{}' }, { ...row, authors: 'bad' }, { ...row, isbn13: 'bad' }]) assert.equal(normalizeLocalRecord(bad, isbn), null);
 });
+test('standalone requires curated catalog provenance', () => {
+  assert.equal(normalizeLocalRecord({ ...row, series_status: 'standalone' }, isbn)?.seriesStatus, 'unknown');
+  assert.equal(normalizeLocalRecord({ ...row, series_status: 'standalone', classification_source: 'curated' }, isbn)?.seriesStatus, 'standalone');
+});
 test('both providers fail then local success; timeout also falls back', async () => {
   assert.equal((await lookupBook(isbn, [failure, failure], local)).source, 'offline-catalog');
   assert.equal((await lookupBook(isbn, [async () => { throw new ProviderError('timeout'); }, failure], local)).title, row.title);
@@ -37,9 +41,9 @@ test('both providers fail then local success; timeout also falls back', async ()
 test('both providers fail and local miss gives clear message', async () => {
   await assert.rejects(lookupBook(isbn, [failure, failure], async () => null), /not in the offline catalog/);
 });
-test('online success and partial success never query local', async () => {
+test('catalog failure cannot discard online success or partial success', async () => {
   const online = async () => normalizeOpenLibrary({ title: 'Online title' }, {}, [], {}, isbn);
-  const unused = async () => { assert.fail('local should not run'); };
+  const unused = async () => { throw Error('unreadable catalog'); };
   for (const providers of [[online, online], [online, failure]]) {
     const book = await lookupBook(isbn, providers, unused);
     assert.equal(book.title, 'Online title'); assert.equal(book.source, undefined);

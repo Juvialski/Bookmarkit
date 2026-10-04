@@ -33,6 +33,12 @@ test('absent, non-numbered and compilation series remain unknown', () => {
     assert.equal(normalizeHardcover(payload({ featured_book_series }), isbn).seriesName, undefined);
   }
 });
+test('structured fractional series positions survive the proxy', () => {
+  for (const position of [0.5, 1.5]) {
+    assert.equal(normalizeHardcover(payload({ featured_book_series: { compilation: false, position, series: { name: 'Example' } } }), isbn).seriesPosition, String(position));
+  }
+  for (const position of [-1, 0, '1.5x', Infinity]) assert.equal(normalizeHardcover(payload({ featured_book_series: { compilation: false, position, series: { name: 'Example' } } }), isbn).seriesName, undefined);
+});
 test('malformed GraphQL, errors, wrong ISBN and ambiguous identities fail closed', () => {
   for (const data of [null, {}, { data: {} }, { errors: [{ message: 'private' }], ...fixture }, payload({ id: null })]) assert.throws(() => normalizeHardcover(data, isbn));
   const wrong = structuredClone(fixture); wrong.data.editions[0].isbn_13 = '9780140328721'; assert.throws(() => normalizeHardcover(wrong, isbn));
