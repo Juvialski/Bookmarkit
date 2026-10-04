@@ -14,7 +14,7 @@ npm run check
 
 `GET /health` returns `{ "status": "ok" }` even without a token; it verifies HTTP process health, not upstream authorization. `GET /api/books/:isbn/hardcover` requires a checksum-valid 978/979 ISBN-13 (digits only). A hit returns `found`, `isbn`, edition title, authors, optional HTTPS cover, optional rating/count, optional numbered series, book ID and optional Hardcover URL. Missing fields are omitted. A miss returns `{ "found": false }`. Invalid ISBN: 400. Missing token/capacity: 503. Upstream/auth/malformed response: 502. Timeout: 504. All failure bodies are generic; no raw GraphQL errors, credentials or stack traces are logged or returned. No CORS configuration is needed for native clients.
 
-Five-second upstream deadline includes response-body reading. Maximum body: 64 KiB. Fixed query, maximum two matching editions and eight contributors per book. Different work IDs for the same ISBN are rejected rather than guessed. Same-ISBN requests coalesce, at most four unique upstream calls run concurrently, and a 256-entry memory cache holds hits for six hours and misses for five minutes. Failures are never cached. Cache resets on restart; multiple service instances have independent caches.
+Two-second upstream deadline includes response-body reading. Maximum body: 64 KiB. Fixed query, maximum two matching editions and eight contributors per book. Different work IDs for the same ISBN are rejected rather than guessed. Same-ISBN requests coalesce, at most four unique upstream calls run concurrently, and a 256-entry memory cache holds hits for six hours and misses for five minutes. Failures are never cached. Cache resets on restart; multiple service instances have independent caches.
 
 ## Official schema checked 2026-10-04
 

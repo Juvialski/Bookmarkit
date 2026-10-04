@@ -10,16 +10,9 @@ export type FailureKind = 'rate-limit' | 'server' | 'timeout' | 'network' | 'mal
 export class ProviderError extends Error {
   constructor(public kind: FailureKind) { super(kind); }
 }
-export function providerMessage(name: string, error: unknown): string {
-  const kind = error instanceof ProviderError ? error.kind : 'unavailable';
-  if (kind === 'rate-limit') return `${name} is busy. Try again shortly.`;
-  if (kind === 'timeout') return `${name} took too long to respond. Try again.`;
-  if (kind === 'network') return `${name} could not be reached. Check your internet connection.`;
-  return `${name} is temporarily unavailable.`;
-}
 export function rating(average: unknown, count: unknown) {
   return { average: typeof average === 'number' && Number.isFinite(average) && average > 0 && average <= 5 && count !== 0 ? average : undefined,
-    count: typeof count === 'number' && Number.isInteger(count) && count >= 0 ? count : undefined };
+    count: typeof count === 'number' && Number.isSafeInteger(count) && count > 0 ? count : undefined };
 }
 export async function json(url: string, fetcher: Fetcher, allowMissing = false, timeoutMs = 10000): Promise<unknown> {
   const controller = new AbortController();

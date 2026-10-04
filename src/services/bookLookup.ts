@@ -3,6 +3,8 @@ import { isValidIsbn, normalizeIsbn } from '../utils/isbn';
 import { hardcover } from './providers/hardcover';
 import { openLibrary } from './providers/openLibrary';
 import { httpsCover, ProviderError } from './providers/shared';
+import { mergeClassification } from '../utils/classification';
+import { primaryRating } from '../utils/ratings';
 export async function lookupBook(value: string, providers = [hardcover, openLibrary], local?: (isbn: string) => Promise<BookResult | null>): Promise<BookResult> {
   const isbn = normalizeIsbn(value);
   if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
@@ -25,15 +27,19 @@ export async function lookupBook(value: string, providers = [hardcover, openLibr
   }
   // Fixed precedence: exact Hardcover ISBN edition, then Open Library ISBN edition.
   const first = books[0];
-  const seriesBooks = books.filter(b => b.seriesStatus === 'series' && b.seriesName && b.seriesPosition);
-  const series = seriesBooks.every(b => b.seriesName === seriesBooks[0]?.seriesName && b.seriesPosition === seriesBooks[0]?.seriesPosition) ? seriesBooks[0] : undefined;
-  const names = ['Hardcover', 'Open Library'] as const;
+  // Catalog evidence also supplements online results. A broken optional catalog
+  // must never discard a usable online book.
+  const stored = local ? await local(isbn).catch(() => null) : null;
+  const classification = mergeClassification([...books, ...(stored ? [stored] : [])]);
+  const onlineRatings = books.map(b => b.rating);
+  const selected = primaryRating(onlineRatings);
+  const usedStoredRating = !selected && !!stored && !!primaryRating(stored.ratings);
   return { isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,
-    incomplete: responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
+    incomplete: usedStoredRating || responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
     authors: books.find(b => b.authors.length)?.authors || [], coverUrl: books.map(b => httpsCover(b.coverUrl)).find(Boolean),
-    seriesStatus: series ? 'series' : 'unknown', seriesName: series?.seriesName, seriesPosition: series?.seriesPosition,
-    ratings: names.flatMap((_provider, i) => { const r = responses[i]; return r?.status === 'fulfilled' && r.value ? [r.value.rating] : []; }),
+    ...classification,
+    ratings: usedStoredRating ? [...onlineRatings, ...stored!.ratings] : onlineRatings,
     // Optional provider outages are quiet when another source identifies the book.
     warnings: books.flatMap(b => b.warnings || []) };
 }

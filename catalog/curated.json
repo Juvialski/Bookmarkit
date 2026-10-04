@@ -4,6 +4,21 @@
     "source": "https://us.macmillan.com/books/9780765326355/thewayofkings/",
     "evidence": "Publisher explicitly identifies Book One of the Stormlight Archive."
   },
+  "9780765326362": {
+    "series": ["The Stormlight Archive ; book 2"],
+    "source": "https://us.macmillan.com/books/9780765326362/wordsofradiance/",
+    "evidence": "Publisher identifies Book Two of the Stormlight Archive."
+  },
+  "9781250899651": {
+    "series_status": "standalone",
+    "source": "https://www.brandonsanderson.com/pages/standalones-cosmere",
+    "evidence": "Author explicitly describes Tress of the Emerald Sea as a standalone novel."
+  },
+  "9781250899699": {
+    "series_status": "standalone",
+    "source": "https://www.brandonsanderson.com/pages/standalones-cosmere",
+    "evidence": "Author explicitly describes Yumi and the Nightmare Painter as a standalone novel."
+  },
   "9780765320308": {
     "series_status": "standalone",
     "source": "https://www.brandonsanderson.com/pages/hello-my-names-brandon",

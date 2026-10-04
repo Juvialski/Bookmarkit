@@ -8,6 +8,9 @@ from catalog import build, isbn13, parse_series, SOURCE, OUTPUT
 
 class CatalogTests(unittest.TestCase):
     def test_conservative_series(self):
+        self.assertEqual(parse_series(['Series #0.5', 'series, Book 0.5']), ('Series', '0.5'))
+        self.assertIsNone(parse_series(['Series #1', 'Series #2']))
+        self.assertIsNone(parse_series(['Series #' + '9' * 400]))
         for statement in ['Series #1', 'Series ; book 1', 'Series (Volume 1)', 'Series (#1)', 'Series : no. 1', 'Series, Vol. 1']:
             self.assertEqual(parse_series([statement]), ('Series', '1'))
         for values in [None, ['Series'], ['Series #1', 'Other #2'], ['Series #1 #2'], ['Series (Book 1'], ['Series #0']]:
@@ -46,6 +49,9 @@ class CatalogTests(unittest.TestCase):
                     self.assertTrue(row[0]); self.assertTrue(json.loads(row[1]))
                 self.assertEqual(db.execute("SELECT series_status, series_position FROM books WHERE isbn13='9780765326355'").fetchone(), ('series', '1'))
                 self.assertEqual(db.execute("SELECT series_status FROM books WHERE isbn13='9780765320308'").fetchone()[0], 'standalone')
+                for isbn in ['9781250899651', '9781250899699']:
+                    self.assertEqual(db.execute('SELECT series_status, classification_source FROM books WHERE isbn13=?', (isbn,)).fetchone(), ('standalone', 'curated'))
+                self.assertEqual(db.execute("SELECT series_position FROM books WHERE isbn13='9780765326362'").fetchone()[0], '2')
                 self.assertIsNone(db.execute("SELECT rating FROM books WHERE isbn13='9780140430776'").fetchone()[0])
 
 if __name__ == '__main__': unittest.main()

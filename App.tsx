@@ -10,7 +10,7 @@ import { createCachedLookup, lookupBook } from './src/services/bookLookup';
 import { createLocalCatalog } from './src/services/localCatalog';
 import { createScanGate } from './src/utils/isbn';
 export default function App() {
-  return <SQLiteProvider databaseName="catalog-v1.db" assetSource={{ assetId: require('./assets/catalog-v1.db') }}><BookScanner /></SQLiteProvider>;
+  return <SQLiteProvider databaseName="catalog-v2.db" assetSource={{ assetId: require('./assets/catalog-v2.db') }}><BookScanner /></SQLiteProvider>;
 }
 function BookScanner() {
   const db = useSQLiteContext();
