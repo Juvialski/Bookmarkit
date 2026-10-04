@@ -2,7 +2,9 @@
 
 A small Android/iOS ISBN scanner: Expo SDK 57, React Native and TypeScript. Google Books and Open Library are called directly. No backend, accounts, persistent history or offline catalog.
 
-## Test on a phone
+## Current test target: emulators/simulators
+
+For the current development phases, acceptance is emulator/simulator-based. Physical Android/iPhone testing is intentionally deferred and is not a blocker yet.
 
 Install Node.js 22.13+ (Node 24 works), then:
 
@@ -11,7 +13,7 @@ npm ci
 npm start
 ```
 
-Use an SDK 57-compatible Expo Go app and the same network as this computer. Android: scan the terminal QR code inside Expo Go. iPhone: scan it with Camera and open Expo Go. If LAN access fails, try `npx expo start --tunnel`. A simulator can test manual entry; camera acceptance requires physical phones.
+Android emulator is the primary executable acceptance target for now. On macOS, an iOS Simulator can validate startup, layout, manual ISBN lookup, provider behavior and non-hardware flows. Camera/barcode behavior that requires real hardware is deferred. Expo Go/physical-phone instructions can still be used later when hardware acceptance begins.
 
 Grant camera permission, then scan the ISBN barcode on the back cover. Manual ISBN entry works without camera permission. Permanently denied permission offers **Open settings**; permission is refreshed on return. Camera startup errors offer retry and manual lookup.
 
@@ -21,9 +23,9 @@ Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY`, 
 
 ### Installable builds
 
-`eas.json` provides an internal **preview** profile with Android APK output. No binary has been produced here: this environment is not logged into Expo, the app has no registered EAS project ID, and local Android tools are unavailable.
+`eas.json` provides an internal **preview** profile with Android APK output. A local standalone release APK was built and tested on the Pixel 9 Pro Android 17 emulator. It uses the generated Android debug signing key and is for local testing, not store release. Artifact: `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\bookmarkit-local-release.apk`. EAS remains logged out and unlinked; no cloud preview was produced.
 
-After authenticating your existing Expo account and registering/configuring this project, run:
+First run `npx eas-cli@latest login` with your existing Expo account, then `npx eas-cli@latest init` to link the intended project. After linkage, run:
 
 ```sh
 npx eas-cli@latest build --platform android --profile preview
@@ -43,22 +45,21 @@ Android: install the APK from the successful EAS build page. iPhone: internal di
 - Missing author, rating, cover and series have placeholders. Failed cover loading also falls back to a placeholder. Service, connection, timeout and rate-limit messages use plain language.
 - In-memory cache: normalized ISBN, at most 20 books, five-minute expiry; partial successes expire after 30 seconds. Failed/not-found lookups are not cached. Closing the app clears it. This is not offline storage.
 
-## Physical-device checklist (Android and iPhone separately)
+## Future physical-device checklist (deferred)
 
-1. Launch app.
-2. Grant camera permission.
-3. Scan a physical ISBN.
-4. Verify title, author and cover.
-5. Repeatedly expose the same barcode; ensure one lookup/result.
-6. Tap Scan Another.
-7. Scan another book; also try the same book to check cache responsiveness.
-8. Background/reopen during scanning and lookup; verify recovery and torch reset.
-9. Deny permission, use manual entry, then re-enable in Settings.
-10. Test poor/no internet and retry after reconnecting.
-11. Verify missing ratings/cover do not break results.
-12. Try a known series book; explicit series or “Series information unavailable” is acceptable when providers lack confident metadata.
+This checklist is intentionally deferred and does not block current development. Current acceptance should use Android Emulator and, when available, iOS Simulator. Preserve this list for the later hardware-validation phase.
 
-Also check Android Back during lookup/result, torch on supported hardware, invalid manual input, and a non-book EAN barcode (must not trigger lookup). Record device/OS, app revision and observations. No physical camera acceptance has been claimed.
+1. Fresh launch; allow camera permission.
+2. Scan a physical 978 ISBN; keep it visible and verify only one lookup/result.
+3. Verify title, author and cover; verify available ratings and series when provider metadata contains it.
+4. Tap Scan Another; scan a second book, then the same book again.
+5. Background and return during scanning and lookup; verify recovery and torch reset.
+6. Toggle torch on supported hardware.
+7. Deny camera permission; recover through Settings and return.
+8. Use manual ISBN lookup with keyboard open on a small screen; ensure input and button remain reachable.
+9. Test weak/no internet; reconnect and retry. Confirm partial provider failure still shows the identified book (Google rate limiting may provide this naturally).
+10. Present malformed/non-book EAN; verify no lookup. Also try invalid manual input.
+11. Check long titles/authors and missing/failed covers; scroll to Scan Another. Check Android Back during lookup/results and safe areas around system UI.
 
 ## Validation commands
 
@@ -76,4 +77,4 @@ npx expo export --platform ios
 
 CI runs mocked tests, TypeScript, lint and dependency compatibility checks. Exports and doctor are local release-readiness checks. Manual live smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
 
-Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Next step: run the checklist on real Android/iPhone using Expo Go, then configure signed native preview builds.
+Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Current readiness fixes enable iPhone autofocus, keyboard-aware manual entry, camera-only permissions and HTTPS-only iOS transport. For now, continue emulator/simulator-based validation; physical Android/iPhone acceptance is deferred. See VALIDATION.md for current evidence.
