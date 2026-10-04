@@ -21,7 +21,7 @@ Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY`, 
 
 ### Installable builds
 
-`eas.json` provides an internal **preview** profile with Android APK output. No binary has been produced here: this environment is not logged into Expo, the app has no registered EAS project ID, and local Android tools are unavailable.
+`eas.json` provides an internal **preview** profile with Android APK output. A local standalone release APK was built and tested on the Pixel 9 Pro Android 17 emulator. It uses the generated Android debug signing key and is for local testing, not store release. Artifact: `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\bookmarkit-local-release.apk`. EAS remains logged out and unlinked; no cloud preview was produced.
 
 First run `npx eas-cli@latest login` with your existing Expo account, then `npx eas-cli@latest init` to link the intended project. After linkage, run:
 

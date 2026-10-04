@@ -28,10 +28,29 @@ Two ISBNs, sequential, actual adapters without a key. Google returned typed rate
 
 ## Native build blockers
 
-npx eas-cli@latest whoami exited 1: Not logged in. No linked extra.eas.projectId exists. No authenticated build was submitted, no credentials guessed, and no account created. Android preview already targets APK/internal distribution; iOS preview targets internal distribution. No APK/IPA or build/artifact URL exists. Apple credential availability cannot be inspected without EAS authentication; iOS signing and registered-device installation remain unconfirmed. This Windows session has no physical phone access.
+npx eas-cli@latest whoami exited 1: Not logged in. No linked extra.eas.projectId exists. No authenticated build was submitted, no credentials guessed, and no account created. Android preview already targets APK/internal distribution; iOS preview targets internal distribution. No EAS APK/IPA or cloud build/artifact URL exists. A local APK was subsequently built; see emulator evidence below. Apple credential availability cannot be inspected without EAS authentication; iOS signing and registered-device installation remain unconfirmed. This Windows session has no physical phone access.
 
 Next user action: `npx eas-cli@latest login` with an existing Expo account. Then `npx eas-cli@latest init` to select/create the intended project, `npx eas-cli@latest build --platform android --profile preview`, and, with Apple signing/device registration available, `npx eas-cli@latest build --platform ios --profile preview`. Do not submit to stores. See README for acceptance steps and official EAS setup links.
 
 ## Not yet confirmed
 
-Physical Android/iPhone camera detection, permission recovery, torch, keyboard/small-screen layout, native startup and installation have not been tested. Run every README acceptance item separately on Android and iPhone; record device/OS, commit and result. No hardware or native-build success is claimed. Exact PR head and GitHub CI result are supplied in the PR handoff.
+Physical Android/iPhone camera detection, permission recovery, torch and keyboard/small-screen layout have not been tested. Android native installation/startup and selected flows have now been tested on an emulator as described below. Run every README acceptance item separately on Android and iPhone; record device/OS, commit and result. No hardware or native-build success is claimed. Exact PR head and GitHub CI result are supplied in the PR handoff.
+
+## Android emulator follow-up
+
+Built from app source at 2777bd4d8fca3a1b8331d0f57b1ebc9bf14cf6eb using `npx expo run:android --variant release --no-bundler`, with the installed Android Studio JBR/SDK supplied through process-local JAVA_HOME/ANDROID_HOME. Expo generated ignored android/; no native files were hand-edited. Restored the prebuild-generated package script changes. Gradle 9.3.1 and licensed NDK 27.1 were installed automatically; build succeeded (291 tasks, 13m27s). APK signature verification passed: generated Android Debug certificate, not EAS/release-account signing.
+
+Local artifact: `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\bookmarkit-local-release.apk`
+SHA256: `882d47899fe3dc869184771bd7edefd65909d33254943ad5769d2fbde9b108f7`.
+
+Pixel_9_Pro, Android 17/API 37, x86_64 emulator:
+- Installed and launched standalone com.juvialski.bookmarkit; also cold-launched after stopping Metro.
+- Manual lookup while camera permission absent: Fantastic Mr. Fox, Roald Dahl, visible cover, 4.0 rating/121 ratings. Google rate-limit warning preserved the Open Library result.
+- Scan Another returned to scanner; second manual lookup displayed The Way of Kings, Brandon Sanderson, visible cover, 4.5 rating/166 ratings. Series unknown on both.
+- Camera permission granted using ADB (not the Android dialog/Settings flow); virtual scene preview started.
+- Torch toggle updated UI without crashing; background/return remounted virtual camera and reset torch.
+- Invalid manual ISBN showed validation and left scanner usable.
+- Result and controls fit the tested viewport; emulator input used the floating/hardware keyboard, so full software keyboard and small-phone acceptance remain pending.
+- No AndroidRuntime/ReactNativeJS error entries observed in the targeted logcat read.
+
+Screenshots retained locally in `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\result.png` and `camera.png`. Physical barcode/duplicate detection, actual torch illumination, denial/Settings recovery, offline/weak-network hardware behavior and iPhone acceptance remain pending. No physical camera success is claimed. EAS authentication/Apple signing blockers remain. Follow-up typecheck/lint passed; normal PR CI stays unchanged.
