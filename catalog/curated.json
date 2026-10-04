@@ -1,0 +1,12 @@
+{
+  "9780765326355": {
+    "series": ["The Stormlight Archive ; book 1"],
+    "source": "https://us.macmillan.com/books/9780765326355/thewayofkings/",
+    "evidence": "Publisher explicitly identifies Book One of the Stormlight Archive."
+  },
+  "9780765320308": {
+    "series_status": "standalone",
+    "source": "https://www.brandonsanderson.com/pages/hello-my-names-brandon",
+    "evidence": "Author recommends Warbreaker as a novel-length standalone work."
+  }
+}

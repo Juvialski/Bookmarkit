@@ -10,7 +10,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.juvialski.bookmarkit",
       "infoPlist": {
-        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": false }
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
       }
     },
     "android": {
@@ -34,7 +36,8 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

@@ -3,17 +3,25 @@ import { isValidIsbn, normalizeIsbn } from '../utils/isbn';
 import { googleBooks } from './providers/googleBooks';
 import { openLibrary } from './providers/openLibrary';
 import { httpsCover, ProviderError, providerMessage } from './providers/shared';
-export async function lookupBook(value: string, providers = [googleBooks, openLibrary]): Promise<BookResult> {
+export async function lookupBook(value: string, providers = [googleBooks, openLibrary], local?: (isbn: string) => Promise<BookResult | null>): Promise<BookResult> {
   const isbn = normalizeIsbn(value);
   if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
   const responses = await Promise.allSettled(providers.map(provider => provider(isbn)));
   const books = responses.flatMap(r => r.status === 'fulfilled' && r.value ? [r.value] : []);
   if (!books.length) {
+    if (local) {
+      try {
+        const stored = await local(isbn);
+        if (stored) return stored;
+      } catch {
+        throw new Error('Book lookup unavailable. The offline catalog could not be read. Try again.');
+      }
+    }
     const errors = responses.flatMap(r => r.status === 'rejected' ? [r.reason] : []);
     if (!errors.length) throw new Error('No book found for this ISBN. Try another book.');
-    if (errors.every(e => e instanceof ProviderError && e.kind === 'network')) throw new Error('Internet unavailable. Check your connection and try again.');
-    if (errors.some(e => e instanceof ProviderError && e.kind === 'rate-limit')) throw new Error('Book lookup is busy. Try again shortly.');
-    throw new Error('Book services are unavailable. Check your connection and try again.');
+    if (errors.every(e => e instanceof ProviderError && e.kind === 'network')) throw new Error('Internet unavailable. This ISBN is not in the offline catalog. Try another book or reconnect.');
+    if (errors.some(e => e instanceof ProviderError && e.kind === 'rate-limit')) throw new Error('Book lookup is busy. This ISBN is not in the offline catalog. Try again shortly.');
+    throw new Error('Book services are unavailable and this ISBN is not in the offline catalog. Check your connection or try another book.');
   }
   // Provider order is fixed: exact Google ISBN volume, then the Open Library ISBN edition.
   const first = books[0];
