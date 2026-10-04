@@ -1,11 +1,11 @@
 // Manual diagnostic only; never run in CI. Sequential ISBNs keep traffic small.
-import { googleBooks } from '../src/services/providers/googleBooks';
+import { hardcover } from '../src/services/providers/hardcover';
 import { openLibrary } from '../src/services/providers/openLibrary';
 import { ProviderError } from '../src/services/providers/shared';
 
 async function main() {
   for (const isbn of ['9780140328721', '9780765326355']) {
-    for (const [provider, lookup] of [['Google Books', googleBooks], ['Open Library', openLibrary]] as const) {
+    for (const [provider, lookup] of [['Hardcover', hardcover], ['Open Library', openLibrary]] as const) {
       try {
         const book = await lookup(isbn);
         console.log(JSON.stringify({ isbn, provider, found: !!book, title: book?.title, authors: book?.authors,

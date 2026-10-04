@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm --prefix server test
+      - run: npm --prefix server run check
       - run: python scripts/test_catalog.py
       - run: npm run typecheck
       - run: npm run lint

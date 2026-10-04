@@ -1,0 +1,12 @@
+{
+  "name": "bookmarkit-hardcover-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check src/hardcover.mjs && node --check src/index.mjs"
+  }
+}
