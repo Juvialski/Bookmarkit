@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isValidIsbn, normalizeIsbn, createScanGate } from '../src/utils/isbn';
 import { normalizeGoogleBooks, googleBooks } from '../src/services/providers/googleBooks';
-import { normalizeOpenLibrary, openLibrary } from '../src/services/providers/openLibrary';
+import { normalizeOpenLibrary, openLibrary, parseSeriesStatement } from '../src/services/providers/openLibrary';
 import { lookupBook } from '../src/services/bookLookup';
 import { Fetcher, json } from '../src/services/providers/shared';
 import { isbn, google, edition, authors, ratings } from './fixtures';
@@ -33,7 +33,7 @@ test('Open Library metadata, work-level ratings and explicit numbered series', (
   assert.equal(book.seriesStatus, 'series'); assert.equal(book.seriesPosition, '2'); assert.equal(book.seriesName, 'Example Series'); assert.ok(book.coverUrl);
 });
 test('Open Library absent or ambiguous series stays unknown; missing fields safe', () => {
-  for (const series of [undefined, ['Example Series'], ['A ; book 1', 'B ; book 2']]) {
+  for (const series of [undefined, ['Example Series'], ['A #1', 'B #2']]) {
     const book = normalizeOpenLibrary({ title: 'Book', series }, null, [null], null, isbn)!;
     assert.equal(book.seriesStatus, 'unknown'); assert.deepEqual(book.authors, []); assert.equal(book.rating.average, undefined); assert.equal(book.coverUrl, undefined);
   }
