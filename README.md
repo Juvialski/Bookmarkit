@@ -1,57 +1,79 @@
 # Bookmarkit
 
-A small Android/iOS ISBN scanner using React Native, Expo SDK 57, TypeScript and expo-camera. No backend, account, persistence, or API keys. Only Google Books and Open Library are called directly.
+A small Android/iOS ISBN scanner: Expo SDK 57, React Native and TypeScript. Google Books and Open Library are called directly. No backend, accounts, persistent history or offline catalog.
 
-## Setup and run
+## Test on a phone
 
-Install Node.js 22.13+ (Node 24 also works), then:
+Install Node.js 22.13+ (Node 24 works), then:
 
 ```sh
 npm ci
 npm start
 ```
 
-Install an Expo Go version compatible with SDK 57 on a physical Android or iOS phone. Connect to the same network and open the terminal QR code (Expo Go on Android; Camera on iOS). If LAN access is blocked, try `npx expo start --tunnel`. Expo Go itself may require an Expo account depending on its version; Bookmarkit has no accounts.
+Use an SDK 57-compatible Expo Go app and the same network as this computer. Android: scan the terminal QR code inside Expo Go. iPhone: scan it with Camera and open Expo Go. If LAN access fails, try `npx expo start --tunnel`. A simulator can test manual entry; camera acceptance requires physical phones.
 
-- Android: `npm run android` opens Expo Go on a connected device/emulator. A local native build uses `npx expo run:android` and needs Android Studio, Android SDK, a supported JDK and a device/emulator.
-- iOS: use the QR code on a physical iPhone from Windows. `npm run ios` opens a simulator on macOS. A local native build uses `npx expo run:ios` on macOS with Xcode and CocoaPods; physical native installs need Apple signing.
-- Both platforms share the same source. Physical phones are required to verify camera scanning; a simulator is useful for manual input.
+Grant camera permission, then scan the ISBN barcode on the back cover. Manual ISBN entry works without camera permission. Permanently denied permission offers **Open settings**; permission is refreshed on return. Camera startup errors offer retry and manual lookup.
 
-Tap **Allow camera** when first opening the scanner. The Expo camera config plugin supplies Android CAMERA permission and the iOS usage description. Audio recording permission is disabled on Android. If camera access was permanently denied, **Open settings** lets you enable it; permissions refresh when returning. Manual ISBN lookup works without camera access.
+### Optional Google Books key
 
-## Behavior
+Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY`, then reload the app. Lookup works without it. The key is only appended when nonblank. This is a **public client key embedded in the bundle**, not a secret. Restrict its Google API access/quota appropriately; never commit keys or use private credentials. See [Expo public environment configuration](https://docs.expo.dev/guides/environment-variables/) and [Google Books API usage](https://developers.google.com/books/docs/v1/using).
 
-Scan rear-camera EAN-13 barcodes starting with 978 or 979 and with a valid checksum. Manual entry accepts spaces/hyphens. A synchronous lock suppresses repeated callbacks, including different barcodes, until Scan Another or retry. The camera unmounts during lookup and on the result screen. Lookup errors pause callbacks until Resume scanner or manual lookup.
+### Installable builds
 
-Provider adapters normalize data before the UI sees it. Google results must contain the scanned ISBN. Open Library resolves the ISBN edition, then its linked work, author records and work-level ratings. Both providers run independently; one successful identification is enough. Requests time out after 10 seconds each. No automatic retry or combined score.
+`eas.json` provides an internal **preview** profile with Android APK output. No binary has been produced here: this environment is not logged into Expo, the app has no registered EAS project ID, and local Android tools are unavailable.
 
-Unavailable provider ratings are distinguished from an identified book with no rating. Open Library scores cover the work across editions; Google scores are for the matched volume. Author/cover/rating gaps are handled with placeholders. Covers that fail to load show a placeholder.
-
-Series is accepted only from a single explicit Open Library edition statement like `Example Series ; book 2` (also volume/vol). Other forms remain unknown. The app never infers a series from the title or claims standalone based on missing information. This intentionally misses some true series memberships.
-
-## Checks
+After authenticating your existing Expo account and registering/configuring this project, run:
 
 ```sh
-npm test
-npm run typecheck
-npx expo install --check
-npx expo-doctor
-npx expo export --platform all
+npx eas-cli@latest build --platform android --profile preview
+npx eas-cli@latest build --platform ios --profile preview
 ```
 
-Tests use fixtures and mocked fetch responses, with no live API dependency. Source: `App.tsx`, `src/screens`, `src/services/providers`, `src/services/bookLookup.ts`, `src/models/book.ts`, `src/utils/isbn.ts`. Test fixtures live in `tests/fixtures.ts`.
+Android: install the APK from the successful EAS build page. iPhone: internal distribution requires Apple signing and registered device UDIDs. TestFlight instead requires a store distribution build, Apple Developer/App Store Connect setup and submission; the internal preview profile is not a TestFlight profile. Local Android builds need Android SDK/JDK; local iOS builds need macOS/Xcode. See [EAS build setup](https://docs.expo.dev/build/setup/). JavaScript export is not an installable native build.
 
-## Known limitations and device acceptance
+## Lookup behavior
 
-Public APIs may be unavailable, rate-limited or incomplete. No offline lookup. Author requests are capped at eight per edition. Series normalization is deliberately conservative. Book ratings are often absent. The app does not store scan history.
+- Rear camera, EAN-13 only, checksum-valid 978/979 ISBNs only. Manual entry allows spaces/hyphens. A synchronous gate rejects duplicate or different barcodes while lookup/result is active.
+- Camera unmounts during lookup, errors, background state and results. Scan Another remounts it; returning from background refreshes permissions and clears mount failure/torch state. A minimal guide and torch toggle help scanning.
+- Google requires an exact ISBN identifier. It gets at most two attempts: one retry after 500 ms for 429 or 5xx only, with a five-second timeout per attempt. Network, timeout and malformed responses are not retried.
+- Open Library resolves the ISBN edition, linked work, work ratings and up to eight unique authors. Secondary request failures preserve the identified edition. Its individual requests time out after ten seconds.
+- Merge order: exact Google ISBN volume title first, then Open Library ISBN edition; first nonempty authors and valid HTTPS cover in that same order. Ratings remain separate; Open Library ratings span editions. Partial failure never erases another provider's book.
+- Series requires one explicit numbered statement in edition/work series metadata. Examples: `The Stormlight Archive #1`, `Series ; book 2`, `Series, Vol. 3`, `Series (Volume 4)`, `Series : no. 5`, `Series (#6)`. Conflicts and unnumbered metadata stay unknown. Titles/subjects never establish series or standalone status.
+- Missing author, rating, cover and series have placeholders. Failed cover loading also falls back to a placeholder. Service, connection, timeout and rate-limit messages use plain language.
+- In-memory cache: normalized ISBN, at most 20 books, five-minute expiry; partial successes expire after 30 seconds. Failed/not-found lookups are not cached. Closing the app clears it. This is not offline storage.
 
-Platform bundle export and TypeScript checks do **not** establish a successful native build or physical camera behavior. Before declaring Phase 1 complete, test both physical Android and iPhone devices: grant/deny permission, re-enable in Settings, scan an ISBN repeatedly, scan another ISBN after the result, use Scan Another, test airplane mode and manual input, verify long titles and missing covers/ratings. Native Android and iOS binaries must also be built in their toolchains.
+## Physical-device checklist (Android and iPhone separately)
 
-Example ISBNs used in automated validation: `9780140328721` (Fantastic Mr. Fox fixture), `9780765326355` (The Way of Kings checksum), `9791032300336` (synthetic checksum-valid 979 test; not a verified catalog record). Live provider smoke results and build evidence are recorded in `VALIDATION.md`.
+1. Launch app.
+2. Grant camera permission.
+3. Scan a physical ISBN.
+4. Verify title, author and cover.
+5. Repeatedly expose the same barcode; ensure one lookup/result.
+6. Tap Scan Another.
+7. Scan another book; also try the same book to check cache responsiveness.
+8. Background/reopen during scanning and lookup; verify recovery and torch reset.
+9. Deny permission, use manual entry, then re-enable in Settings.
+10. Test poor/no internet and retry after reconnecting.
+11. Verify missing ratings/cover do not break results.
+12. Try a known series book; explicit series or “Series information unavailable” is acceptable when providers lack confident metadata.
 
-Dependencies initially reported npm audit advisories in the Expo/React Native toolchain. Do not use `npm audit fix --force` to downgrade the Expo SDK; assess compatible upstream fixes before release.
+Also check Android Back during lookup/result, torch on supported hardware, invalid manual input, and a non-book EAN barcode (must not trigger lookup). Record device/OS, app revision and observations. No physical camera acceptance has been claimed.
 
-The next smallest step is completing the physical-device acceptance checklist and native builds for this phase. Phase 2 has not been started.
+## Validation commands
 
-References: [Expo Camera](https://docs.expo.dev/versions/latest/sdk/camera/), [Google Books ISBN search](https://developers.google.com/books/docs/v1/using), [Open Library JSON API](https://openlibrary.org/dev/docs/json_api).
+```sh
+npm ci
+npm test
+npm run typecheck
+npm run lint
+npx expo install --check
+npx expo-doctor
+npx expo config --type introspect
+npx expo export --platform android
+npx expo export --platform ios
+```
 
+CI runs mocked tests, TypeScript, lint and dependency compatibility checks. Exports and doctor are local release-readiness checks. Manual live smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
+
+Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Next step: run the checklist on real Android/iPhone using Expo Go, then configure signed native preview builds.
