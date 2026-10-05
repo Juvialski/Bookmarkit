@@ -23,7 +23,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.juvialski.bookmarkit"
+      "package": "com.juvialski.bookmarkit",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"

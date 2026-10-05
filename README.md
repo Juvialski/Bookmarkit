@@ -21,18 +21,28 @@ Grant camera permission, then scan the ISBN barcode on the back cover. Manual IS
 
 Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_BOOK_API_BASE_URL` to the proxy's HTTPS URL. Android Emulator local testing can use `http://10.0.2.2:3001`; rebuild the native app after changing local HTTP configuration. This URL is public and embedded in the app. **HARDCOVER_API_TOKEN belongs only in the server environment**, never in Expo public variables or mobile code. See [server setup, query and mock instructions](server/README.md) and [Expo environment configuration](https://docs.expo.dev/guides/environment-variables/). Without a proxy/token, Open Library and the catalog still work. Google Books is removed from runtime entirely.
 
-### Installable builds
+### Standalone Android test APK
 
-`eas.json` provides an internal **preview** profile with Android APK output. A local standalone release APK was built and tested on the Pixel 9 Pro Android 17 emulator. It uses the generated Android debug signing key and is for local testing, not store release. Artifact: `C:\Users\Al\Documents\Codex\Bookmarkit-emulator\bookmarkit-local-release.apk`. EAS remains logged out and unlinked; no cloud preview was produced.
+See [ANDROID-PHONE-TEST.md](ANDROID-PHONE-TEST.md) for installation and the short phone checklist. The **Android test APK** GitHub Actions workflow uploads `bookmarkit-android-test.apk` plus its SHA256 checksum as the **bookmarkit-android-test** artifact (30-day retention). Open a successful run under **Actions → Android test APK → Artifacts** and unzip the download. After merge, use **Run workflow** with `main` to generate a fresh APK. The workflow also builds on PRs changing Android build configuration so artifact generation is verified before merge.
 
-First run `npx eas-cli@latest login` with your existing Expo account, then `npx eas-cli@latest init` to link the intended project. After linkage, run:
+Local build (Node 22.13+; JDK 21; Android SDK with accepted licenses):
 
 ```sh
-npx eas-cli@latest build --platform android --profile preview
-npx eas-cli@latest build --platform ios --profile preview
+npm ci
+npm run build:android-test
 ```
 
-Android: install the APK from the successful EAS build page. iPhone: internal distribution requires Apple signing and registered device UDIDs. TestFlight instead requires a store distribution build, Apple Developer/App Store Connect setup and submission; the internal preview profile is not a TestFlight profile. Local Android builds need Android SDK/JDK; local iOS builds need macOS/Xcode. See [EAS build setup](https://docs.expo.dev/build/setup/). JavaScript export is not an installable native build.
+Set `JAVA_HOME` and `ANDROID_HOME` to your local JDK/SDK paths. Output: `dist/bookmarkit-android-test.apk`; Gradle original: `android/app/build/outputs/apk/release/app-release.apk`. Expo generates Android native files; do not edit them. Gradle builds the release variant, bundling JavaScript, assets and `catalog-v2.db`. The universal APK includes ARM phone and x86 emulator architectures. No EAS account, cloud build or Metro server is needed. Generated debug signing is acceptable for private testing; it is not Play Store signing. Different build keys can require uninstalling an earlier test installation.
+
+Phone builds ignore local dotenv files to avoid embedding emulator-only URLs. Optionally supply the public HTTPS `EXPO_PUBLIC_BOOK_API_BASE_URL` environment variable (Actions repository variable of the same name). With no configured proxy, Open Library and the offline catalog remain available. Never supply a Hardcover token to the mobile build.
+
+Repeatable acceptance on a booted disposable emulator (clears Bookmarkit data):
+
+```sh
+python scripts/android-apk-smoke.py --adb /path/to/adb --apk dist/bookmarkit-android-test.apk
+```
+
+This checks APK JS/catalog contents, install/cold launch, the Android camera permission dialog, manual online lookup, Goodreads browser intent, network-disabled catalog lookup and reconnection. XML/screenshots/results go to ignored `dist/android-smoke/`. Real camera scanning and final physical-phone acceptance require your phone. EAS preview remains an optional alternative in `eas.json`; iOS signing/distribution is outside this phase.
 
 ## Lookup behavior
 
@@ -117,6 +127,6 @@ npx expo export --platform android
 npx expo export --platform ios
 ```
 
-CI runs mocked mobile/backend tests, local catalog fixture/integrity/regeneration checks, TypeScript, lint, backend syntax and dependency compatibility checks. Backend has no dependencies to install in CI. No live API calls, dataset downloads, emulator jobs, native/EAS builds or deployment run in CI. Exports and doctor are local checks. Manual provider smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
+CI runs mocked mobile/backend tests, local catalog fixture/integrity/regeneration checks, TypeScript, lint, backend syntax and dependency compatibility checks. Backend has no dependencies to install in CI. The separate Android test APK workflow performs native Gradle builds; the fast checks workflow makes no live API calls or dataset downloads and does not deploy. Exports and doctor are local checks. Manual provider smoke: `npx tsx scripts/provider-smoke.ts` (two ISBNs, not in CI). Current evidence and blockers: [VALIDATION.md](VALIDATION.md).
 
 Existing Expo/React Native toolchain npm audit findings remain; no forced SDK downgrade was applied. Provider metadata is incomplete and ratings change. ISBN `9791032300336` is a synthetic checksum fixture, not a verified catalog record. Current readiness fixes enable iPhone autofocus, keyboard-aware manual entry, camera-only permissions and HTTPS-only iOS transport. For now, continue emulator/simulator-based validation; physical Android/iPhone acceptance is deferred. See VALIDATION.md for current evidence.
