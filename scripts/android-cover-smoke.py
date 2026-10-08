@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--adb', default='adb')
 parser.add_argument('--serial', default='emulator-5554')
 parser.add_argument('--apk', required=True)
+parser.add_argument('--baseline-apk')
 parser.add_argument('--covers-dir', default='dist/ocr-images')
 args = parser.parse_args()
 if not args.serial.startswith('emulator-'):
@@ -162,10 +163,15 @@ with zipfile.ZipFile(apk) as archive:
     report['model_assets'] = [n for n in archive.namelist() if 'text' in n.lower() and ('model' in n.lower() or n.endswith('.tflite'))]
 try:
     network(False)
+    if args.baseline_apk:
+        adb('install', '-r', str(Path(args.baseline_apk).resolve()))
+        report['baseline_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
     installed = subprocess.run([args.adb, '-s', args.serial, 'install', '-r', str(apk.resolve())], capture_output=True, text=True)
     report['install'] = installed.stdout + installed.stderr
     if installed.returncode:
         raise AssertionError('Installation failed: ' + report['install'])
+    report['installed_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
+    assert report['installed_version'] == '2'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     launch()
@@ -187,14 +193,16 @@ try:
     for step in range(4):
         browser = screen('external-browser-' + str(step))
         labels = texts(browser)
-        action = next((label for label in ('Use without an account', 'Accept & continue', 'No thanks', 'Not now') if label in labels), None)
+        action = next((label for label in ('Use without an account', 'Accept & continue', 'No thanks', 'Not now') if label.lower() in [text.lower() for text in labels]), None)
         if not action: break
         tap(action); time.sleep(2)
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-title-activities.txt').write_text(activity, encoding='utf-8')
     assert 'goodreads.com/search?q=Warbreaker' in activity and 'Sanderson' in activity, 'Title browser intent missing'
     report['goodreads_title_intent'] = 'passed'
-    launch()
+    shell('am', 'start', '-n', f'{package}/.MainActivity')
+    wait('Warbreaker')
+    tap('Scan Another')
     pick('way-of-kings.jpg')
     result = book_result('The Way of Kings', 'offline-synthetic-way')
     assert 'The Way of Kings' in texts(result), texts(result)
