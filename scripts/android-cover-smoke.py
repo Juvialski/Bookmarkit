@@ -28,12 +28,19 @@ def shell(*values):
     return adb('shell', *values).decode('utf-8', errors='replace')
 
 def screen(name=None):
-    shell('uiautomator', 'dump', '/sdcard/bookmarkit-smoke.xml')
-    xml = shell('cat', '/sdcard/bookmarkit-smoke.xml')
     if name:
-        (out / f'{name}.xml').write_text(xml, encoding='utf-8')
         (out / f'{name}.png').write_bytes(adb('exec-out', 'screencap', '-p'))
-    return ET.fromstring(xml)
+    for attempt in range(6):
+        try:
+            shell('rm', '-f', '/sdcard/bookmarkit-smoke.xml')
+            shell('uiautomator', 'dump', '/sdcard/bookmarkit-smoke.xml')
+            xml = shell('cat', '/sdcard/bookmarkit-smoke.xml')
+            root = ET.fromstring(xml)
+            if name: (out / f'{name}.xml').write_text(xml, encoding='utf-8')
+            return root
+        except (subprocess.CalledProcessError, ET.ParseError):
+            if attempt == 5: raise
+            time.sleep(2)
 
 def wait(text, timeout=45, name=None):
     end = time.monotonic() + timeout
@@ -103,7 +110,8 @@ def pick(filename):
     shell('mkdir', '-p', '/sdcard/Pictures/BookmarkitPhase8')
     adb('push', str(staged.resolve()), remote)
     # Synchronous provider scan avoids first-boot broadcast/indexing races.
-    shell('content', 'call', '--uri', 'content://media', '--method', 'scan_file', '--arg', remote)
+    scan_result = shell('content', 'call', '--uri', 'content://media', '--method', 'scan_file', '--arg', remote)
+    (out / ('scan-' + path.stem + '.txt')).write_text(scan_result, encoding='utf-8')
     time.sleep(2)
     tap('Choose Photo')
     nodes = []
@@ -116,6 +124,23 @@ def pick(filename):
     attr = nodes[0].attrib
     x1,y1,x2,y2 = map(int, re.findall(r'\d+', attr['bounds']))
     shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+
+def book_result(title, name):
+    end = time.monotonic() + 60
+    while time.monotonic() < end:
+        root = screen()
+        values = texts(root)
+        if any('View on Goodreads' in text for text in values):
+            assert title in values, values
+            return screen(name)
+        if 'Which book?' in values:
+            candidate = next((n for n in root.iter('node') if n.attrib.get('content-desc', '').startswith(title + ', ')), None)
+            assert candidate is not None, values
+            x1,y1,x2,y2 = map(int, re.findall(r'\d+', candidate.attrib['bounds']))
+            shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+            report.setdefault('candidate_selections', []).append(title)
+        time.sleep(1)
+    screen('failure'); raise AssertionError('No book result for ' + title)
 
 apk = Path(args.apk)
 report = {'apk': str(apk.resolve()), 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest()}
@@ -135,7 +160,7 @@ try:
     screen('first-launch-offline')
     # Camera remains ungranted: gallery and OCR must still work.
     pick('warbreaker-real.jpg')
-    result = wait('View on Goodreads', name='offline-real-warbreaker')
+    result = book_result('Warbreaker', 'offline-real-warbreaker')
     values = texts(result)
     assert 'Warbreaker' in values and 'Brandon Sanderson' in values, values
     assert any('★' in t for t in values), values
@@ -149,13 +174,13 @@ try:
     report['goodreads_title_intent'] = 'passed'
     launch()
     pick('way-of-kings.jpg')
-    result = wait('View on Goodreads', name='offline-synthetic-way')
+    result = book_result('The Way of Kings', 'offline-synthetic-way')
     assert 'The Way of Kings' in texts(result), texts(result)
     report['offline_multiline_native_ocr'] = texts(result)
     network(True); time.sleep(3)
     launch()
     pick('warbreaker-real.jpg')
-    result = wait('View on Goodreads', name='online-real-warbreaker')
+    result = book_result('Warbreaker', 'online-real-warbreaker')
     assert 'Warbreaker' in texts(result), texts(result)
     report['online_native_ocr'] = texts(result)
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')

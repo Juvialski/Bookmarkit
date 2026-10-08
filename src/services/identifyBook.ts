@@ -61,10 +61,11 @@ export async function identifyBook(request: RecognitionRequest, dependencies: Re
   const searches: BookQuery[] = local?.kind === 'book'
     ? [{ title: local.book.title, author: local.book.authors[0] }] : [];
   for (const q of queries) {
-    const broad = q.text ? { text: q.text } : q.title ? { title: q.title } : { author: q.author };
+    const broad: BookQuery = q.text ? { text: q.text } : q.title ? { title: q.title, ...(request.origin === 'manual' && q.author ? { author: q.author } : {}) } : { author: q.author };
     if (!searches.some(s => normalizeText(s.text || s.title || s.author || '') === normalizeText(broad.text || broad.title || broad.author || ''))) searches.push(broad);
     if (searches.length === 4) break;
   }
+  if (request.origin === 'manual' && request.title && request.author && searches.length < 4) searches.push({ title: request.title });
   const responses: PromiseSettledResult<BookResult[]>[] = [];
   for (const query of searches) {
     ensureActive(signal);

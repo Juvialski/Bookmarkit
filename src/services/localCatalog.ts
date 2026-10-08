@@ -50,8 +50,8 @@ export function createLocalSearch(db: CatalogDatabase & { getAllAsync<T>(sql: st
       const book = normalizeLocalRecord(row, String(row.isbn13));
       return book ? [{ ...book, isbn: undefined, identity: 'work' as const }] : [];
     }).filter(book => matchBook(query, book).score >= 0.75);
-    if (!books.length && query.title) {
-      const title = normalizeText(query.title).slice(0, 240);
+    if (!books.length && (query.title || query.text)) {
+      const title = normalizeText(query.title || query.text || '').slice(0, 240);
       const grams = [...new Set(Array.from({ length: Math.max(0, title.length - 2) }, (_, i) => title.slice(i, i + 3)))].slice(0, 40);
       if (grams.length) {
         values = await db.getAllAsync<Record<string, unknown>>(`${select} WHERE w.id IN (SELECT work_id FROM search_grams WHERE gram IN (${grams.map(() => '?').join(',')}) GROUP BY work_id ORDER BY COUNT(*) DESC, work_id LIMIT 80)`, ...grams);

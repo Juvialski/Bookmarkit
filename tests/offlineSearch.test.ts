@@ -9,7 +9,7 @@ const catalog = createLocalSearch({
   async getAllAsync<T>(sql: string, ...params: string[]) { return database.prepare(sql).all(...params) as T[]; },
 });
 test('real SQLite index resolves title/author, reversed free text and fuzzy title offline', async () => {
-  for (const query of [{ title: 'The Way of Kings', author: 'Brandon Sanderson' }, { text: 'Brandon Sanderson Way of Kings' }, { title: 'The Hobb1t' }]) {
+  for (const query of [{ title: 'The Way of Kings', author: 'Brandon Sanderson' }, { text: 'Brandon Sanderson Way of Kings' }, { title: 'The Hobb1t' }, { text: 'The Hobb1t' }]) {
     const result = await identifyBook(query, { catalog, online: async () => false });
     const books = result.kind === 'book' ? [result.book] : result.books;
     assert.ok(books.some(b => /Way of Kings|Hobbit/.test(b.title)));

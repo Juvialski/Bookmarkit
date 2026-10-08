@@ -33,7 +33,7 @@ for index, (slug, title, author) in enumerate(fixtures):
     image = Image.new('RGB', (900, 1400), ['#f5efdc', '#dce9e2', '#e7e1f4'][index % 3])
     draw = ImageDraw.Draw(image)
     draw.text((450, 65), 'NEW YORK TIMES BESTSELLER', font=font(26), fill='#333333', anchor='mt')
-    draw.multiline_text((450, 360), '\n'.join(textwrap.wrap(title, width=17)), font=font(68, True), fill='#132b26', anchor='ma', align='center', spacing=24)
+    draw.multiline_text((450, 360), ('THE WAY\nOF KINGS' if slug == 'way-of-kings' else '\n'.join(textwrap.wrap(title, width=17))), font=font(68, True), fill='#132b26', anchor='ma', align='center', spacing=24)
     if slug == 'atomic':
         draw.text((450, 820), 'Tiny Changes, Remarkable Results', font=font(32), fill='#333333', anchor='mt')
     draw.multiline_text((450, 180 if slug in ('1984', 'alchemist') else 1060), '\n'.join(textwrap.wrap(author, width=22)), font=font(42), fill='#132b26', anchor='ma', align='center', spacing=16)

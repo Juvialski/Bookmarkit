@@ -143,3 +143,10 @@ test('validated local work prioritizes the correct title for live enrichment', a
   if (result.kind === 'book') assert.equal(result.book.coverUrl, 'https://example.com/cover.jpg');
   else assert.fail('Expected confident work');
 });
+
+test('manual title and author reach provider together before broad fallback', async () => {
+  const result = await identifyBook({ title: 'The Hobbit', author: 'J.R.R. Tolkien', origin: 'manual' }, {
+    search: async query => { assert.equal(query.author, 'J.R.R. Tolkien'); return [book()]; },
+  });
+  assert.equal(result.kind, 'book');
+});
