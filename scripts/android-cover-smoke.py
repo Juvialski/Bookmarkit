@@ -60,6 +60,8 @@ def tap(text=None, resource=None, description=None):
     raise AssertionError(f'Cannot find {text or resource or description}')
 
 def launch():
+    shell('input', 'keyevent', '224')
+    shell('wm', 'dismiss-keyguard')
     shell('am', 'force-stop', package)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
     wait('Point your camera at a book cover')
@@ -104,7 +106,7 @@ def pick(filename):
     time.sleep(2)
     tap('Choose Photo')
     root = screen('picker-' + path.stem)
-    # Final selector will be confirmed against the emulator's actual system picker.
+    # Native system picker labels observed on Android emulator.
     nodes = [n for n in root.iter('node') if n.attrib.get('content-desc', '').startswith('Photo taken')]
     assert nodes, 'No system-picker photo tile'
     attr = nodes[0].attrib
@@ -122,7 +124,7 @@ try:
     installed = subprocess.run([args.adb, '-s', args.serial, 'install', '-r', str(apk.resolve())], capture_output=True, text=True)
     report['install'] = installed.stdout + installed.stderr
     if installed.returncode:
-        raise AssertionError('Installation failed; incompatible test signatures require uninstall/reinstall')
+        raise AssertionError('Installation failed: ' + report['install'])
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     launch()

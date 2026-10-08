@@ -24,7 +24,11 @@ fixtures = [
 out = Path('dist/ocr-images')
 out.mkdir(parents=True, exist_ok=True)
 font_dir = Path('C:/Windows/Fonts')
-font = lambda size, bold=False: ImageFont.truetype(str(font_dir / ('arialbd.ttf' if bold else 'arial.ttf')), size)
+def font(size, bold=False):
+    path = font_dir / ('arialbd.ttf' if bold else 'arial.ttf')
+    if not path.is_file():
+        path = Path('/usr/share/fonts/truetype/dejavu') / ('DejaVuSans-Bold.ttf' if bold else 'DejaVuSans.ttf')
+    return ImageFont.truetype(str(path), size)
 for index, (slug, title, author) in enumerate(fixtures):
     image = Image.new('RGB', (900, 1400), ['#f5efdc', '#dce9e2', '#e7e1f4'][index % 3])
     draw = ImageDraw.Draw(image)
