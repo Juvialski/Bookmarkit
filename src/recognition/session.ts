@@ -9,3 +9,8 @@ export function createRequestGate() {
     cancel() { generation++; locked = false; },
   };
 }
+
+export function ensureActive(signal?: AbortSignal) {
+  // React Native's abort-controller polyfill does not expose throwIfAborted.
+  if (signal?.aborted) throw new Error('Scan cancelled.');
+}

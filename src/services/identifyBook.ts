@@ -1,3 +1,4 @@
+import { ensureActive } from '../recognition/session';
 import { BookResult } from '../models/book';
 import { BookCatalog, BookQuery, Identification, RecognitionRequest } from '../recognition/types';
 import { rankBooks } from '../recognition/matching';
@@ -26,7 +27,7 @@ export interface ResolverDependencies {
   online?: () => Promise<boolean>;
 }
 export async function identifyBook(request: RecognitionRequest, dependencies: ResolverDependencies = {}, signal?: AbortSignal): Promise<Identification> {
-  signal?.throwIfAborted();
+  ensureActive(signal);
   const byIsbn = dependencies.isbn || lookupBook;
   if (request.isbn && isValidIsbn(normalizeIsbn(request.isbn))) {
     const isbn = normalizeIsbn(request.isbn);
@@ -63,10 +64,10 @@ export async function identifyBook(request: RecognitionRequest, dependencies: Re
   }
   const responses: PromiseSettledResult<BookResult[]>[] = [];
   for (const query of searches) {
-    signal?.throwIfAborted();
+    ensureActive(signal);
     try {
       const books = await (dependencies.search || providerSearch)(query, signal);
-      signal?.throwIfAborted();
+      ensureActive(signal);
       responses.push({ status: 'fulfilled', value: books });
       const identified = rankBooks(queries, [...responses.flatMap(r => r.status === 'fulfilled' ? r.value : []), ...stored]);
       if (identified?.kind === 'book') return identified;

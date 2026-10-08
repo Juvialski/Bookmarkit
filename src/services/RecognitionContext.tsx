@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { BookResult } from '../models/book';
 import { RecognitionRequest } from '../recognition/types';
 import { interpretCover } from '../recognition/coverParser';
-import { createRequestGate, ScanState } from '../recognition/session';
+import { createRequestGate, ensureActive, ScanState } from '../recognition/session';
 import { identifyBook, manualQuery } from './identifyBook';
 import { createCachedLookup, lookupBook } from './bookLookup';
 import { createLocalCatalog, createLocalSearch } from './localCatalog';
@@ -65,7 +65,7 @@ export function RecognitionProvider({ children }: { children: ReactNode }) {
     await run(async signal => {
       let text;
       try { text = await readCover(uri); } catch { throw new Error('Cover could not be read. Try a clearer photo or use Search Manually.'); }
-      signal.throwIfAborted();
+      ensureActive(signal);
       const candidates = interpretCover(text);
       setRecognized(candidates[0]?.title || text.text.replace(/\s+/g, ' ').slice(0, 240));
       if (!candidates.length) throw new Error('No readable title found. Try a clearer photo or correct the search below.');
