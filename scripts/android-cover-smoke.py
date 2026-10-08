@@ -183,6 +183,13 @@ try:
     report['offline_native_ocr'] = values
     tap('View on Goodreads')
     time.sleep(2)
+    # A fresh disposable emulator browser has a first-run screen, no account.
+    for step in range(4):
+        browser = screen('external-browser-' + str(step))
+        labels = texts(browser)
+        action = next((label for label in ('Use without an account', 'Accept & continue', 'No thanks', 'Not now') if label in labels), None)
+        if not action: break
+        tap(action); time.sleep(2)
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-title-activities.txt').write_text(activity, encoding='utf-8')
     assert 'goodreads.com/search?q=Warbreaker' in activity and 'Sanderson' in activity, 'Title browser intent missing'
