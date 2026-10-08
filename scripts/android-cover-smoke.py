@@ -36,6 +36,16 @@ def screen(name=None):
             shell('uiautomator', 'dump', '/sdcard/bookmarkit-smoke.xml')
             xml = shell('cat', '/sdcard/bookmarkit-smoke.xml')
             root = ET.fromstring(xml)
+            labels = texts(root)
+            anr = next((text for text in labels if "isn't responding" in text), '')
+            if anr:
+                if not any(system in anr for system in ('Pixel Launcher', 'System UI', 'Process system')):
+                    raise AssertionError('Application ANR: ' + anr)
+                (out / 'emulator-system-dialog.png').write_bytes(adb('exec-out', 'screencap', '-p'))
+                close = next(n for n in root.iter('node') if n.attrib.get('text') == 'Close app')
+                x1,y1,x2,y2 = map(int, re.findall(r'\d+', close.attrib['bounds']))
+                shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+                time.sleep(2); continue
             if name: (out / f'{name}.xml').write_text(xml, encoding='utf-8')
             return root
         except (subprocess.CalledProcessError, ET.ParseError):
@@ -69,6 +79,7 @@ def tap(text=None, resource=None, description=None):
 def launch():
     shell('input', 'keyevent', '224')
     shell('wm', 'dismiss-keyguard')
+    shell('am', 'force-stop', 'com.google.android.apps.nexuslauncher')
     shell('am', 'force-stop', package)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
     wait('Point your camera at a book cover')
