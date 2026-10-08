@@ -102,12 +102,16 @@ def pick(filename):
     remote = '/sdcard/Pictures/BookmarkitPhase8/' + str(time.time_ns()) + '-' + filename
     shell('mkdir', '-p', '/sdcard/Pictures/BookmarkitPhase8')
     adb('push', str(staged.resolve()), remote)
-    shell('am', 'broadcast', '-a', 'android.intent.action.MEDIA_SCANNER_SCAN_FILE', '-d', 'file://' + remote)
+    # Synchronous provider scan avoids first-boot broadcast/indexing races.
+    shell('content', 'call', '--uri', 'content://media', '--method', 'scan_file', '--arg', remote)
     time.sleep(2)
     tap('Choose Photo')
-    root = screen('picker-' + path.stem)
-    # Native system picker labels observed on Android emulator.
-    nodes = [n for n in root.iter('node') if n.attrib.get('content-desc', '').startswith('Photo taken')]
+    nodes = []
+    for _ in range(10):
+        root = screen('picker-' + path.stem)
+        nodes = [n for n in root.iter('node') if n.attrib.get('content-desc', '').startswith('Photo taken')]
+        if nodes: break
+        time.sleep(1)
     assert nodes, 'No system-picker photo tile'
     attr = nodes[0].attrib
     x1,y1,x2,y2 = map(int, re.findall(r'\d+', attr['bounds']))
