@@ -91,6 +91,7 @@ def texts(root):
 
 
 def network(enabled):
+    shell('cmd', 'connectivity', 'airplane-mode', 'disable' if enabled else 'enable')
     shell('svc', 'wifi', 'enable' if enabled else 'disable')
     shell('svc', 'data', 'enable' if enabled else 'disable')
     if not enabled:
@@ -130,7 +131,7 @@ def book_result(title, name):
     while time.monotonic() < end:
         root = screen()
         values = texts(root)
-        if any('View on Goodreads' in text for text in values):
+        if any('view on goodreads' in text.lower() for text in values):
             assert title in values, values
             return screen(name)
         if 'Which book?' in values:
@@ -165,6 +166,9 @@ try:
     assert 'Warbreaker' in values and 'Brandon Sanderson' in values, values
     assert any('★' in t for t in values), values
     assert not any(t.startswith('ISBN ') for t in values), values
+    connectivity = shell('dumpsys', 'connectivity')
+    assert 'Active default network: none' in connectivity, 'Network reconnected during OCR'
+    (out / 'offline-after-ocr-connectivity.txt').write_text(connectivity, encoding='utf-8')
     report['offline_native_ocr'] = values
     tap('View on Goodreads')
     time.sleep(2)

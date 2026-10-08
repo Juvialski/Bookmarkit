@@ -35,7 +35,7 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
       <Text style={styles.label}>Rating</Text>
       <Text style={styles.score}>{rating ? `★ ${rating.average!.toFixed(1)}` : 'Not rated'}</Text>
       {rating && <Text style={styles.detail}>
-        {rating.provider}{rating.count !== undefined && rating.count > 0 ? ` · ${rating.count.toLocaleString()} ratings` : ''}
+        {rating.provider}{rating.stored ? ' · offline catalog' : ''}{rating.count !== undefined && rating.count > 0 ? ` · ${rating.count.toLocaleString()} ratings` : ''}
       </Text>}
     </View>
 
