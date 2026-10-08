@@ -32,7 +32,7 @@ export function ScannerScreen({ loading, status, state, error, recognized, onSca
     try { await getPermission(); setPermissionError(''); } catch { setPermissionError('Camera access could not be checked. Retry or use Manual Search.'); }
   }, [getPermission]);
   useEffect(() => { const sub = AppState.addEventListener('change', state => {
-    if (state !== 'active' && !choosingPhoto.current) captureId.current++;
+    if (state !== 'active' && !choosingPhoto.current) { captureId.current++; captureGate.current = false; setCapturing(false); }
     setActive(state === 'active'); setTorch(false); setReady(false);
     if (state === 'active') { setCameraError(false); void refreshPermission(); }
   }); return () => sub.remove(); }, [refreshPermission]);
@@ -44,18 +44,34 @@ export function ScannerScreen({ loading, status, state, error, recognized, onSca
     if (loading || captureGate.current || !focused || !active || AppState.currentState !== 'active') return;
     setInvalid(''); setTorch(false); setReady(false); Keyboard.dismiss(); onScan(value, author || undefined);
   }
+  function cancelCapture() {
+    captureId.current++; captureGate.current = false; choosingPhoto.current = false;
+    setCapturing(false); setReady(false); setTorch(false); setCameraKey(value => value + 1); onRetry();
+  }
   async function capture(photoLibrary = false) {
     if (loading || captureGate.current || !active || (!photoLibrary && !ready)) return;
     const id = ++captureId.current;
     choosingPhoto.current = photoLibrary;
     captureGate.current = true; setCapturing(true); setReady(photoLibrary ? ready : false); setInvalid('');
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let expired = false;
     try {
-      const picture = photoLibrary ? await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 }) : await camera.current?.takePictureAsync({ quality: 0.8 });
+      const operation = photoLibrary ? launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 }) : camera.current?.takePictureAsync({ quality: 0.8 });
+      // A late native capture after cancel/timeout must not leak its cache file.
+      void operation?.then(picture => {
+        const uri = picture && ('canceled' in picture ? !picture.canceled && picture.assets[0]?.uri : picture.uri);
+        if (uri && (expired || id !== captureId.current)) cleanupCover(uri);
+      }).catch(() => {});
+      const picture = await (photoLibrary ? operation : Promise.race([operation, new Promise<never>((_, reject) => { timeout = setTimeout(() => { expired = true; reject(new Error('Capture timed out')); }, 10000); })]));
+      clearTimeout(timeout);
       const uri = picture && ('canceled' in picture ? !picture.canceled && picture.assets[0]?.uri : picture.uri);
       choosingPhoto.current = false;
       if (uri && id === captureId.current) { setTorch(false); await onCover(uri); } else if (uri) cleanupCover(uri);
-    } catch { setInvalid('Photo could not be captured. Try again or use Manual Search.'); }
-    finally { choosingPhoto.current = false; captureGate.current = false; setCapturing(false); setReady(false); setCameraKey(value => value + 1); }
+    } catch { if (id === captureId.current) setInvalid('Photo could not be captured. Try again or use Search Manually.'); }
+    finally {
+      clearTimeout(timeout);
+      if (id === captureId.current) { choosingPhoto.current = false; captureGate.current = false; setCapturing(false); setReady(false); setCameraKey(value => value + 1); }
+    }
   }
   const scanState: ScanState = capturing && !loading ? 'capturing' : state;
   const cameraVisible = permission?.granted && focused && active && !loading && !error && !cameraError;
@@ -71,10 +87,10 @@ export function ScannerScreen({ loading, status, state, error, recognized, onSca
     {!!(error || invalid) && <Text accessibilityRole="alert" style={styles.error}>{error || invalid}</Text>}
     {!!error && <Button title="Resume scanner" onPress={onRetry} />}
     <Button title="Choose Photo" disabled={loading || capturing} onPress={() => void capture(true)} />
-    {(loading || capturing) && <Button title="Cancel" onPress={() => { captureId.current++; onRetry(); }} />}
+    {(loading || capturing) && <Button title="Cancel" onPress={cancelCapture} />}
     <Button title="Search Manually" disabled={loading || capturing} onPress={() => setManual(value => !value)} />
-    {(manual || !!error || !!recognized) && <><TextInput accessibilityLabel="Title, author, or ISBN" style={styles.input} value={query} onChangeText={setQuery} placeholder="Title, author, or ISBN" autoCorrect={false} editable={!loading && !capturing} returnKeyType="search" onSubmitEditing={() => submit(query)} />
-      <TextInput accessibilityLabel="Author (optional)" style={styles.input} value={author} onChangeText={setAuthor} placeholder="Author (optional)" editable={!loading && !capturing} />
+    {(manual || !!error || !!recognized) && <><TextInput accessibilityLabel="Title, author, or ISBN" style={styles.input} value={query} onChangeText={setQuery} maxLength={240} placeholder="Title, author, or ISBN" autoCorrect={false} editable={!loading && !capturing} returnKeyType="search" onSubmitEditing={() => submit(query)} />
+      <TextInput accessibilityLabel="Author (optional)" style={styles.input} value={author} onChangeText={setAuthor} maxLength={160} placeholder="Author (optional)" editable={!loading && !capturing} />
       <Button title="Look up book" disabled={loading || capturing} onPress={() => submit(query)} /></>}
   </ScrollView></SafeAreaView>;
 }

@@ -56,7 +56,10 @@ export async function identifyBook(request: RecognitionRequest, dependencies: Re
   // Four bounded requests maximum. Alternate author hypotheses for the same
   // title are ranked locally; broad title searches avoid a bad author guess
   // excluding the correct book upstream.
-  const searches: BookQuery[] = [];
+  // A confident catalog interpretation gives online enrichment a validated
+  // title/name instead of spending the first request on a large author heading.
+  const searches: BookQuery[] = local?.kind === 'book'
+    ? [{ title: local.book.title, author: local.book.authors[0] }] : [];
   for (const q of queries) {
     const broad = q.text ? { text: q.text } : q.title ? { title: q.title } : { author: q.author };
     if (!searches.some(s => normalizeText(s.text || s.title || s.author || '') === normalizeText(broad.text || broad.title || broad.author || ''))) searches.push(broad);

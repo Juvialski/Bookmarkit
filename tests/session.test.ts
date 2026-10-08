@@ -1,3 +1,4 @@
+import { createCachedLookup } from '../src/services/bookLookup';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequestGate, ensureActive } from '../src/recognition/session';
@@ -42,4 +43,14 @@ test('cancelled search stops alternate query fan-out', async () => {
 test('cancellation guard supports a React Native signal without throwIfAborted', () => {
   assert.doesNotThrow(() => ensureActive({ aborted: false } as AbortSignal));
   assert.throws(() => ensureActive({ aborted: true } as AbortSignal), /cancelled/);
+});
+
+test('in-flight ISBN retry shares the original bounded provider operation', async () => {
+  let calls = 0;
+  let complete!: () => void;
+  const ready = new Promise<void>(resolve => { complete = resolve; });
+  const lookup = createCachedLookup(async isbn => { calls++; await ready; return { isbn, title: 'Book', authors: [], seriesStatus: 'unknown', ratings: [], warnings: [] }; });
+  const first = lookup('9780547928227'), second = lookup('978-0547928227');
+  assert.equal(calls, 1); complete();
+  assert.deepEqual(await first, await second);
 });

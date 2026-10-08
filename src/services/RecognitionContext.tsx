@@ -11,6 +11,7 @@ import { identifyBook, manualQuery } from './identifyBook';
 import { createCachedLookup, lookupBook } from './bookLookup';
 import { createLocalCatalog, createLocalSearch } from './localCatalog';
 import { readCover } from './coverOcr';
+import { createWorkEnricher } from './providers/workDetails';
 import { createCachedSearch } from './providers/search';
 
 interface Session {
@@ -20,15 +21,16 @@ interface Session {
 const Context = createContext<Session | null>(null);
 export function RecognitionProvider({ children }: { children: ReactNode }) {
   const db = useSQLiteContext();
-  const dependencies = useMemo(() => ({ catalog: createLocalSearch(db), search: createCachedSearch(), isbn: createCachedLookup(value => lookupBook(value, undefined, createLocalCatalog(db))),
+  const dependencies = useMemo(() => ({ enrich: createWorkEnricher(), catalog: createLocalSearch(db), search: createCachedSearch(), isbn: createCachedLookup(value => lookupBook(value, undefined, createLocalCatalog(db))),
     online: async () => { try { const state = await getNetworkStateAsync(); return state.isConnected !== false && state.isInternetReachable !== false; } catch { return true; } } }), [db]);
   const [book, setBook] = useState<BookResult | null>(null), [candidates, setCandidates] = useState<BookResult[]>([]);
   const [state, setState] = useState<ScanState>('idle'), [error, setError] = useState(''), [recognized, setRecognized] = useState('');
   const gate = useRef(createRequestGate());
+  const selection = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const loading = state === 'capturing' || state === 'recognizing' || state === 'searching';
   const status = state === 'recognizing' ? 'Reading cover on your device…' : 'Looking up your book…';
-  function cancel() { gate.current.cancel(); controller.current?.abort(); setState('idle'); setBook(null); setCandidates([]); setError(''); }
+  function cancel() { selection.current++; gate.current.cancel(); controller.current?.abort(); setState('idle'); setBook(null); setCandidates([]); setError(''); }
   function reset() { cancel(); router.replace('/'); }
   useEffect(() => {
     const back = BackHandler.addEventListener('hardwareBackPress', () => { if (loading) { cancel(); return true; } return false; });
@@ -36,7 +38,13 @@ export function RecognitionProvider({ children }: { children: ReactNode }) {
     return () => { back.remove(); app.remove(); };
   }, [loading]);
   useEffect(() => () => { gate.current.cancel(); controller.current?.abort(); }, []);
-  function choose(value: BookResult) { setBook(value); setState('result'); router.replace('/result'); }
+  function choose(value: BookResult) {
+    const id = ++selection.current; const signal = controller.current?.signal;
+    setBook(value); setState('result'); router.replace('/result');
+    void dependencies.online().then(online => online ? dependencies.enrich(value, signal) : value).then(enriched => {
+      if (id === selection.current && !signal?.aborted) setBook(enriched);
+    }).catch(() => {});
+  }
   async function run(request: (signal: AbortSignal) => Promise<RecognitionRequest>, phase: ScanState) {
     const id = gate.current.acquire();
     if (id === null) return;

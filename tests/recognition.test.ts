@@ -131,3 +131,15 @@ test('different work identifiers never combine ratings despite same title/author
   assert.equal(result?.kind, 'candidates');
   if (result?.kind === 'candidates') assert.deepEqual(result.books.map(b => b.ratings[0].average), [1, 5]);
 });
+
+test('validated local work prioritizes the correct title for live enrichment', async () => {
+  const expected = book('Warbreaker', 'Brandon Sanderson');
+  let calls = 0;
+  const result = await identifyBook({ origin: 'cover', candidates: [{ title: 'Brandon Sanderson' }, { title: 'Warbreaker', author: 'Brandon Sanderson' }] }, {
+    catalog: { search: async () => [expected] },
+    search: async query => { calls++; assert.equal(query.title, 'Warbreaker'); assert.equal(query.author, 'Brandon Sanderson'); return [{ ...expected, coverUrl: 'https://example.com/cover.jpg' }]; },
+  });
+  assert.equal(calls, 1);
+  if (result.kind === 'book') assert.equal(result.book.coverUrl, 'https://example.com/cover.jpg');
+  else assert.fail('Expected confident work');
+});
