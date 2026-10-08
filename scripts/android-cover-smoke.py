@@ -66,16 +66,20 @@ def wait(text, timeout=45, name=None):
     raise AssertionError(f'Timed out waiting for {text}')
 
 def tap(text=None, resource=None, description=None):
-    root = screen()
-    for node in root.iter('node'):
-        attr = node.attrib
-        if ((text and attr.get('text', '').lower() == text.lower()) or
-            (resource and attr.get('resource-id') == resource) or
-            (description and attr.get('content-desc') == description)):
-            x1, y1, x2, y2 = map(int, re.findall(r'\d+', attr['bounds']))
-            shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
-            return
-    raise AssertionError(f'Cannot find {text or resource or description}')
+    for attempt in range(4):
+        root = screen()
+        for node in root.iter('node'):
+            attr = node.attrib
+            if ((text and attr.get('text', '').lower() == text.lower()) or
+                (resource and attr.get('resource-id') == resource) or
+                (description and attr.get('content-desc') == description)):
+                x1,y1,x2,y2 = map(int, re.findall(r'\d+', attr['bounds']))
+                if x2 > x1 and y2 > y1:
+                    shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2)); return
+        bounds = root.find('node').attrib['bounds']
+        _,_,width,height = map(int, re.findall(r'\d+', bounds))
+        shell('input', 'swipe', str(width//2), str(height*3//4), str(width//2), str(height//3), '300')
+    raise AssertionError('Cannot find ' + str(text or resource or description))
 
 def launch():
     shell('input', 'keyevent', '224')
@@ -93,7 +97,7 @@ def lookup(isbn, title, name):
     shell('input', 'keyevent', '123')
     for _ in range(100):
         shell('input', 'keyevent', '67')
-    shell('input', 'text', isbn)
+    shell('input', 'text', isbn.replace(' ', '%s'))
     shell('input', 'keyevent', '4')
     tap('Look up book')
     return wait(title, name=name)
@@ -207,12 +211,21 @@ try:
     result = book_result('The Way of Kings', 'offline-synthetic-way')
     assert 'The Way of Kings' in texts(result), texts(result)
     report['offline_multiline_native_ocr'] = texts(result)
+    tap('Scan Another')
+    report['offline_manual_title_author'] = texts(lookup('Brandon Sanderson The Way of Kings', 'The Way of Kings', 'offline-manual-title-author'))
+    tap('Scan Another')
+    report['offline_manual_isbn10'] = texts(lookup('0140328726', 'Fantastic Mr', 'offline-manual-isbn10'))
     network(True); time.sleep(3)
     launch()
     pick('warbreaker-real.jpg')
     result = book_result('Warbreaker', 'online-real-warbreaker')
     assert 'Warbreaker' in texts(result), texts(result)
     report['online_native_ocr'] = texts(result)
+    tap('Scan Another')
+    tap('Choose Photo')
+    shell('input', 'keyevent', '4')
+    wait('Point your camera at a book cover', name='picker-cancelled')
+    report['picker_cancellation'] = 'passed'
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
     (out / 'errors.log').write_text(errors, encoding='utf-8')
     assert 'FATAL EXCEPTION' not in errors

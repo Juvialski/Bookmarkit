@@ -20,6 +20,9 @@ on:
       - 'app.json'
       - 'package*.json'
       - 'metro.config.*'
+      - 'babel.config.*'
+      - 'app.config.*'
+      - 'eas.json'
       - 'tsconfig.json'
   pull_request:
     paths: *mobile-paths
