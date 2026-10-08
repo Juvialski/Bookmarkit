@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Redirect } from 'expo-router';
-import { Button, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Button, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRecognition } from '../services/RecognitionContext';
 export default function Candidates() {
   const { candidates, choose, reset } = useRecognition();
+  useEffect(() => { const sub = BackHandler.addEventListener('hardwareBackPress', () => { reset(); return true; }); return () => sub.remove(); }, [reset]);
   if (!candidates.length) return <Redirect href="/" />;
   return <SafeAreaView style={styles.page}><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.heading}>Which book?</Text>

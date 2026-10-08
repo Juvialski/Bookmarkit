@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequestGate } from '../src/recognition/session';
+import { createRequestGate, ensureActive } from '../src/recognition/session';
 import { createCachedSearch } from '../src/services/providers/search';
 import { identifyBook } from '../src/services/identifyBook';
 test('gate rejects double submissions and stale completion after cancellation/retry', () => {
@@ -37,4 +37,9 @@ test('cancelled search stops alternate query fan-out', async () => {
     search: async () => { calls++; abort.abort(); return []; },
   }, abort.signal));
   assert.equal(calls, 1);
+});
+
+test('cancellation guard supports a React Native signal without throwIfAborted', () => {
+  assert.doesNotThrow(() => ensureActive({ aborted: false } as AbortSignal));
+  assert.throws(() => ensureActive({ aborted: true } as AbortSignal), /cancelled/);
 });
