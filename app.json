@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bookmarkit",
     "slug": "bookmarkit",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.juvialski.bookmarkit",
-      "versionCode": 1
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,13 +33,23 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Bookmarkit to scan ISBN barcodes.",
+          "cameraPermission": "Allow Bookmarkit to read book covers and barcodes.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],
       "expo-sqlite",
-      "./plugins/withLocalBookApi.js"
-    ]
+      "./plugins/withLocalBookApi.js",
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Bookmarkit to read a selected book cover.",
+          "cameraPermission": "Allow Bookmarkit to read book covers and barcodes.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "scheme": "bookmarkit"
   }
 }

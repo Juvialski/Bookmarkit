@@ -3,6 +3,7 @@ import argparse
 import gzip
 import json
 import math
+import unicodedata
 import re
 import sqlite3
 import time
@@ -13,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / 'catalog/source.json'
-OUTPUT = ROOT / 'assets/catalog-v2.db'
+OUTPUT = ROOT / 'assets/catalog-v3.db'
 
 def isbn13(value):
     s = re.sub(r'[\s-]', '', str(value))
@@ -104,7 +105,26 @@ def build(source=SOURCE, output=OUTPUT):
         db.execute('CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID')
         db.executemany('INSERT INTO books VALUES (?,?,?,?,?,?,?,?,?,?)', [rows[k] for k in sorted(rows)])
         db.executemany('INSERT INTO metadata VALUES (?,?)', [(k, data[k]) for k in ['version', 'generated_date', 'source']])
-        db.execute('INSERT INTO metadata VALUES (?,?)', ('catalog_schema', 'v2'))
+        db.execute('INSERT INTO metadata VALUES (?,?)', ('catalog_schema', 'v3'))
+        db.execute('CREATE TABLE works (id TEXT PRIMARY KEY, isbn13 TEXT NOT NULL, normalized_title TEXT NOT NULL) WITHOUT ROWID')
+        db.execute('CREATE INDEX works_title ON works(normalized_title)')
+        db.execute('CREATE TABLE search_tokens (token TEXT NOT NULL, work_id TEXT NOT NULL, PRIMARY KEY(token,work_id)) WITHOUT ROWID')
+        db.execute('CREATE TABLE search_grams (gram TEXT NOT NULL, work_id TEXT NOT NULL, PRIMARY KEY(gram,work_id)) WITHOUT ROWID')
+        def normalized(value):
+            value = ''.join(c for c in unicodedata.normalize('NFKD', value).lower() if not unicodedata.combining(c))
+            value = re.sub(r"[’‘`'.]", '', value)
+            return ' '.join(re.sub(r'[^\w]+', ' ', value, flags=re.UNICODE).split())
+        works = {}
+        for row in sorted(rows.values(), key=lambda r: (r[9] != 'curated', r[0])):
+            key = row[3] or row[1] + row[2]
+            works.setdefault(key, row)
+        for key, row in sorted(works.items()):
+            title = normalized(row[1])
+            db.execute('INSERT INTO works VALUES (?,?,?)', (key, row[0], title))
+            tokens = set(normalized(row[1] + ' ' + ' '.join(json.loads(row[2]))).split())
+            db.executemany('INSERT INTO search_tokens VALUES (?,?)', [(t,key) for t in sorted(tokens)])
+            grams = set(title[i:i+3] for i in range(max(0,len(title)-2)))
+            db.executemany('INSERT INTO search_grams VALUES (?,?)', [(g,key) for g in sorted(grams)])
         db.commit()
         db.execute('VACUUM')
     return rows

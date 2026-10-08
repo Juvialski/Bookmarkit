@@ -34,7 +34,7 @@ export async function lookupBook(value: string, providers = [hardcover, openLibr
   const onlineRatings = books.map(b => b.rating);
   const selected = primaryRating(onlineRatings);
   const usedStoredRating = !selected && !!stored && !!primaryRating(stored.ratings);
-  return { isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
+  return { identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,
     incomplete: usedStoredRating || responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
     authors: books.find(b => b.authors.length)?.authors || [], coverUrl: books.map(b => httpsCover(b.coverUrl)).find(Boolean),

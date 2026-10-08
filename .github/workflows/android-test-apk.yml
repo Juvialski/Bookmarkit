@@ -2,11 +2,22 @@ name: Android test APK
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
+  push:
+    branches: [main]
+    paths: &mobile-paths
       - '.github/workflows/android-test-apk.yml'
-      - 'scripts/build-android-test.mjs'
+      - 'src/**'
+      - 'assets/**'
+      - 'catalog/**'
+      - 'plugins/**'
+      - 'scripts/**'
+      - 'tests/**'
       - 'app.json'
+      - 'package*.json'
+      - 'metro.config.*'
+      - 'tsconfig.json'
+  pull_request:
+    paths: *mobile-paths
 
 permissions:
   contents: read

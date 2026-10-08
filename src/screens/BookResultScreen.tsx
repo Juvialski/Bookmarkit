@@ -40,10 +40,10 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
     </View>
 
     <View style={styles.goodreads}>
-      <Button title="View on Goodreads" onPress={() => { void Linking.openURL(goodreadsSearchUrl(book.isbn)).catch(() => {}); }} />
+      <Button title="View on Goodreads" onPress={() => { void Linking.openURL(goodreadsSearchUrl(book)).catch(() => {}); }} />
     </View>
 
-    <Text style={styles.isbn}>ISBN {book.isbn}</Text>
+    {!!book.isbn && <Text style={styles.isbn}>ISBN {book.isbn}</Text>}
     <Button title="Scan Another" onPress={onScanAnother} />
   </ScrollView></SafeAreaView>;
 }

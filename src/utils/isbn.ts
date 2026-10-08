@@ -1,4 +1,9 @@
-export function normalizeIsbn(value: string): string { return value.replace(/[\s-]/g, ''); }
+export function normalizeIsbn(value: string): string { const raw = value.replace(/[\s-]/g, '').toUpperCase();
+  if (/^\d{9}[\dX]$/.test(raw) && [...raw].reduce((sum, c, i) => sum + (c === 'X' ? 10 : Number(c)) * (10 - i), 0) % 11 === 0) {
+    const base = '978' + raw.slice(0, 9);
+    return base + ((10 - [...base].reduce((sum, c, i) => sum + Number(c) * (i % 2 ? 3 : 1), 0) % 10) % 10);
+  }
+  return raw; }
 export function isValidIsbn(value: string): boolean {
   const isbn = normalizeIsbn(value);
   if (!/^97[89]\d{10}$/.test(isbn)) return false;

@@ -34,6 +34,15 @@ class CatalogTests(unittest.TestCase):
                 self.assertIn('PRIMARY KEY', connection.execute('EXPLAIN QUERY PLAN SELECT * FROM books WHERE isbn13=?', (row[0],)).fetchone()[3])
             self.assertIsNone(isbn13('9780140328722'))
 
+    def test_title_indexes(self):
+        with closing(sqlite3.connect(OUTPUT)) as db:
+            row = db.execute("SELECT b.title FROM works w JOIN books b ON b.isbn13=w.isbn13 WHERE w.normalized_title=?", ('the way of kings',)).fetchone()
+            self.assertEqual(row[0], 'The Way of Kings')
+            plan = db.execute('EXPLAIN QUERY PLAN SELECT * FROM search_tokens WHERE token=?', ('sanderson',)).fetchone()[3]
+            self.assertIn('PRIMARY KEY', plan)
+            self.assertIn('works_title', db.execute('EXPLAIN QUERY PLAN SELECT * FROM works WHERE normalized_title=?', ('the hobbit',)).fetchone()[3])
+            self.assertGreater(db.execute("SELECT COUNT(*) FROM search_grams WHERE gram='hob'").fetchone()[0], 0)
+
     def test_bundled_catalog(self):
         with tempfile.TemporaryDirectory() as folder:
             rebuilt = Path(folder)/'rebuilt.db'

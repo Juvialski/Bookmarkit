@@ -15,7 +15,7 @@ function run(command, args, cwd = process.cwd()) {
 }
 const packageBefore = readFileSync('package.json');
 try {
-  run(process.execPath, ['node_modules/expo/bin/cli', 'prebuild', '--platform', 'android', '--no-install']);
+  run(process.execPath, ['node_modules/expo/bin/cli', 'prebuild', '--platform', 'android', '--no-install', ...(process.argv.includes('--clean') ? ['--clean'] : [])]);
 } finally {
   // Expo may rewrite development scripts; APK generation should leave them intact.
   writeFileSync('package.json', packageBefore);

@@ -66,12 +66,15 @@ def tap(text=None, resource=None, description=None):
 def launch():
     shell('am', 'force-stop', package)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
-    wait('Scan a book')
+    wait('Point your camera at a book cover')
 
 def lookup(isbn, title, name):
-    tap(description='ISBN-13')
+    root = screen()
+    if not any(n.attrib.get('content-desc') == 'Title, author, or ISBN' for n in root.iter('node')):
+        tap('Search Manually')
+    tap(description='Title, author, or ISBN')
     shell('input', 'keyevent', '123')
-    for _ in range(16):
+    for _ in range(100):
         shell('input', 'keyevent', '67')
     shell('input', 'text', isbn)
     shell('input', 'keyevent', '4')
@@ -86,7 +89,7 @@ report = {'apk': str(apk.resolve()), 'bytes': apk.stat().st_size,
           'sha256': hashlib.sha256(apk.read_bytes()).hexdigest()}
 with zipfile.ZipFile(apk) as archive:
     assert archive.getinfo('assets/index.android.bundle').file_size > 100_000
-    catalog = Path('assets/catalog-v2.db').read_bytes()
+    catalog = Path('assets/catalog-v3.db').read_bytes()
     databases = [n for n in archive.namelist() if n.endswith('.db')]
     assert any(archive.read(n) == catalog for n in databases), 'Catalog differs or is absent'
     report['bundled_catalog'] = databases
