@@ -1,0 +1,11 @@
+# Catalog publication recovery
+
+The publisher deduplicates every generated table by its actual primary key before building 500-row upload batches. Composite work/author and work/rating keys are included. Rows sort by primary key, and conflicting records for one identity fail before upload. Repeated author references do not remove distinct coauthors or the same author's relationships to different works; ISBNs keep their selected source edition and work.
+
+All data batches use repeatable upserts. Transient network errors, HTTP 408/429/500/502/503/504 without a permanent database code, and recognized transient PostgreSQL failures receive at most three attempts with two bounded backoffs. Constraint failures such as `21000` or `23503` stop immediately. Errors include table, batch, HTTP status and a sanitized database code/description; arbitrary provider messages, payload details and credentials are withheld.
+
+Publication checks local size/checksum, SQLite integrity and work/ISBN counts. After data batches finish, it uploads the immutable checksum-addressed file and downloads it to verify size/checksum before publishing the manifest. Existing storage objects must match exactly. The ingestion audit is checked by version and is not blindly retried after ambiguous writes. The manifest is published last. A rerun repairs an interrupted audit and verifies an existing manifest/file before skipping an already published catalog. Existing packages/manifests are preserved; database rows are never deleted.
+
+Monthly Actions artifacts now retain source records, author names and the checkpoint alongside the validated package for diagnosis/recovery. The workflow publishes twice from the same staged inputs to prove repeat publication exits cleanly. Only one generation/download pass runs. Backend/catalog maintenance scripts no longer trigger the Android APK workflow; native build and acceptance scripts still do.
+
+Focused fixtures: `python -m unittest discover -s scripts -p test_catalog_publish.py`. These cover repeated author refs with multiple ISBNs, legitimate coauthors/shared authors, edition/rating mappings, deterministic keys, conflicting source identities, interrupted upserts, immutable storage conflicts, manifest integrity, transient/permanent failures, bounded timeouts and credential-safe diagnostics. GitHub CI runs these fixtures.

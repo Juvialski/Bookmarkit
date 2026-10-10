@@ -1,6 +1,26 @@
 // All credentials stay in the backend. Project IDs are the authority for quota.
 const GROUNDING_MODELS = new Set(['gemini-2.5-flash-lite']);
 const TEXT_MODELS = new Set(['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite']);
+// Private operational verification: no quota reservation or generation request.
+export async function verifyFreeConfiguration({ projects, checks, authorization, service, serviceCheck }) {
+  // Management API may issue a different valid legacy service JWT than the one
+  // injected into the function. Verify its service-only database access instead
+  // of trusting decoded JWT claims or demanding identical token bytes.
+  if (!service || typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) return { status: 'unauthorized' };
+  if (authorization !== `Bearer ${service}` && !(await serviceCheck?.(authorization))) return { status: 'unauthorized' };
+  if (!projects.length) return { status: 'disabled', projects: [] };
+  const results = [];
+  for (const project of projects) {
+    try {
+      const billingDisabled = await checks.billingCheck(project.id, project.number);
+      const keyOwned = await checks.keyProjectCheck(project.keys[0], project.number);
+      const models = [];
+      for (const model of project.models) models.push({ id: model.id, available: await checks.modelCheck(project.keys[0], model.id), grounding: model.grounding });
+      results.push({ billingDisabled, keyOwned, models });
+    } catch { results.push({ billingDisabled: false, keyOwned: false, models: [] }); }
+  }
+  return { status: results.every(r => r.billingDisabled && r.keyOwned && r.models.length && r.models.every(m => m.available)) ? 'verified' : 'disabled', projects: results };
+}
 export function readFreeProjects(get) {
   if (get('GEMINI_ENABLED') !== 'true') return [];
   if (get('GEMINI_FREE_PROJECTS_JSON')) return parseFreeProjects(get('GEMINI_FREE_PROJECTS_JSON'));

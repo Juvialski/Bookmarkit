@@ -69,3 +69,11 @@ Exactly two generation attempts were reserved: one 3.5 text request recorded 35 
 The existing quota tables/RPCs were verified, with RLS and service-role-only permissions. The central catalog still contains 25,265 works. Live normal multi-source lookup resolved Warbreaker by Brandon Sanderson with an attributed Open Library rating and unknown series status. No mobile code, catalog data or APK was changed. The temporary credential files were protected and emptied after setup; no plaintext credential material remains in those files.
 
 The GitHub monthly refresh secret exists and was supplied to the latest run. Run `38033708104` failed during catalog upload with HTTP 500; the workflow cannot yet be called operationally verified. No complete catalog refresh was rerun for this setup.
+
+## Maintenance verification: 2026-10-10
+
+The private `book-search` verification task checks the current unlinked billing state, numeric project binding, key ownership, and model metadata without reserving quota or generating content. It requires service-role authorization, validated by the existing service-only circuit table when the caller's valid service JWT differs from the function's injected JWT. Anonymous callers cannot use it. It does not prove provider generation or Search eligibility.
+
+Run `python scripts/verify_gemini.py` using existing authenticated Supabase CLI access. Credentials are captured in process memory and never printed. Hosted verification confirmed billing disabled, existing key ownership, and 3.5 Flash-Lite model availability; grounding returned `disabled`. Usage remained one text attempt/35 tokens and one grounded attempt/zero tokens. The original circuit remains active until `2026-10-11T07:46:02.860232Z`.
+
+After October 11, 2026 at 3:46:03 PM Philippine time, an authorized operator can run `python scripts/verify_gemini.py --live-text`. It rechecks billing/key/model configuration and the hosted circuit, then permits at most one 3.5 text request and reports usage afterward. It refuses an active cooldown or enabled grounding and has no automatic generation retry. Do not repeat a failed provider request or enable billing. No corrected live text response was attempted during this maintenance run.

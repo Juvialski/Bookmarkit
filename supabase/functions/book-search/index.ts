@@ -1,4 +1,4 @@
-import { createFreeGemini, readFreeProjects } from './freeGemini.mjs';
+import { createFreeGemini, readFreeProjects, verifyFreeConfiguration } from './freeGemini.mjs';
 import { createGoogleFreeChecks } from './googleFreeChecks.mjs';
 import { readQuotaResponse } from './quotaRpc.mjs';
 const url = Deno.env.get('SUPABASE_URL')!, service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -22,6 +22,14 @@ Deno.serve(async req => {
  if(Number(req.headers.get('content-length')||'0')>2048)return new Response('{}',{status:413,headers});
  try {
   const raw=await req.text();if(raw.length>2048)return new Response('{}',{status:413,headers});const body=JSON.parse(raw);
+  if(body.task==='verify') {
+   const result=await verifyFreeConfiguration({projects,checks,authorization:req.headers.get('authorization'),service,
+    serviceCheck:async (authorization: string)=>{
+     const response=await fetch(`${url}/rest/v1/gemini_circuit?select=id&limit=1`,{headers:{apikey:service,Authorization:authorization},signal:AbortSignal.timeout(2000)});
+     return response.ok;
+    }});
+   return new Response(JSON.stringify(result),{status:result.status==='unauthorized'?403:200,headers});
+  }
   if(!projects.length || (body.task!=='text' && !projects.some(project=>project.models.some(model=>model.grounding))))return new Response(JSON.stringify({status:'disabled'}),{headers});
   const result=await search(body.query,body.task==='text'?'text':'grounding');
   return new Response(JSON.stringify(result),{headers});
