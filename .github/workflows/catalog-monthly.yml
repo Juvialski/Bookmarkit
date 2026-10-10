@@ -19,8 +19,9 @@ jobs:
           python-version: '3.12'
       - uses: actions/cache@v4
         with:
-          path: dist/catalog/checkpoint.sqlite
+          path: dist/catalog
           key: catalog-${{ github.run_id }}
+          restore-keys: catalog-
       - run: python scripts/expanded_catalog.py --works 25000
       - run: python scripts/validate_expanded.py
       - uses: actions/upload-artifact@v4

@@ -20,6 +20,8 @@ def run(target=25000):
     db.execute('CREATE TABLE IF NOT EXISTS checkpoint_metadata(key TEXT PRIMARY KEY,value TEXT)')
     month = time.strftime('%Y-%m')
     previous = db.execute("SELECT value FROM checkpoint_metadata WHERE key='month'").fetchone()
+    if not previous and (staging/'manifest.json').exists():
+        previous = (json.loads((staging/'manifest.json').read_text('utf-8'))['version'],)
     if previous and previous[0] != month:
         db.execute('DELETE FROM records')
         (staging / 'authors.json').unlink(missing_ok=True)

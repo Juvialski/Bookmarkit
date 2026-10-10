@@ -215,8 +215,31 @@ try:
     report['offline_manual_title_author'] = texts(lookup('Brandon Sanderson The Way of Kings', 'The Way of Kings', 'offline-manual-title-author'))
     tap('Scan Another')
     report['offline_manual_isbn10'] = texts(lookup('0140328726', 'Fantastic Mr', 'offline-manual-isbn10'))
+    tap('Scan Another')
+    report['ambiguous_matches'] = texts(lookup('Brandon Sanderson', 'Which book?', 'ambiguous-matches'))
+    tap('Scan Another')
     network(True); time.sleep(3)
     launch()
+    tap('Offline books')
+    wait('Expanded catalog', name='offline-books')
+    tap('Download')
+    wait('Delete expanded catalog', timeout=150, name='expanded-installed')
+    report['expanded_download'] = 'Checksum and SQLite validation completed before installation'
+    network(False)
+    tap('Back to scanner')
+    # An actual edition outside the bundled catalog must work offline.
+    import sqlite3
+    with sqlite3.connect('catalog/packages/expanded.db') as catalog:
+        sample = catalog.execute('SELECT isbn13,title FROM books WHERE length(title)>4 ORDER BY isbn13 LIMIT 1').fetchone()
+    report['expanded_offline_book'] = texts(lookup(sample[0], sample[1], 'expanded-offline-result'))
+    tap('Scan Another')
+    network(True)
+    tap('Offline books')
+    wait('Delete expanded catalog')
+    tap('Delete expanded catalog')
+    wait('Download', name='expanded-deleted')
+    tap('Back to scanner')
+    report['expanded_deletion'] = 'Bundled fallback restored'
     pick('warbreaker-real.jpg')
     result = book_result('Warbreaker', 'online-real-warbreaker')
     assert 'Warbreaker' in texts(result), texts(result)

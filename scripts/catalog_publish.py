@@ -51,6 +51,9 @@ def publish():
     with sqlite3.connect(staging/'expanded.db') as db:
         assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         assert db.execute('SELECT count(*) FROM works').fetchone()[0]==m['works']
+    existing=json.loads(request('/rest/v1/catalog_manifests?select=sha256&sha256=eq.'+m['sha256'],None,method='GET'))
+    if existing:
+        print('Catalog unchanged; publication skipped');return
     for table, rows in payloads():
         for offset in range(0,len(rows),500): request('/rest/v1/'+table,json.dumps(rows[offset:offset+500]).encode())
     path=f"{m['version']}/{m['sha256']}.db"
