@@ -152,7 +152,7 @@ def book_result(title, name):
     while time.monotonic() < end:
         root = screen()
         values = texts(root)
-        if any('view on goodreads' in text.lower() for text in values):
+        if any('read goodreads reviews' in text.lower() for text in values):
             assert title in values, values
             return screen(name)
         if 'Which book?' in values:
