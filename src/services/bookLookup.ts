@@ -36,7 +36,7 @@ export async function lookupBook(value: string, providers = [centralCatalog, ope
   const classification = mergeClassification([...books, ...(stored ? [stored] : [])]);
   const onlineRatings = books.map(b => b.rating);
   const selected = primaryRating(onlineRatings);
-  const usedStoredRating = !selected && !!stored && !!primaryRating(stored.ratings);
+  const usedStoredRating = !!stored && (!selected || stored.ratings.some(r => r.provider === 'Goodreads' && r.verified));
   const coverUrls = coverCandidates(...books, ...(stored ? [stored] : []));
   return { identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,

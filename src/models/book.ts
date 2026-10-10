@@ -1,5 +1,5 @@
-export type Provider = 'Hardcover' | 'Open Library' | 'Google Books';
-export interface Rating { provider: Provider; average?: number; count?: number; unavailable?: boolean; stored?: boolean }
+export type Provider = 'Goodreads' | 'Hardcover' | 'Open Library' | 'Google Books';
+export interface Rating { provider: Provider; average?: number; count?: number; unavailable?: boolean; stored?: boolean; verified?: boolean; url?: string; scope?: 'work' | 'edition'; retrievedAt?: string }
 export interface BookResult {
   source?: 'offline-catalog';
   incomplete?: boolean;

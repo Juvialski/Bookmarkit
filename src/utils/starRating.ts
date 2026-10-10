@@ -10,5 +10,6 @@ export function ratingSource(rating: Rating): string {
   return valid ? `${count.toLocaleString('en-US')} ${count === 1 ? 'rating' : 'ratings'} · ${rating.provider}` : rating.provider;
 }
 export function ratingLabel(rating: Rating): string {
-  return `${rating.average!.toFixed(1)} out of 5 stars, ${ratingSource(rating).replace(' · ', ', ')}.`;
+  return `${ratingScore(rating)} out of 5 stars, ${ratingSource(rating).replace(' · ', ', ')}.`;
 }
+export function ratingScore(rating: Rating): string { return rating.average!.toFixed(rating.provider === 'Goodreads' ? 2 : 1); }

@@ -89,6 +89,8 @@ def run(target=25000):
         catalog.executemany('INSERT OR IGNORE INTO editions VALUES (?,?,?)', [(r['edition_key'], r['key'], latest.get(r['key'])) for r in records])
         works = catalog.execute('SELECT count(*) FROM works').fetchone()[0]
         isbns = catalog.execute('SELECT count(*) FROM books').fetchone()[0]
+    from goodreads_snapshot import attach, cached_summaries
+    attach(output, cached_summaries())
     raw = output.read_bytes()
     manifest = {'version': time.strftime('%Y-%m'), 'schema': 'v3', 'works': works, 'isbns': isbns, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(), 'file': 'expanded.db', 'sources': [BASE.format(k) for k in ['editions', 'authors', 'ratings']]}
     (staging / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')

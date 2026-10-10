@@ -128,6 +128,12 @@ def build(source=SOURCE, output=OUTPUT):
             db.executemany('INSERT INTO search_grams VALUES (?,?)', [(g,key) for g in sorted(grams)])
         db.commit()
         db.execute('VACUUM')
+    # Optional reviewed summaries are a reproducible part of the small bundle.
+    # Legacy catalog files remain valid without the optional column.
+    reviewed = ROOT / 'catalog/goodreads.json'
+    if Path(source) == SOURCE and reviewed.exists():
+        from goodreads_snapshot import attach
+        attach(output, json.loads(reviewed.read_text('utf-8')))
     return rows
 
 def measure(output=OUTPUT):

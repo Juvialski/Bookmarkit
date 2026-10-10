@@ -203,7 +203,7 @@ try:
     (out / 'offline-after-ocr-connectivity.txt').write_text(connectivity, encoding='utf-8')
     assert 'Active default network: none' in connectivity, 'Network reconnected during OCR'
     report['offline_native_ocr'] = values
-    tap('View on Goodreads')
+    tap('Read Goodreads Reviews')
     time.sleep(2)
     # A fresh CI Chrome installation handles the first link with onboarding.
     # Complete it without an account, then exercise the application link again.
@@ -216,7 +216,7 @@ try:
         if not action: raise AssertionError('Unsupported emulator browser onboarding')
         tap(action); time.sleep(2)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
-    wait('Warbreaker');tap('View on Goodreads');time.sleep(2)
+    wait('Warbreaker');tap('Read Goodreads Reviews');time.sleep(2)
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-title-activities.txt').write_text(activity, encoding='utf-8')
     assert 'goodreads.com/search?q=Warbreaker' in activity and 'Sanderson' in activity, 'Title browser intent missing'

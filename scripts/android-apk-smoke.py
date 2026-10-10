@@ -109,7 +109,7 @@ try:
     wait('Scan Book', name='camera')
     report['camera_permission'] = 'Android dialog accepted; camera screen and torch control loaded'
     report['online'] = texts(lookup('9780765326355', 'The Way of Kings', 'online'))
-    tap('View on Goodreads')
+    tap('Read Goodreads Reviews')
     time.sleep(3)
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-activities.txt').write_text(activity, encoding='utf-8')

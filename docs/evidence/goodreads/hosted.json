@@ -1,0 +1,20 @@
+{
+  "unauthorized": 401,
+  "wrong_token": 401,
+  "authenticated_empty": 200,
+  "invalid_batch": 400,
+  "anon_rpc": 401,
+  "anonymous_insert": 401,
+  "dpapi_stored": true,
+  "ingestion_status": 200,
+  "ingestion_ack": {
+    "acknowledged": 1,
+    "changed": 0
+  },
+  "verified_records": 1,
+  "idempotent_status": 200,
+  "idempotent_ack": {
+    "acknowledged": 1,
+    "changed": 0
+  }
+}

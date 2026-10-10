@@ -39,7 +39,7 @@ try:
     tap('Scan another')
     shell('settings', 'put', 'system', 'font_scale', '1.3')
     launch(); lookup('9780765320308', 'Warbreaker', 'large-text-top')
-    tap('View on Goodreads')
+    tap('Read Goodreads Reviews')
     report['layout'] = {'dp': '360x640', 'font_scale': 1.3, 'goodreads_reachable': True}
     shell('settings', 'put', 'system', 'font_scale', '1.0')
     network(True); time.sleep(3); launch()
@@ -50,7 +50,7 @@ try:
     # tab receives another URL. Start a fresh browser process so this assertion
     # observes this click's exact ISBN intent rather than the earlier title URL.
     shell('am', 'force-stop', 'com.android.chrome')
-    tap('View on Goodreads'); time.sleep(2)
+    tap('Read Goodreads Reviews'); time.sleep(2)
     activities = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-isbn.txt').write_text(activities, encoding='utf-8')
     assert 'goodreads.com/search?q=9780765320308' in activities
@@ -60,6 +60,20 @@ try:
     book_result('Warbreaker', 'front-cover-initial')
     root = description('Cover of Warbreaker', name='front-cover-online')
     report['front_cover_online'] = {'native_gallery_ocr': True, 'cover': 'loaded', 'rating': rating_evidence(root)}
+    # A real collected summary is bundled and served by Supabase. No injected
+    # emulator rating fixture and no Goodreads request from the phone.
+    reviewed = json.loads(Path('catalog/goodreads.json').read_text('utf-8'))[0]
+    expected = f"{reviewed['average']:.2f} out of 5 stars, {reviewed['rating_count']:,} ratings, Goodreads."
+    launch(); lookup(reviewed['isbn13'], 'The Hunger Games', 'goodreads-online-initial')
+    root = description(expected, name='goodreads-online')
+    report['goodreads_online'] = rating_evidence(root)
+    shell('am', 'force-stop', 'com.android.chrome'); tap('Read Goodreads Reviews'); time.sleep(2)
+    activities = shell('dumpsys', 'activity', 'activities')
+    assert reviewed['url'] in activities, activities
+    report['goodreads_exact_reviews'] = 'passed'
+    network(False); launch(); lookup(reviewed['isbn13'], 'The Hunger Games', 'goodreads-offline-initial')
+    root = description(expected, name='goodreads-offline')
+    report['goodreads_offline'] = rating_evidence(root)
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
     (out / 'errors.log').write_text(errors, encoding='utf-8')
     assert 'FATAL EXCEPTION' not in errors

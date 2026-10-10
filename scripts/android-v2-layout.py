@@ -12,7 +12,7 @@ try:
         isbn,title=db.execute('SELECT isbn13,title FROM books ORDER BY length(title) DESC LIMIT 1').fetchone()
     root=lookup(isbn,title,'long-title-large-text')
     assert title in texts(root)
-    tap('View on Goodreads')
+    tap('Read Goodreads Reviews')
     report={'small_screen_dp':'360x640','font_scale':1.3,'long_title':title,'result':'passed'}
 finally:
     shell('settings','put','system','font_scale',original_font if original_font not in ('null','') else '1.0')
