@@ -14,15 +14,25 @@ Sources: [Expo 57 camera](https://docs.expo.dev/versions/v57.0.0/sdk/camera/), [
 
 ## Validation status
 
-- Mobile: 67 tests passed, including real SQLite indexed offline/fuzzy/ISBN queries, parser fixtures, conflicting work IDs, ambiguity, ISBN-10, Goodreads title fallback, cancellation and cache expiry.
+- Mobile: 73 tests passed, including real SQLite indexed offline/fuzzy/ISBN queries, parser fixtures, conflicting work IDs, ambiguity, ISBN-10, Goodreads title fallback, cancellation and cache expiry.
 - Backend: 20 regressions passed; syntax passed. No new Hardcover endpoint.
 - Python catalog: 4 passed; integrity, deterministic regeneration and index plans.
 - TypeScript/lint passed; Expo dependency check and Doctor 21/21 after SDK 57 patch alignment.
 - iOS export/configuration verified on Windows; Xcode compilation and native Vision execution NOT performed.
-- Android release build/native emulator OCR: in progress, no success claimed yet.
-- Live provider observations: pending; provider unit tests are mocked.
+- Android universal release APK successfully built on Linux. Native ML Kit ran on Android 15/API 35 x86_64 emulator through the real system gallery picker, with the standalone release JS bundle and no Metro.
+- Live Open Library title/author probes returned The Way of Kings (/works/OL15358691W, 4.5120482/166) and Warbreaker (/works/OL5738149W, 4.304348/23). Provider unit tests remain mocked; SQLite tests use the real bundled database.
 - Physical-camera acceptance: pending user's phone. Gallery/emulator recognition does not prove hardware focus, lighting or torch.
 
 ## Distribution
 
-Final exact-head Actions artifact and tested APK hash will be recorded after native validation. Existing test signing is retained. Different signatures require uninstall/reinstall; update compatibility must be checked before claiming it.
+[Validated implementation APK](https://github.com/Juvialski/Bookmarkit/actions/runs/37766580274/artifacts/11546033643), built from b35363b. SHA256 `05d2e54d79ae46d2ee0f82ad56e19c0560109e3ab3ad0c9e841cb2a62e4b110e`.
+
+Native observations on that APK: first-launch airplane mode (no active default network), ungranted camera permission, real Warbreaker cover -> Warbreaker / Brandon Sanderson / Standalone / stored Open Library 4.3 (23), without ISBN. Synthetic multiline THE WAY / OF KINGS -> The Way of Kings / Brandon Sanderson / Stormlight Archive book 1 / stored 4.5 (166). Same-process Scan Another worked. Offline manual title/author and ISBN-10 0140328726 succeeded. Reconnected real-cover OCR reached the result with online rating. Goodreads title/author intent opened externally. APK contains bundled model files, catalog-v3 and release JS; no broad photo-library or microphone permissions.
+
+[Expanded passing native acceptance](https://github.com/Juvialski/Bookmarkit/actions/runs/37766575462) used the previous 15ee96a runtime APK and also verified picker cancellation. The latest APK passed all preceding checks but the final harness Back event raced picker opening; the harness now waits for the Cancel control before cancelling. Final exact-head native CI remains required before merge.
+
+Version 1 -> version 2 `adb install -r` succeeded against the published PR #7 APK in a disposable emulator. Both tested APKs share Android Debug certificate SHA256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`. Other locally generated test signatures may still require uninstall/reinstall; no general seamless-upgrade claim.
+
+Local Android 17 preview emulators had system/launcher ANRs and storage constraints, so authoritative native acceptance uses the stable Linux Android 15 emulator. A short-path Windows build compiled the OCR Kotlin module, but was stopped to release RAM; no local release build success is claimed. iOS export/configuration and TypeScript passed, not native compilation. Physical focus, lighting, angled/glossy covers and real flashlight remain pending the user's phone.
+
+Only Latin OCR is bundled. Provider metadata can be incomplete. Offline scope is the 1,109-work catalog; unsupported books need internet. No image uploads, Supabase, scraper, LLM or desktop Chrome use.

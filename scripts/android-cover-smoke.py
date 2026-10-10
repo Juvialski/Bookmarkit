@@ -223,7 +223,11 @@ try:
     report['online_native_ocr'] = texts(result)
     tap('Scan Another')
     tap('Choose Photo')
-    shell('input', 'keyevent', '4')
+    for _ in range(10):
+        picker = screen()
+        if any(n.attrib.get('content-desc') == 'Cancel' for n in picker.iter('node')): break
+        time.sleep(1)
+    tap(description='Cancel')
     wait('Point your camera at a book cover', name='picker-cancelled')
     report['picker_cancellation'] = 'passed'
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
