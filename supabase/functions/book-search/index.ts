@@ -1,13 +1,14 @@
-import { createFreeGemini, parseFreeProjects } from './freeGemini.mjs';
+import { createFreeGemini, readFreeProjects } from './freeGemini.mjs';
 import { createGoogleFreeChecks } from './googleFreeChecks.mjs';
+import { readQuotaResponse } from './quotaRpc.mjs';
 const url = Deno.env.get('SUPABASE_URL')!, service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const auth = { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' };
 async function rpc(name: string, body: unknown) {
  const response=await fetch(`${url}/rest/v1/rpc/${name}`,{method:'POST',headers:auth,body:JSON.stringify(body),signal:AbortSignal.timeout(2000)});
- if(!response.ok) throw new Error('Usage store unavailable');return response.json();
+ return readQuotaResponse(response);
 }
 let projects = [];
-try { if(Deno.env.get('GEMINI_ENABLED')==='true') projects=parseFreeProjects(Deno.env.get('GEMINI_FREE_PROJECTS_JSON')); } catch { projects=[]; }
+try { projects=readFreeProjects(name=>Deno.env.get(name)); } catch { projects=[]; }
 const checks=createGoogleFreeChecks({ serviceAccount:Deno.env.get('GOOGLE_VERIFIER_SERVICE_ACCOUNT_JSON'),accessToken:Deno.env.get('GOOGLE_VERIFIER_ACCESS_TOKEN') });
 const search=createFreeGemini({projects,...checks,
  reserve:async (project: string,model: string,task: string,limit: number)=>rpc('reserve_free_gemini',{p_project:project,p_model:model,p_task:task,p_limit:limit}),
@@ -21,7 +22,7 @@ Deno.serve(async req => {
  if(Number(req.headers.get('content-length')||'0')>2048)return new Response('{}',{status:413,headers});
  try {
   const raw=await req.text();if(raw.length>2048)return new Response('{}',{status:413,headers});const body=JSON.parse(raw);
-  if(!projects.length)return new Response(JSON.stringify({status:'disabled'}),{headers});
+  if(!projects.length || (body.task!=='text' && !projects.some(project=>project.models.some(model=>model.grounding))))return new Response(JSON.stringify({status:'disabled'}),{headers});
   const result=await search(body.query,body.task==='text'?'text':'grounding');
   return new Response(JSON.stringify(result),{headers});
  } catch { return new Response(JSON.stringify({status:'unavailable'}),{headers}); }
