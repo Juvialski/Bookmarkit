@@ -36,8 +36,34 @@ permissions:
   actions: read
 
 jobs:
+  mobile-scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      changed: ${{ steps.scope.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python - <<'PY'
+          import fnmatch, os, subprocess
+          patterns = ['src/*', 'assets/*', 'catalog/*', 'plugins/*', 'tests/*', 'app.json', 'package*.json', 'metro.config.*', 'babel.config.*', 'app.config.*', 'eas.json', 'tsconfig.json', 'scripts/build-android-test.mjs', 'scripts/android-*.py', 'scripts/create-ocr-images.py']
+          if os.environ['EVENT_NAME'] == 'workflow_dispatch':
+              changed = True
+          else:
+              files = subprocess.check_output(['git', 'diff', '--name-only', os.environ['BASE_SHA'], os.environ['HEAD_SHA']], text=True).splitlines()
+              changed = any(fnmatch.fnmatch(path, pattern) for path in files for pattern in patterns)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('changed=' + str(changed).lower() + '\n')
+          PY
   apk:
-    if: ${{ !inputs.apk_run_id }}
+    needs: mobile-scope
+    if: ${{ needs.mobile-scope.outputs.changed == 'true' && !inputs.apk_run_id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
