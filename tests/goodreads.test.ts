@@ -37,6 +37,8 @@ test('offline catalog accepts optional cached summaries and retains legacy catal
   const offline = normalizeLocalRecord({ ...row, goodreads_json: JSON.stringify([record]) }, book.isbn!)!;
   assert.equal(primaryRating(offline.ratings)?.provider, 'Goodreads'); assert.equal(primaryRating(offline.ratings)?.stored, true);
   assert.equal(goodreadsReviewsUrl(offline), record.url);
+  const workOnly = normalizeLocalRecord({ ...row, goodreads_json: JSON.stringify([record]) }, book.isbn!, true)!;
+  assert.equal(primaryRating(workOnly.ratings)?.provider, 'Open Library'); assert.equal(workOnly.seriesStatus, 'unknown');
   assert.equal(primaryRating(normalizeLocalRecord({ ...row, goodreads_json: '{' }, book.isbn!)!.ratings)?.provider, 'Open Library');
 });
 test('ingestion validates source identity, scores, counts, series and provenance', () => {

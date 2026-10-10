@@ -185,7 +185,8 @@ def collect(db, cli, state, interval=15, pilot=False, max_books=100):
             if time.time() - fetched >= 30 * 86400:
                 db.execute("UPDATE queue SET status='pending',priority=case when priority<=1 then priority else 4 end,attempts=0 WHERE key=?", (row['key'],))
         db.commit()
-        attempted = 0; blocks = 0
+        previous_blocks = db.execute("SELECT value FROM control WHERE key='consecutive_blocks'").fetchone()
+        attempted = 0; blocks = int(previous_blocks[0]) if previous_blocks else 0
         while attempted < max_books:
             if (state / 'STOP').exists() or (state / 'PAUSE').exists(): return
             if not pilot and not safe_to_run(): return
@@ -220,6 +221,7 @@ def collect(db, cli, state, interval=15, pilot=False, max_books=100):
             db.execute('UPDATE queue SET status=?,elapsed=?,summary=coalesce(?,summary),next_at=?,uploaded_at=case when ? is null then uploaded_at else null end WHERE key=?',
                        (status, elapsed, json.dumps(record) if record else None, next_at, record and 'new', row['key'])); db.commit()
             attempted += 1; blocks = blocks + 1 if blocked else 0
+            db.execute("INSERT OR REPLACE INTO control VALUES('consecutive_blocks',?)", (str(blocks),)); db.commit()
             with open(state / 'operations.log', 'a', encoding='utf-8') as log:
                 log.write(f'{stamp()} {row["key"][:10]} {status} {elapsed:.1f}s\n')
             if (state / 'operations.log').stat().st_size > 1000000:
@@ -251,7 +253,7 @@ def sync(db, credential):
             with urllib.request.urlopen(req, timeout=20) as response: ack = json.load(response)
             if ack.get('acknowledged') != len(rows): return
         except (urllib.error.URLError, TimeoutError, ValueError): return  # next launch retries identical batch
-        db.executemany('UPDATE queue SET uploaded_at=? WHERE key=?', [(stamp(), row['key']) for row in rows]); db.commit()
+        db.executemany('UPDATE queue SET uploaded_at=? WHERE key=? AND summary=?', [(stamp(), row['key'], row['summary']) for row in rows]); db.commit()
 
 
 def report(db):

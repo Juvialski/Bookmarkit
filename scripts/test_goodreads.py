@@ -3,9 +3,11 @@ import sqlite3
 import subprocess
 import tempfile
 import unittest
+import io
+import urllib.error
 from pathlib import Path
 from unittest.mock import patch
-from goodreads_worker import database, enqueue, extract, collect, sample, validate_summary, ClosingConnection
+from goodreads_worker import database, enqueue, extract, collect, sample, validate_summary, ClosingConnection, sync
 from goodreads_snapshot import attach
 
 TARGET = dict(work_id='/works/OL1W', title='A fixture', authors=['Test Author'], isbn13='9780439023481')
@@ -57,11 +59,25 @@ class GoodreadsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, database(Path(tmp)/'queue.sqlite') as db:
             enqueue(db, [{**TARGET, 'isbn13': str(i)} for i in range(5)])
             with patch('goodreads_worker.subprocess.Popen', return_value=Process()) as run, patch('goodreads_worker.time.sleep'), patch('goodreads_worker.time.monotonic', side_effect=range(0,10000,20)):
+                collect(db, 'unused', tmp, pilot=True, max_books=2)
+                self.assertEqual(run.call_count, 2)
                 collect(db, 'unused', tmp, pilot=True)
                 self.assertEqual(run.call_count, 3)
                 collect(db, 'unused', tmp, pilot=True)
                 self.assertEqual(run.call_count, 3)
             self.assertTrue(db.execute("SELECT 1 FROM control WHERE key='blocked'").fetchone())
+
+    def test_checkpointed_upload_retries_without_losing_pending_records(self):
+        with tempfile.TemporaryDirectory() as tmp, database(Path(tmp)/'queue.sqlite') as db:
+            enqueue(db, [TARGET]); record=extract(payload(), TARGET)
+            db.execute('UPDATE queue SET summary=?', (json.dumps(record),)); db.commit()
+            with patch('goodreads_worker.os.name', 'nt'), patch('windows_credential.load', return_value='a'*64):
+                with patch('urllib.request.urlopen', side_effect=urllib.error.URLError('interrupted')):
+                    sync(db, 'unused')
+                self.assertIsNone(db.execute('SELECT uploaded_at FROM queue').fetchone()[0])
+                with patch('urllib.request.urlopen', return_value=io.BytesIO(b'{"acknowledged":1}')):
+                    sync(db, 'unused')
+                self.assertTrue(db.execute('SELECT uploaded_at FROM queue').fetchone()[0])
 
     def test_optional_offline_column_and_allowlist(self):
         with tempfile.TemporaryDirectory() as tmp:

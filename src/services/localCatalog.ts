@@ -11,7 +11,7 @@ export interface CatalogDatabase {
   getFirstAsync<T>(sql: string, ...params: string[]): Promise<T | null>;
 }
 
-export function normalizeLocalRecord(value: unknown, isbn: string): BookResult | null {
+export function normalizeLocalRecord(value: unknown, isbn: string, workOnly = false): BookResult | null {
   const row = object(value);
   if (row.isbn13 !== isbn || !string(row.title)) return null;
   let authors: unknown;
@@ -20,7 +20,7 @@ export function normalizeLocalRecord(value: unknown, isbn: string): BookResult |
   const name = string(row.series_name), position = seriesPosition(row.series_position);
   const series = row.series_status === 'series' && name && position;
   const standalone = row.series_status === 'standalone' && row.classification_source === 'curated';
-  const book: BookResult = { identity: 'isbn', isbn, title: string(row.title)!, authors: strings(authors).map(a => a.trim()),
+  const book: BookResult = { identity: workOnly ? 'work' : 'isbn', isbn: workOnly ? undefined : isbn, title: string(row.title)!, authors: strings(authors).map(a => a.trim()),
     workId: string(row.work_id), source: 'offline-catalog',
     seriesStatus: series ? 'series' : standalone ? 'standalone' : 'unknown',
     seriesName: series ? name : undefined, seriesPosition: series ? position : undefined,
@@ -53,7 +53,7 @@ export function createLocalSearch(db: CatalogDatabase & { getAllAsync<T>(sql: st
     const select = 'SELECT b.* FROM books b JOIN works w ON w.isbn13=b.isbn13';
     let values = await db.getAllAsync<Record<string, unknown>>(`${select} WHERE w.id IN (SELECT work_id FROM search_tokens WHERE token IN (${placeholders}) GROUP BY work_id ORDER BY COUNT(*) DESC, work_id LIMIT 80)`, ...tokens);
     let books = values.flatMap(row => {
-      const book = normalizeLocalRecord(row, String(row.isbn13));
+      const book = normalizeLocalRecord(row, String(row.isbn13), true);
       return book ? [{ ...book, isbn: undefined, identity: 'work' as const, ratings: book.ratings.filter(r => r.provider !== 'Goodreads' || r.scope === 'work') }] : [];
     }).filter(book => matchBook(query, book).score >= 0.75);
     if (!books.length && (query.title || query.text)) {
@@ -61,7 +61,7 @@ export function createLocalSearch(db: CatalogDatabase & { getAllAsync<T>(sql: st
       const grams = [...new Set(Array.from({ length: Math.max(0, title.length - 2) }, (_, i) => title.slice(i, i + 3)))].slice(0, 40);
       if (grams.length) {
         values = await db.getAllAsync<Record<string, unknown>>(`${select} WHERE w.id IN (SELECT work_id FROM search_grams WHERE gram IN (${grams.map(() => '?').join(',')}) GROUP BY work_id ORDER BY COUNT(*) DESC, work_id LIMIT 80)`, ...grams);
-        books = values.flatMap(row => { const book = normalizeLocalRecord(row, String(row.isbn13)); return book ? [{ ...book, isbn: undefined, identity: 'work' as const, ratings: book.ratings.filter(r => r.provider !== 'Goodreads' || r.scope === 'work') }] : []; }).filter(book => matchBook(query, book).score >= 0.75);
+        books = values.flatMap(row => { const book = normalizeLocalRecord(row, String(row.isbn13), true); return book ? [{ ...book, isbn: undefined, identity: 'work' as const, ratings: book.ratings.filter(r => r.provider !== 'Goodreads' || r.scope === 'work') }] : []; }).filter(book => matchBook(query, book).score >= 0.75);
       }
     }
     return books;
