@@ -46,6 +46,10 @@ try:
     lookup('9780765320308', 'Warbreaker', 'isbn-initial')
     root = description('Cover of Warbreaker', name='isbn-online-cover')
     report['isbn_online'] = {'cover': 'loaded', 'rating': rating_evidence(root)}
+    # dumpsys retains Chrome's original ActivityRecord intent when an existing
+    # tab receives another URL. Start a fresh browser process so this assertion
+    # observes this click's exact ISBN intent rather than the earlier title URL.
+    shell('am', 'force-stop', 'com.android.chrome')
     tap('View on Goodreads'); time.sleep(2)
     activities = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-isbn.txt').write_text(activities, encoding='utf-8')
