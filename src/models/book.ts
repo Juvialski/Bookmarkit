@@ -5,7 +5,7 @@ export interface BookResult {
   incomplete?: boolean;
   hardcoverId?: string; hardcoverUrl?: string;
   identity?: 'isbn' | 'work';
-  isbn?: string; title: string; authors: string[]; coverUrl?: string;
+  isbn?: string; title: string; authors: string[]; coverUrl?: string; coverUrls?: string[];
   seriesStatus: 'series' | 'standalone' | 'unknown';
   classificationSource?: 'hardcover' | 'open-library' | 'curated' | 'unknown';
   classificationConfidence?: 'structured' | 'explicit' | 'curated';

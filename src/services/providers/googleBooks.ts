@@ -11,8 +11,10 @@ export async function googleBooksSearch(query: BookQuery, fetcher: Fetcher = fet
     if (!title) return [];
     const identifiers = Array.isArray(volume.industryIdentifiers) ? volume.industryIdentifiers : [];
     if (query.isbn && !identifiers.some((v: unknown) => normalizeIsbn(String(object(v).identifier)) === query.isbn)) return [];
+    const images = object(volume.imageLinks);
+    const coverUrls = [images.large, images.medium, images.thumbnail, images.smallThumbnail].map(httpsCover).filter((url): url is string => !!url);
     return [{ identity: query.isbn ? 'isbn' as const : 'work' as const, isbn: query.isbn, title,
-      authors: strings(volume.authors), coverUrl: httpsCover(object(volume.imageLinks).thumbnail),
+      authors: strings(volume.authors), coverUrl: coverUrls[0], coverUrls,
       seriesStatus: 'unknown' as const, ratings: [{ provider: 'Google Books' as const, ...rating(volume.averageRating, volume.ratingsCount) }], warnings: [] }];
   });
 }

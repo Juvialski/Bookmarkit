@@ -2,7 +2,8 @@ import { BookResult } from '../models/book';
 import { isValidIsbn, normalizeIsbn } from '../utils/isbn';
 import { hardcover } from './providers/hardcover';
 import { openLibrary } from './providers/openLibrary';
-import { httpsCover, ProviderError } from './providers/shared';
+import { ProviderError } from './providers/shared';
+import { coverCandidates } from '../utils/covers';
 import { mergeClassification } from '../utils/classification';
 import { primaryRating } from '../utils/ratings';
 import { centralCatalog } from './providers/centralCatalog';
@@ -11,7 +12,7 @@ export async function lookupBook(value: string, providers = [centralCatalog, ope
   const isbn = normalizeIsbn(value);
   if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
   const responses = await Promise.allSettled(providers.map(provider => provider(isbn)));
-  const books = responses.flatMap(r => r.status === 'fulfilled' && r.value ? [r.value] : []);
+  const books = responses.flatMap(r => r.status === 'fulfilled' && r.value && (!r.value.isbn || r.value.isbn === isbn) ? [r.value] : []);
   if (!books.length) {
     if (local) {
       try {
@@ -36,10 +37,11 @@ export async function lookupBook(value: string, providers = [centralCatalog, ope
   const onlineRatings = books.map(b => b.rating);
   const selected = primaryRating(onlineRatings);
   const usedStoredRating = !selected && !!stored && !!primaryRating(stored.ratings);
+  const coverUrls = coverCandidates(...books, ...(stored ? [stored] : []));
   return { identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,
     incomplete: usedStoredRating || responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
-    authors: books.find(b => b.authors.length)?.authors || [], coverUrl: books.map(b => httpsCover(b.coverUrl)).find(Boolean),
+    authors: books.find(b => b.authors.length)?.authors || [], coverUrl: coverUrls[0], coverUrls,
     ...classification,
     ratings: usedStoredRating ? [...onlineRatings, ...stored!.ratings] : onlineRatings,
     // Optional provider outages are quiet when another source identifies the book.

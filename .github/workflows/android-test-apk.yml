@@ -18,6 +18,7 @@ on:
       - 'scripts/build-android-test.mjs'
       - 'scripts/android-apk-smoke.py'
       - 'scripts/android-cover-smoke.py'
+      - 'scripts/android-result-smoke.py'
       - 'scripts/create-ocr-images.py'
       - 'scripts/android-v2-*.py'
       - 'tests/**'
@@ -40,6 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       changed: ${{ steps.scope.outputs.changed }}
+      apk_run_id: ${{ steps.scope.outputs.apk_run_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,9 +51,11 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
-          import fnmatch, os, subprocess
+          import fnmatch, json, os, subprocess
           patterns = ['src/*', 'assets/*', 'catalog/*', 'plugins/*', 'tests/*', 'app.json', 'package*.json', 'metro.config.*', 'babel.config.*', 'app.config.*', 'eas.json', 'tsconfig.json', 'scripts/build-android-test.mjs', 'scripts/android-*.py', 'scripts/create-ocr-images.py']
           if os.environ['EVENT_NAME'] == 'workflow_dispatch':
               changed = True
@@ -60,10 +64,31 @@ jobs:
               changed = any(fnmatch.fnmatch(path, pattern) for path in files for pattern in patterns)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('changed=' + str(changed).lower() + '\n')
+              # Reuse an already built APK only when ALL differences are native
+              # acceptance scripts or the workflow, with identical build recipe.
+              # Source/assets/packages/config changes always require a new build.
+              reuse = ''
+              def acceptance(path):
+                  return path == '.github/workflows/android-test-apk.yml' or (path.startswith('scripts/android-') and path.endswith('.py'))
+              def recipe(ref):
+                  workflow = subprocess.check_output(['git', 'show', ref + ':.github/workflows/android-test-apk.yml'], text=True)
+                  return workflow.split('  apk:\n', 1)[1].split('  native-cover:\n', 1)[0].split('    env:\n', 1)[1]
+              if changed and os.environ['EVENT_NAME'] != 'workflow_dispatch':
+                  runs = json.loads(subprocess.check_output(['gh', 'run', 'list', '--workflow', 'android-test-apk.yml', '--branch', os.environ['HEAD_BRANCH'], '--limit', '10', '--json', 'databaseId,headSha,status'], text=True))
+                  for run in runs:
+                      if run['status'] != 'completed': continue
+                      if subprocess.run(['git', 'cat-file', '-e', run['headSha']], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode: continue
+                      differences = subprocess.check_output(['git', 'diff', '--name-only', run['headSha'], os.environ['HEAD_SHA']], text=True).splitlines()
+                      if not all(acceptance(path) for path in differences): continue
+                      if recipe(run['headSha']) != recipe(os.environ['HEAD_SHA']): continue
+                      artifacts = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + str(run['databaseId']) + '/artifacts'], text=True))['artifacts']
+                      if any(a['name'] == 'bookmarkit-android-test' and not a['expired'] for a in artifacts):
+                          reuse = str(run['databaseId']); break
+              output.write('apk_run_id=' + reuse + '\n')
           PY
   apk:
     needs: mobile-scope
-    if: ${{ needs.mobile-scope.outputs.changed == 'true' && !inputs.apk_run_id }}
+    if: ${{ needs.mobile-scope.outputs.changed == 'true' && !inputs.apk_run_id && needs.mobile-scope.outputs.apk_run_id == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -100,8 +125,8 @@ jobs:
           retention-days: 30
 
   native-cover:
-    needs: apk
-    if: ${{ always() && (needs.apk.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.apk_run_id != '')) }}
+    needs: [mobile-scope, apk]
+    if: ${{ always() && (needs.apk.result == 'success' || needs.mobile-scope.outputs.apk_run_id != '' || (github.event_name == 'workflow_dispatch' && inputs.apk_run_id != '')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -113,7 +138,7 @@ jobs:
         with:
           name: bookmarkit-android-test
           path: dist/apk
-          run-id: ${{ inputs.apk_run_id || github.run_id }}
+          run-id: ${{ inputs.apk_run_id || needs.mobile-scope.outputs.apk_run_id || github.run_id }}
           github-token: ${{ github.token }}
       - run: pip install Pillow
       - run: python scripts/create-ocr-images.py
@@ -137,11 +162,16 @@ jobs:
           arch: x86_64
           profile: pixel_4
           emulator-options: -cores 2 -memory 4096 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
+          script: |
+            python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
+            python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
+            python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bookmarkit-native-cover-evidence
-          path: dist/android-phase8
+          path: |
+            dist/android-phase8
+            dist/android-result
           if-no-files-found: warn
           retention-days: 30
