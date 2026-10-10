@@ -47,7 +47,7 @@ export function rankBooks(queries: BookQuery[], books: BookResult[]): Identifica
   const distinct: typeof ranked = [];
   for (const row of ranked) {
     const canonical = (book: BookResult) => `${normalizeText(book.title)}|${book.authors.map(normalizeText).sort().join('|')}`;
-    const existing = distinct.find(r => (row.book.workId && r.book.workId === row.book.workId) || (row.book.hardcoverId && r.book.hardcoverId === row.book.hardcoverId) || (!row.book.workId && !r.book.workId && row.book.authors.length && canonical(r.book) === canonical(row.book)));
+    const existing = distinct.find(r => (row.book.workId && r.book.workId === row.book.workId) || (row.book.hardcoverId && r.book.hardcoverId === row.book.hardcoverId) || ((!row.book.workId || !r.book.workId) && (!row.book.isbn || !r.book.isbn || row.book.isbn === r.book.isbn) && row.book.authors.length && canonical(r.book) === canonical(row.book)));
     if (!existing) distinct.push(row);
     else {
       const a = existing.book, b = row.book;

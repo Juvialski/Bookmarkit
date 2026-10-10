@@ -1,4 +1,4 @@
-export type Provider = 'Hardcover' | 'Open Library';
+export type Provider = 'Hardcover' | 'Open Library' | 'Google Books';
 export interface Rating { provider: Provider; average?: number; count?: number; unavailable?: boolean; stored?: boolean }
 export interface BookResult {
   source?: 'offline-catalog';

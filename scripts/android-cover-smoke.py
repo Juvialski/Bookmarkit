@@ -87,12 +87,12 @@ def launch():
     shell('am', 'force-stop', 'com.google.android.apps.nexuslauncher')
     shell('am', 'force-stop', package)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
-    wait('Point your camera at a book cover')
+    wait('Point at a book cover')
 
 def lookup(isbn, title, name):
     root = screen()
     if not any(n.attrib.get('content-desc') == 'Title, author, or ISBN' for n in root.iter('node')):
-        tap('Search Manually')
+        tap('Search')
     tap(description='Title, author, or ISBN')
     shell('input', 'keyevent', '123')
     for _ in range(100):
@@ -228,7 +228,7 @@ try:
         if any(n.attrib.get('content-desc') == 'Cancel' for n in picker.iter('node')): break
         time.sleep(1)
     tap(description='Cancel')
-    wait('Point your camera at a book cover', name='picker-cancelled')
+    wait('Point at a book cover', name='picker-cancelled')
     report['picker_cancellation'] = 'passed'
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
     (out / 'errors.log').write_text(errors, encoding='utf-8')

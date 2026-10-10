@@ -1,6 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler } from 'react-native';
-import { useSQLiteContext } from 'expo-sqlite';
 import { getNetworkStateAsync } from 'expo-network';
 import { router } from 'expo-router';
 import { BookResult } from '../models/book';
@@ -8,11 +7,12 @@ import { RecognitionRequest } from '../recognition/types';
 import { interpretCover } from '../recognition/coverParser';
 import { createRequestGate, ensureActive, ScanState } from '../recognition/session';
 import { identifyBook, manualQuery } from './identifyBook';
-import { createCachedLookup, lookupBook } from './bookLookup';
-import { createLocalCatalog, createLocalSearch } from './localCatalog';
+import { createProgressiveLookup } from './progressiveLookup';
+import { useOfflineCatalog } from './OfflineCatalogContext';
 import { readCover } from './coverOcr';
 import { createWorkEnricher } from './providers/workDetails';
-import { createCachedSearch } from './providers/search';
+import { createCachedSearch, providerSearch } from './providers/search';
+import { rankBooks } from '../recognition/matching';
 
 interface Session {
   book: BookResult | null; candidates: BookResult[]; loading: boolean; state: ScanState; status: string; error: string; recognized: string;
@@ -20,9 +20,20 @@ interface Session {
 }
 const Context = createContext<Session | null>(null);
 export function RecognitionProvider({ children }: { children: ReactNode }) {
-  const db = useSQLiteContext();
-  const dependencies = useMemo(() => ({ enrich: createWorkEnricher(), catalog: createLocalSearch(db), search: createCachedSearch(), isbn: createCachedLookup(value => lookupBook(value, undefined, createLocalCatalog(db))),
-    online: async () => { try { const state = await getNetworkStateAsync(); return state.isConnected !== false && state.isInternetReachable !== false; } catch { return true; } } }), [db]);
+  const { catalog } = useOfflineCatalog();
+  const dependencies = useMemo(() => {
+    const progressive = createProgressiveLookup(async isbn => (await catalog.search({ isbn }))[0] || null), work = createWorkEnricher();
+    return { enrich: async (book: BookResult, signal?: AbortSignal) => {
+      if (book.isbn) return progressive.enrich(book);
+      const query = { title: book.title, author: book.authors[0] };
+      const online = await providerSearch(query, signal).catch(() => []);
+      const same = online.filter(b => b.workId && b.workId === book.workId);
+      const merged = rankBooks([query], [...same, book]);
+      return work(merged?.kind === 'book' ? merged.book : book, signal);
+    }, catalog, search: createCachedSearch(), isbn: progressive.lookup,
+      online: async () => { try { const state = await getNetworkStateAsync(); return state.isConnected !== false && state.isInternetReachable !== false; } catch { return true; } }
+    };
+  }, [catalog]);
   const [book, setBook] = useState<BookResult | null>(null), [candidates, setCandidates] = useState<BookResult[]>([]);
   const [state, setState] = useState<ScanState>('idle'), [error, setError] = useState(''), [recognized, setRecognized] = useState('');
   const gate = useRef(createRequestGate());

@@ -1,67 +1,31 @@
-import { useState } from 'react';
-import { Button, Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookResult } from '../models/book';
 import { goodreadsSearchUrl } from '../utils/goodreads';
 import { primaryRating } from '../utils/ratings';
-
-function typeText(book: BookResult) {
-  if (book.seriesStatus === 'series' && book.seriesName) {
-    return `${book.seriesName}${book.seriesPosition ? ` · Book ${book.seriesPosition}` : ''}`;
-  }
-  return '';
-}
-
+import { Action, Brand, palette, serif } from '../components/Editorial';
+import { groundedSearch, groundingAvailable, SearchEvidence } from '../services/groundedSearch';
+import { GroundedEvidence } from '../components/GroundedEvidence';
 export function BookResultScreen({ book, onScanAnother }: { book: BookResult; onScanAnother: () => void }) {
-  const [coverFailed, setCoverFailed] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false), [linkError, setLinkError] = useState(false);
   const rating = primaryRating(book.ratings);
-
+  const [evidence, setEvidence] = useState<SearchEvidence | null>(null), [searching, setSearching] = useState(false);
+  const [groundingEnabled, setGroundingEnabled] = useState(false);
+  useEffect(() => { let active = true; void groundingAvailable().then(enabled => { if (active) setGroundingEnabled(enabled); }); return () => { active = false; }; }, []);
+  const series = book.seriesStatus === 'series' && book.seriesName ? `${book.seriesName}${book.seriesPosition ? ` · #${book.seriesPosition}` : ''}` : book.seriesStatus === 'standalone' ? 'Standalone' : 'Series unknown';
   return <SafeAreaView style={styles.page}><ScrollView contentContainerStyle={styles.content}>
-    <Text style={styles.brand}>Bookmarkit</Text>
-
-    {book.coverUrl && !coverFailed
-      ? <Image accessibilityLabel={`Cover of ${book.title}`} source={{ uri: book.coverUrl }} style={styles.cover} resizeMode="contain" onError={() => setCoverFailed(true)} />
-      : <View style={[styles.cover, styles.placeholder]}><Text style={styles.detail}>Cover unavailable</Text></View>}
-
+    <Brand />
+    <View style={styles.coverStage}>{book.coverUrl && !coverFailed ? <Image accessibilityLabel={`Cover of ${book.title}`} source={{ uri: book.coverUrl }} style={styles.cover} resizeMode="contain" onError={() => setCoverFailed(true)} /> : <View style={[styles.cover, styles.placeholder]}><Text style={styles.coverTitle}>{book.title}</Text></View>}</View>
     <Text style={styles.title}>{book.title || 'Title unavailable'}</Text>
-    <Text style={styles.author}>{book.authors.length ? book.authors.join(', ') : 'Author unavailable'}</Text>
-
-    <View style={styles.infoCard}>
-      <Text style={styles.type}>{book.seriesStatus === 'series' ? 'SERIES' : book.seriesStatus === 'standalone' ? 'STANDALONE' : 'TYPE UNKNOWN'}</Text>
-      {book.seriesStatus === 'series' && <Text style={styles.type}>{typeText(book)}</Text>}
-    </View>
-
-    <View style={styles.ratingCard}>
-      <Text style={styles.label}>Rating</Text>
-      <Text style={styles.score}>{rating ? `★ ${rating.average!.toFixed(1)}` : 'Not rated'}</Text>
-      {rating && <Text style={styles.detail}>
-        {rating.provider}{rating.stored ? ' · offline catalog' : ''}{rating.count !== undefined && rating.count > 0 ? ` · ${rating.count.toLocaleString()} ratings` : ''}
-      </Text>}
-    </View>
-
-    <View style={styles.goodreads}>
-      <Button title="View on Goodreads" onPress={() => { void Linking.openURL(goodreadsSearchUrl(book)).catch(() => {}); }} />
-    </View>
-
-    {!!book.isbn && <Text style={styles.isbn}>ISBN {book.isbn}</Text>}
-    <Button title="Scan Another" onPress={onScanAnother} />
+    <Text style={styles.author}>{book.authors.join(', ') || 'Author unavailable'}</Text>
+    <View style={styles.rating}><Text style={styles.score}>{rating ? `★ ${rating.average!.toFixed(1)}` : 'Not rated'}</Text>{rating && <Text style={styles.source}>{rating.provider}</Text>}</View>
+    <Text style={styles.series}>{series}</Text><View style={styles.rule} />
+    <Action title="View on Goodreads" onPress={() => { setLinkError(false); void Linking.openURL(goodreadsSearchUrl(book)).catch(() => setLinkError(true)); }} />
+    {linkError && <Text accessibilityRole="alert" style={styles.source}>Could not open link. Try again.</Text>}
+    <Action quiet title="Scan another" onPress={onScanAnother} />
+    {!rating && groundingEnabled && <Action quiet title={searching ? 'Searching…' : 'Search with Google'} disabled={searching} onPress={() => { setSearching(true); void groundedSearch([book.title, ...book.authors].join(' ')).then(result => { setEvidence(result); if (!result) setLinkError(true); }).finally(() => setSearching(false)); }} />}
+    <GroundedEvidence evidence={evidence} close={() => setEvidence(null)} />
   </ScrollView></SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#f7f5ee' },
-  content: { padding: 24, gap: 14 },
-  brand: { fontSize: 16, fontWeight: '700', color: '#356455' },
-  cover: { width: 145, height: 205, alignSelf: 'center' },
-  placeholder: { backgroundColor: '#e1e7df', justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  title: { fontSize: 28, fontWeight: '700', color: '#182a24' },
-  author: { fontSize: 18, color: '#536259' },
-  infoCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 5 },
-  ratingCard: { backgroundColor: '#fff', borderRadius: 12, padding: 18, gap: 5 },
-  goodreads: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 9 },
-  label: { fontSize: 14, fontWeight: '600', color: '#536259' },
-  type: { fontSize: 20, fontWeight: '700', color: '#182a24' },
-  score: { fontSize: 34, fontWeight: '700', color: '#182a24' },
-  detail: { color: '#536259', fontSize: 14, lineHeight: 20 },
-  isbn: { color: '#536259', fontSize: 13 }
-});
+const styles = StyleSheet.create({ page: { flex: 1, backgroundColor: palette.paper }, content: { padding: 24, paddingBottom: 32, gap: 12 }, coverStage: { alignItems: 'center', paddingVertical: 20 }, cover: { width: 164, height: 236 }, placeholder: { backgroundColor: palette.forest, padding: 18, justifyContent: 'center' }, coverTitle: { fontFamily: serif, fontSize: 23, color: palette.paper }, title: { fontFamily: serif, fontSize: 32, lineHeight: 38, color: palette.ink }, author: { fontSize: 17, color: palette.muted, lineHeight: 25 }, rating: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'baseline', marginTop: 8 }, score: { fontFamily: serif, fontSize: 38, color: palette.forest }, source: { fontSize: 14, color: palette.muted }, series: { fontSize: 16, lineHeight: 24, color: palette.ink }, rule: { height: 1, backgroundColor: palette.sage, marginVertical: 12 } });

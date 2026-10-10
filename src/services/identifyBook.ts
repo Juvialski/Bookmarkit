@@ -53,13 +53,15 @@ export async function identifyBook(request: RecognitionRequest, dependencies: Re
       ? 'Book cover read successfully. Connect to the internet to look up this book.'
       : 'This book is not in the offline catalog. Connect to the internet to look it up.');
   }
+  // A confident reusable catalog match is useful immediately. The session
+  // enriches metadata after navigation and guards every update by selection ID.
+  if (local?.kind === 'book') return local;
   // Four bounded requests maximum. Alternate author hypotheses for the same
   // title are ranked locally; broad title searches avoid a bad author guess
   // excluding the correct book upstream.
   // A confident catalog interpretation gives online enrichment a validated
   // title/name instead of spending the first request on a large author heading.
-  const searches: BookQuery[] = local?.kind === 'book'
-    ? [{ title: local.book.title, author: local.book.authors[0] }] : [];
+  const searches: BookQuery[] = [];
   for (const q of queries) {
     const broad: BookQuery = q.text ? { text: q.text } : q.title ? { title: q.title, ...(request.origin === 'manual' && q.author ? { author: q.author } : {}) } : { author: q.author };
     if (!searches.some(s => normalizeText(s.text || s.title || s.author || '') === normalizeText(broad.text || broad.title || broad.author || ''))) searches.push(broad);
