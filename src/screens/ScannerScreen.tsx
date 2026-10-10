@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, KeyboardAvoidingView, Platform, Pressable, Keyboard, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, KeyboardAvoidingView, Platform, Pressable, Keyboard, Linking, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
@@ -12,6 +12,7 @@ import { groundedSearch, groundingAvailable, SearchEvidence } from '../services/
 import { GroundedEvidence } from '../components/GroundedEvidence';
 export function ScannerScreen({ loading, status, state, error, recognized, onScan, onCover, onRetry }: { loading: boolean; status: string; state: ScanState; error: string; recognized: string; onScan: (value: string, author?: string) => void; onCover: (uri: string) => Promise<void>; onRetry: () => void }) {
   const [permission, requestPermission, getPermission] = useCameraPermissions();
+  const { height } = useWindowDimensions();
   const [draft, setDraft] = useState({ source: recognized, value: recognized });
   const query = draft.source === recognized ? draft.value : recognized;
   const setQuery = (value: string) => setDraft({ source: recognized, value });
@@ -83,9 +84,9 @@ export function ScannerScreen({ loading, status, state, error, recognized, onSca
   const cameraVisible = permission?.granted && focused && active && !loading && !error && !cameraError;
   return <SafeAreaView style={styles.page}><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
     <View style={styles.header}><Brand /><Pressable accessibilityRole="button" accessibilityLabel="Offline Books" onPress={() => router.push('/offline')} style={styles.offline}><Text style={styles.offlineText}>Offline books</Text></Pressable></View><Text style={styles.heading}>Scan a book</Text><Text style={styles.help}>Point at a book cover</Text>
-    <View style={styles.camera}>
+    <View style={[styles.camera, { height: Math.min(330, Math.max(220, height * 0.38)) }]}>
       {cameraVisible ? <><CameraView key={cameraKey} ref={camera} style={StyleSheet.absoluteFill} facing="back" autofocus="on" enableTorch={torch} onCameraReady={() => setReady(true)} barcodeScannerSettings={{ barcodeTypes: ['ean13', 'code128'] }} onBarcodeScanned={({ data }) => { if (!loading && !capturing && !captureGate.current && active && focused && !error && isValidIsbn(data)) { setTorch(false); setReady(false); onScan(data); } }} onMountError={() => { setCameraError(true); setReady(false); setTorch(false); }} /><View pointerEvents="none" style={styles.guide} /></> :
-        <View style={styles.cameraMessage}>{loading ? <><ActivityIndicator size="large" /><Text>{status}</Text></> : cameraError ? <><Text>Camera could not start. Use Search.</Text><Button title="Retry camera" onPress={() => setCameraError(false)} /></> : !permission ? <><ActivityIndicator /><Button title="Retry camera access" onPress={() => void refreshPermission()} /></> : !permission.granted ? <><Text style={styles.help}>Allow camera to scan books.</Text><Button title={permission.canAskAgain ? 'Allow camera' : 'Open settings'} onPress={() => void recoverPermission()} /></> : <Text>Camera paused</Text>}</View>}
+        <View style={styles.cameraMessage}>{loading ? <><ActivityIndicator size="large" /><Text>{status}</Text></> : cameraError ? <><Text>Camera could not start. Use Search.</Text><Button title="Retry camera" onPress={() => setCameraError(false)} /></> : !permission ? <><ActivityIndicator /><Button title="Retry camera access" onPress={() => void refreshPermission()} /></> : !permission.granted ? <><Text style={[styles.help, { color: palette.ink }]}>Allow camera to scan books.</Text><Button title={permission.canAskAgain ? 'Allow camera' : 'Open settings'} onPress={() => void recoverPermission()} /></> : <Text>Camera paused</Text>}</View>}
     {cameraVisible && <Pressable accessibilityRole="button" accessibilityLabel={torch ? 'Torch off' : 'Torch on'} accessibilityState={{ selected: torch }} disabled={capturing} onPress={() => setTorch(value => !value)} style={styles.torch}><Text style={styles.torchText}>ϟ</Text></Pressable>}
     </View>
     <Button title={scanState === 'capturing' ? 'Capturing…' : 'Scan Book'} disabled={!cameraVisible || !ready || capturing || loading} onPress={() => void capture()} />

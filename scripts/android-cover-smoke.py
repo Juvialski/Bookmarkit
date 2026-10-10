@@ -141,6 +141,11 @@ def pick(filename):
     attr = nodes[0].attrib
     x1,y1,x2,y2 = map(int, re.findall(r'\d+', attr['bounds']))
     shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
+    # Current Android Photo Picker confirms a selected single image with Done.
+    time.sleep(1)
+    selected = screen()
+    if any(n.attrib.get('text', '').lower() == 'done' for n in selected.iter('node')):
+        tap('Done')
 
 def book_result(title, name):
     end = time.monotonic() + 60
@@ -160,7 +165,11 @@ def book_result(title, name):
     screen('failure'); raise AssertionError('No book result for ' + title)
 
 apk = Path(args.apk)
-report = {'apk': str(apk.resolve()), 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest()}
+class Evidence(dict):
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        (out / 'cover-report.json').write_text(json.dumps(self, indent=2), encoding='utf-8')
+report = Evidence({'apk': str(apk.resolve()), 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest(), 'result': 'running'})
 with zipfile.ZipFile(apk) as archive:
     assert archive.getinfo('assets/index.android.bundle').file_size > 100000
     assert any(archive.read(n) == Path('assets/catalog-v3.db').read_bytes() for n in archive.namelist() if n.endswith('.db'))
@@ -193,13 +202,8 @@ try:
     report['offline_native_ocr'] = values
     tap('View on Goodreads')
     time.sleep(2)
-    # A fresh disposable emulator browser has a first-run screen, no account.
-    for step in range(4):
-        browser = screen('external-browser-' + str(step))
-        labels = texts(browser)
-        action = next((label for label in ('Use without an account', 'Accept & continue', 'No thanks', 'Not now') if label.lower() in [text.lower() for text in labels]), None)
-        if not action: break
-        tap(action); time.sleep(2)
+    # Verify the external intent directly; an offline fresh browser's onboarding
+    # is outside application acceptance and may have no UI automation root.
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-title-activities.txt').write_text(activity, encoding='utf-8')
     assert 'goodreads.com/search?q=Warbreaker' in activity and 'Sanderson' in activity, 'Title browser intent missing'
@@ -253,10 +257,19 @@ try:
     tap(description='Cancel')
     wait('Point at a book cover', name='picker-cancelled')
     report['picker_cancellation'] = 'passed'
+    tap('Allow camera')
+    wait('While using the app')
+    tap('While using the app')
+    wait('Scan Book', name='scanner-camera')
+    report['camera_permission'] = 'Native Android permission dialog accepted; camera screen loaded'
     errors = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
     (out / 'errors.log').write_text(errors, encoding='utf-8')
     assert 'FATAL EXCEPTION' not in errors
     report['result'] = 'passed'
+except Exception as error:
+    report['result'] = 'failed'
+    report['failure'] = str(error)
+    raise
 finally:
     network(True)
     (out / 'cover-report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
