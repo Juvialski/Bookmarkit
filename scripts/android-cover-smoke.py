@@ -184,7 +184,7 @@ try:
     if installed.returncode:
         raise AssertionError('Installation failed: ' + report['install'])
     report['installed_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
-    assert report['installed_version'] == '2'
+    assert report['installed_version'] == '3'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     # Cold CI emulators can finish radio initialization during APK installation.
@@ -197,7 +197,7 @@ try:
     result = book_result('Warbreaker', 'offline-real-warbreaker')
     values = texts(result)
     assert 'Warbreaker' in values and 'Brandon Sanderson' in values, values
-    assert any('★' in t for t in values), values
+    assert any('out of 5 stars' in n.attrib.get('content-desc', '') for n in result.iter('node')), values
     assert not any(t.startswith('ISBN ') for t in values), values
     connectivity = shell('dumpsys', 'connectivity')
     (out / 'offline-after-ocr-connectivity.txt').write_text(connectivity, encoding='utf-8')

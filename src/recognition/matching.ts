@@ -2,6 +2,7 @@ import { BookResult } from '../models/book';
 import { BookQuery, Identification } from './types';
 import { authorSimilarity, normalizeText, titleSimilarity } from './normalization';
 import { mergeClassification } from '../utils/classification';
+import { coverCandidates } from '../utils/covers';
 
 function matchBase(query: BookQuery, book: BookResult): { score: number; certain: boolean } {
   if (query.isbn) return { score: query.isbn === book.isbn ? 1 : 0, certain: query.isbn === book.isbn };
@@ -52,7 +53,7 @@ export function rankBooks(queries: BookQuery[], books: BookResult[]): Identifica
     else {
       const a = existing.book, b = row.book;
       existing.book = { ...a, isbn: a.isbn || b.isbn, workId: a.workId || b.workId, hardcoverId: a.hardcoverId || b.hardcoverId,
-        hardcoverUrl: a.hardcoverUrl || b.hardcoverUrl, coverUrl: a.coverUrl || b.coverUrl,
+        hardcoverUrl: a.hardcoverUrl || b.hardcoverUrl, coverUrl: coverCandidates(a, b)[0], coverUrls: coverCandidates(a, b),
         ...mergeClassification([a, b]), ratings: [...a.ratings, ...b.ratings.filter(r => !a.ratings.some(x => x.provider === r.provider && x.stored === r.stored))] };
     }
   }

@@ -10,9 +10,8 @@ import { identifyBook, manualQuery } from './identifyBook';
 import { createProgressiveLookup } from './progressiveLookup';
 import { useOfflineCatalog } from './OfflineCatalogContext';
 import { readCover } from './coverOcr';
-import { createWorkEnricher } from './providers/workDetails';
-import { createCachedSearch, providerSearch } from './providers/search';
-import { rankBooks } from '../recognition/matching';
+import { createCachedSearch } from './providers/search';
+import { createBookEnricher } from './enrichBook';
 
 interface Session {
   book: BookResult | null; candidates: BookResult[]; loading: boolean; state: ScanState; status: string; error: string; recognized: string;
@@ -22,15 +21,8 @@ const Context = createContext<Session | null>(null);
 export function RecognitionProvider({ children }: { children: ReactNode }) {
   const { catalog } = useOfflineCatalog();
   const dependencies = useMemo(() => {
-    const progressive = createProgressiveLookup(async isbn => (await catalog.search({ isbn }))[0] || null), work = createWorkEnricher();
-    return { enrich: async (book: BookResult, signal?: AbortSignal) => {
-      if (book.isbn) return progressive.enrich(book);
-      const query = { title: book.title, author: book.authors[0] };
-      const online = await providerSearch(query, signal).catch(() => []);
-      const same = online.filter(b => b.workId && b.workId === book.workId);
-      const merged = rankBooks([query], [...same, book]);
-      return work(merged?.kind === 'book' ? merged.book : book, signal);
-    }, catalog, search: createCachedSearch(), isbn: progressive.lookup,
+    const progressive = createProgressiveLookup(async isbn => (await catalog.search({ isbn }))[0] || null);
+    return { enrich: createBookEnricher(progressive.enrich), catalog, search: createCachedSearch(), isbn: progressive.lookup,
       online: async () => { try { const state = await getNetworkStateAsync(); return state.isConnected !== false && state.isInternetReachable !== false; } catch { return true; } }
     };
   }, [catalog]);

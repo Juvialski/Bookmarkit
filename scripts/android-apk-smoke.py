@@ -130,7 +130,7 @@ try:
     report['offline_series'] = texts(lookup('9780765326355', 'The Way of Kings', 'offline-series'))
     assert any('#1' in t for t in report['offline_series'])
     assert any('Stormlight' in t for t in report['offline_series'])
-    assert any('★' in t for t in report['offline_series'])
+    assert any('out of 5 stars' in n.attrib.get('content-desc', '') for n in screen().iter('node'))
     tap('Scan Another')
     report['offline_standalone'] = texts(lookup('9780765320308', 'Warbreaker', 'offline-standalone'))
     assert 'Standalone' in report['offline_standalone']

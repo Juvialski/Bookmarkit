@@ -18,6 +18,7 @@ on:
       - 'scripts/build-android-test.mjs'
       - 'scripts/android-apk-smoke.py'
       - 'scripts/android-cover-smoke.py'
+      - 'scripts/android-result-smoke.py'
       - 'scripts/create-ocr-images.py'
       - 'scripts/android-v2-*.py'
       - 'tests/**'
@@ -137,11 +138,16 @@ jobs:
           arch: x86_64
           profile: pixel_4
           emulator-options: -cores 2 -memory 4096 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
+          script: |
+            python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
+            python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
+            python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bookmarkit-native-cover-evidence
-          path: dist/android-phase8
+          path: |
+            dist/android-phase8
+            dist/android-result
           if-no-files-found: warn
           retention-days: 30
