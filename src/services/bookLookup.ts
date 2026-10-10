@@ -34,7 +34,7 @@ export async function lookupBook(value: string, providers = [hardcover, openLibr
   const onlineRatings = books.map(b => b.rating);
   const selected = primaryRating(onlineRatings);
   const usedStoredRating = !selected && !!stored && !!primaryRating(stored.ratings);
-  return { isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
+  return { identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,
     incomplete: usedStoredRating || responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
     authors: books.find(b => b.authors.length)?.authors || [], coverUrl: books.map(b => httpsCover(b.coverUrl)).find(Boolean),
@@ -46,18 +46,25 @@ export async function lookupBook(value: string, providers = [hardcover, openLibr
 
 export function createCachedLookup(lookup: (isbn: string) => Promise<BookResult>, now = Date.now, maxSize = 20, ttlMs = 5 * 60 * 1000) {
   const cache = new Map<string, { book: BookResult; expires: number }>();
+  const pending = new Map<string, Promise<BookResult>>();
   return async (value: string): Promise<BookResult> => {
     const isbn = normalizeIsbn(value);
     if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
     const hit = cache.get(isbn);
     if (hit && hit.expires > now()) return hit.book;
     cache.delete(isbn);
-    const book = await lookup(isbn);
-    // Retain partial successes briefly to avoid hammering a busy provider.
-    for (const [key, value] of cache) if (value.expires <= now()) cache.delete(key);
-    if (cache.size >= maxSize) cache.delete(cache.keys().next().value!);
-    cache.set(isbn, { book, expires: now() + (book.source === 'offline-catalog' || book.incomplete || book.warnings.length ? Math.min(ttlMs, 30000) : ttlMs) });
-    return book;
+    const existing = pending.get(isbn);
+    if (existing) return existing;
+    const operation = (async () => {
+      const book = await lookup(isbn);
+      // Retain partial successes briefly to avoid hammering a busy provider.
+      for (const [key, value] of cache) if (value.expires <= now()) cache.delete(key);
+      if (cache.size >= maxSize) cache.delete(cache.keys().next().value!);
+      cache.set(isbn, { book, expires: now() + (book.source === 'offline-catalog' || book.incomplete || book.warnings.length ? Math.min(ttlMs, 30000) : ttlMs) });
+      return book;
+      })();
+    pending.set(isbn, operation);
+    try { return await operation; } finally { pending.delete(isbn); }
   };
 }
 export const lookupBookForSession = createCachedLookup(lookupBook);

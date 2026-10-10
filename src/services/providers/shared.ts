@@ -14,8 +14,11 @@ export function rating(average: unknown, count: unknown) {
   return { average: typeof average === 'number' && Number.isFinite(average) && average > 0 && average <= 5 && count !== 0 ? average : undefined,
     count: typeof count === 'number' && Number.isSafeInteger(count) && count > 0 ? count : undefined };
 }
-export async function json(url: string, fetcher: Fetcher, allowMissing = false, timeoutMs = 10000): Promise<unknown> {
+export async function json(url: string, fetcher: Fetcher, allowMissing = false, timeoutMs = 10000, signal?: AbortSignal): Promise<unknown> {
   const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  if (signal?.aborted) controller.abort();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try { const response = await fetcher(url, { signal: controller.signal });
     if (allowMissing && response.status === 404) return null;
@@ -25,5 +28,5 @@ export async function json(url: string, fetcher: Fetcher, allowMissing = false, 
     if (controller.signal.aborted) throw new ProviderError('timeout');
     if (error instanceof ProviderError) throw error;
     throw new ProviderError('network');
-  } finally { clearTimeout(timer); }
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); }
 }

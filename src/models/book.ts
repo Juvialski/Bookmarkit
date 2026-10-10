@@ -4,7 +4,8 @@ export interface BookResult {
   source?: 'offline-catalog';
   incomplete?: boolean;
   hardcoverId?: string; hardcoverUrl?: string;
-  isbn: string; title: string; authors: string[]; coverUrl?: string;
+  identity?: 'isbn' | 'work';
+  isbn?: string; title: string; authors: string[]; coverUrl?: string;
   seriesStatus: 'series' | 'standalone' | 'unknown';
   classificationSource?: 'hardcover' | 'open-library' | 'curated' | 'unknown';
   classificationConfidence?: 'structured' | 'explicit' | 'curated';
