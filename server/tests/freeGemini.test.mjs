@@ -1,14 +1,61 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFreeGemini, parseFreeProjects } from '../src/freeGemini.mjs';
+import { createFreeGemini, parseFreeProjects, readFreeProjects } from '../src/freeGemini.mjs';
 import { createGoogleFreeChecks } from '../src/googleFreeChecks.mjs';
 const project = (id='authorized-one',number='123',key='fixture-key-one') => ({ id,number,keys:[key,'fixture-backup-'+id],authorized:true,billingEnabled:false,models:[{id:'gemini-2.5-flash-lite',grounding:true,freeEligible:true,verifiedAt:new Date().toISOString(),dailyLimit:5,freeRpd:500,externalUsage:0}] });
 const checks={billingCheck:async()=>true,keyProjectCheck:async()=>true,modelCheck:async()=>true};
 const answer=()=>Response.json({usageMetadata:{totalTokenCount:30},candidates:[{content:{parts:[{text:'Warbreaker by Brandon Sanderson.'}]},groundingMetadata:{searchEntryPoint:{renderedContent:'<div>Google</div>'},groundingChunks:[{web:{uri:'https://example.org/book',title:'Book'}}],groundingSupports:[{segment:{text:'Warbreaker'},groundingChunkIndices:[0]}]}}]});
 test('paid, unverified, duplicate project and unsafe model configurations are rejected',()=>{
  const valid=project(); assert.equal(parseFreeProjects(JSON.stringify([valid])).length,1);
- for(const change of [{billingEnabled:true},{authorized:false},{number:'bad'},{models:[{...valid.models[0],id:'gemini-3.5-flash-lite'}]},{models:[{...valid.models[0],verifiedAt:'2020-01-01'}]},{models:[{...valid.models[0],freeEligible:false}]}]) assert.throws(()=>parseFreeProjects(JSON.stringify([{...valid,...change}])));
+ for(const change of [{billingEnabled:true},{authorized:false},{number:'bad'},{models:[{...valid.models[0],id:'gemini-3.5-flash-lite'}]},{models:[{...valid.models[0],freeEligible:false}]}]) assert.throws(()=>parseFreeProjects(JSON.stringify([{...valid,...change}])));
  assert.throws(()=>parseFreeProjects(JSON.stringify([valid,project('another-id','123','fixture-different')])));
+});
+test('simple single-project secrets need no roster JSON or recurring timestamp',async()=>{
+ const env={GEMINI_ENABLED:'true',GEMINI_API_KEY:'fixture-key-simple',GEMINI_PROJECT_ID:'authorized-one',GEMINI_PROJECT_NUMBER:'123',GEMINI_GROUNDING_MODEL:'gemini-2.5-flash-lite'};
+ const projects=readFreeProjects(name=>env[name]);
+ assert.equal(projects[0].models[0].id,'gemini-3.5-flash-lite');
+ assert.equal(projects[0].models[0].dailyLimit,5);
+ assert.equal(projects[0].models[0].verifiedAt,undefined);
+ assert.equal((await createFreeGemini({projects,...checks,now:()=>Date.now()+365*86400000,reserve:async()=>true,fetcher:async()=>answer()})('Warbreaker')).status,'ok');
+ assert.deepEqual(readFreeProjects(()=>undefined),[]);
+ assert.throws(()=>readFreeProjects(name=>({...env,GEMINI_TEXT_MODEL:'gemini-paid-pro'})[name]));
+});
+test('billing changing during reservation prevents generation',async()=>{
+ let billing=false;
+ const search=createFreeGemini({projects:[project()],...checks,billingCheck:async()=>!billing,reserve:async()=>{billing=true;return true;},fetcher:async()=>assert.fail('Paid request forbidden')});
+ assert.equal((await search('Warbreaker')).status,'disabled');
+});
+test('exhausted local daily quota, failed verifier and failed storage make no generation requests',async()=>{
+ for(const override of [{reserve:async()=>false},{reserve:async()=>{throw Error('private storage error');}},{billingCheck:async()=>{throw Error('private verification error');}}]) {
+  const result=await createFreeGemini({projects:[project()],...checks,reserve:async()=>true,...override,fetcher:async()=>assert.fail('Generation forbidden')})('Warbreaker');
+  assert.ok(['disabled','timeout'].includes(result.status));
+ }
+});
+test('invalid keys and unsupported grounding stop subsequent requests even when cooldown persistence fails',async()=>{
+ for(const status of [400,401,403,404,429]) {
+  let calls=0;
+  const search=createFreeGemini({projects:[project()],...checks,reserve:async()=>true,cooldown:async()=>{throw Error('storage');},fetcher:async()=>{calls++;return new Response('private provider error',{status});}});
+  assert.ok(['quota','unavailable'].includes((await search('Warbreaker')).status));
+  assert.equal((await search('Another book')).status,'unavailable');assert.equal(calls,1);
+ }
+});
+test('purged keys and unexpected billing account association fail closed',async()=>{
+ const check=createGoogleFreeChecks({accessToken:'fixture-oauth',fetcher:async url=>Response.json(url.includes('cloudresourcemanager')?{projectId:'authorized-one',name:'projects/123'}:url.includes('billingInfo')?{projectId:'authorized-one',billingEnabled:false,billingAccountName:'billingAccounts/linked'}:{parent:'projects/123/locations/global',name:''})});
+ assert.equal(await check.billingCheck('authorized-one','123'),false);
+ assert.equal(await check.keyProjectCheck('fixture-key-one','123'),false);
+});
+test('Edge Function deploys the same checked implementation as the server tests',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ for(const name of ['freeGemini.mjs','googleFreeChecks.mjs','quotaRpc.mjs']) assert.equal(await readFile(new URL('../src/'+name,import.meta.url),'utf8'),await readFile(new URL('../../supabase/functions/book-search/'+name,import.meta.url),'utf8'));
+});
+test('empty successful usage/cooldown RPC bodies preserve the completed response',async()=>{
+ const {readQuotaResponse}=await import('../src/quotaRpc.mjs');
+ assert.equal(await readQuotaResponse(new Response(null,{status:204})),null);
+ assert.equal(await readQuotaResponse(new Response('')) ,null);
+ assert.equal(await readQuotaResponse(Response.json(true)),true);
+ await assert.rejects(readQuotaResponse(new Response('private error',{status:500})),/Usage store unavailable/);
+ const search=createFreeGemini({projects:[project()],...checks,reserve:async()=>readQuotaResponse(Response.json(true)),recordUsage:async()=>readQuotaResponse(new Response(null,{status:204})),fetcher:async()=>answer()});
+ assert.equal((await search('Warbreaker')).status,'ok');
 });
 test('multiple keys share one project reservation; requests deduplicate without retaining answers',async()=>{
  let calls=0,reserved=[];

@@ -1,7 +1,17 @@
 // All credentials stay in the backend. Project IDs are the authority for quota.
 const GROUNDING_MODELS = new Set(['gemini-2.5-flash-lite']);
 const TEXT_MODELS = new Set(['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite']);
-export function parseFreeProjects(serialized, now = Date.now()) {
+export function readFreeProjects(get) {
+  if (get('GEMINI_ENABLED') !== 'true') return [];
+  if (get('GEMINI_FREE_PROJECTS_JSON')) return parseFreeProjects(get('GEMINI_FREE_PROJECTS_JSON'));
+  return parseFreeProjects(JSON.stringify([{
+    id: get('GEMINI_PROJECT_ID'), number: get('GEMINI_PROJECT_NUMBER'),
+    keys: [get('GEMINI_API_KEY')], authorized: true, billingEnabled: false,
+    models: [get('GEMINI_TEXT_MODEL') || 'gemini-3.5-flash-lite', get('GEMINI_GROUNDING_MODEL')].filter(Boolean)
+      .map(id => ({ id, grounding: GROUNDING_MODELS.has(id), freeEligible: true, dailyLimit: 5, freeRpd: 5, externalUsage: 0 }))
+  }]));
+}
+export function parseFreeProjects(serialized) {
   const input = JSON.parse(serialized || '[]');
   if (!Array.isArray(input) || input.length > 8) throw new Error('Invalid free project configuration');
   const ids = new Set(), numbers = new Set(), keys = new Set();
@@ -13,30 +23,38 @@ export function parseFreeProjects(serialized, now = Date.now()) {
     const models = project.models;
     if (!Array.isArray(models) || !models.length) throw new Error('Free model eligibility required');
     for (const m of models) {
-      const verified = Date.parse(m.verifiedAt);
-      if (!(GROUNDING_MODELS.has(m.id) || TEXT_MODELS.has(m.id)) || m.freeEligible !== true || m.grounding !== GROUNDING_MODELS.has(m.id) || !Number.isFinite(verified) || verified > now || now - verified > 24 * 60 * 60 * 1000 || !Number.isSafeInteger(m.dailyLimit) || m.dailyLimit < 1 || m.dailyLimit > 20 || !Number.isSafeInteger(m.externalUsage) || m.externalUsage < 0 || !Number.isSafeInteger(m.freeRpd) || m.freeRpd <= m.externalUsage || (GROUNDING_MODELS.has(m.id) && m.freeRpd > 500)) throw new Error('Verified free capacity required');
+      // These are conservative local limits, not a daily operator attestation.
+      // Live billing, key ownership and model access remain mandatory below.
+      if (!(GROUNDING_MODELS.has(m.id) || TEXT_MODELS.has(m.id)) || m.freeEligible !== true || m.grounding !== GROUNDING_MODELS.has(m.id) || !Number.isSafeInteger(m.dailyLimit) || m.dailyLimit < 1 || m.dailyLimit > 20 || !Number.isSafeInteger(m.externalUsage) || m.externalUsage < 0 || !Number.isSafeInteger(m.freeRpd) || m.freeRpd <= m.externalUsage || (GROUNDING_MODELS.has(m.id) && m.freeRpd > 500)) throw new Error('Verified free capacity required');
     }
     return project;
   });
 }
 export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck, modelCheck, reserve, cooldown, recordUsage, fetcher = fetch, now = Date.now, timeoutMs = 6000 } = {}) {
   const pending = new Map();
+  let blockedUntil = 0;
   async function run(query, task) {
     if (typeof query !== 'string' || query.length < 2 || query.length > 240) return { status: 'invalid' };
+    if (now() < blockedUntil) return { status: 'unavailable' };
     // Only one legitimately eligible project is selected. No retry on another
     // project after quota/restriction enforcement; keys are never rotated.
     for (const project of projects) {
       const model = project.models.find(m => task === 'grounding' ? GROUNDING_MODELS.has(m.id) && m.grounding : TEXT_MODELS.has(m.id) && !m.grounding);
-      if (!model || now() - Date.parse(model.verifiedAt) > 86400000) continue;
-      if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id, project.number)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
-      const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
-      if (!reserve || !(await reserve(project.id, model.id, task, limit))) continue;
+      if (!model) continue;
       try {
+        if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id, project.number)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
+        const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
+        if (!reserve || !(await reserve(project.id, model.id, task, limit))) continue;
+        // Recheck after reservation, immediately before generation. An owner can
+        // change billing externally; no once-only confirmation is authoritative.
+        if (!(await billingCheck(project.id, project.number))) return { status: 'disabled' };
         const request = { contents: [{ parts: [{ text: task === 'grounding' ? `Find the book from this literal title, author or ISBN: ${JSON.stringify(query)}. Give its title, author and Goodreads link only when supported by search evidence. Do not guess ratings or series. Cite sources; under 100 words.` : `Normalize only this recognized book title, author or ISBN: ${JSON.stringify(query)}. Do not invent metadata, ratings or series. Return concise text.` }] }], generationConfig: { maxOutputTokens: 512, temperature: 0 } };
         if (task === 'grounding') request.tools = [{ google_search: {} }];
         const response = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': project.keys[0] }, body: JSON.stringify(request), signal: AbortSignal.timeout(timeoutMs) });
-        if ([429,400,403,404].includes(response.status)) {
-          await cooldown?.(project.id, model.id, task, response.status === 429 ? 3600 : 86400);
+        if ([429,400,401,403,404].includes(response.status)) {
+          const seconds = response.status === 429 ? 3600 : 86400;
+          blockedUntil = now() + seconds * 1000;
+          try { await cooldown?.(project.id, model.id, task, seconds); } catch { /* retain the in-instance circuit */ }
           return { status: response.status === 429 ? 'quota' : 'unavailable' };
         }
         if (!response.ok) return { status: 'unavailable' };
