@@ -14,7 +14,7 @@ export function parseFreeProjects(serialized, now = Date.now()) {
     if (!Array.isArray(models) || !models.length) throw new Error('Free model eligibility required');
     for (const m of models) {
       const verified = Date.parse(m.verifiedAt);
-      if (!(GROUNDING_MODELS.has(m.id) || TEXT_MODELS.has(m.id)) || m.freeEligible !== true || m.grounding !== GROUNDING_MODELS.has(m.id) || !Number.isFinite(verified) || verified > now || now - verified > 24 * 60 * 60 * 1000 || !Number.isSafeInteger(m.dailyLimit) || m.dailyLimit < 1 || m.dailyLimit > 20 || !Number.isSafeInteger(m.externalUsage) || m.externalUsage < 0 || !Number.isSafeInteger(m.freeRpd) || m.freeRpd <= m.externalUsage || m.freeRpd > 500) throw new Error('Verified free capacity required');
+      if (!(GROUNDING_MODELS.has(m.id) || TEXT_MODELS.has(m.id)) || m.freeEligible !== true || m.grounding !== GROUNDING_MODELS.has(m.id) || !Number.isFinite(verified) || verified > now || now - verified > 24 * 60 * 60 * 1000 || !Number.isSafeInteger(m.dailyLimit) || m.dailyLimit < 1 || m.dailyLimit > 20 || !Number.isSafeInteger(m.externalUsage) || m.externalUsage < 0 || !Number.isSafeInteger(m.freeRpd) || m.freeRpd <= m.externalUsage || (GROUNDING_MODELS.has(m.id) && m.freeRpd > 500)) throw new Error('Verified free capacity required');
     }
     return project;
   });
@@ -28,7 +28,7 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
     for (const project of projects) {
       const model = project.models.find(m => task === 'grounding' ? GROUNDING_MODELS.has(m.id) && m.grounding : TEXT_MODELS.has(m.id) && !m.grounding);
       if (!model || now() - Date.parse(model.verifiedAt) > 86400000) continue;
-      if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
+      if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id, project.number)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
       const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
       if (!reserve || !(await reserve(project.id, model.id, task, limit))) continue;
       try {

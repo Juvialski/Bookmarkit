@@ -187,6 +187,9 @@ try:
     assert report['installed_version'] == '2'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
+    # Cold CI emulators can finish radio initialization during APK installation.
+    # Reassert isolation after install/clear, immediately before first launch.
+    network(False)
     launch()
     screen('first-launch-offline')
     # Camera remains ungranted: gallery and OCR must still work.
@@ -197,8 +200,8 @@ try:
     assert any('★' in t for t in values), values
     assert not any(t.startswith('ISBN ') for t in values), values
     connectivity = shell('dumpsys', 'connectivity')
-    assert 'Active default network: none' in connectivity, 'Network reconnected during OCR'
     (out / 'offline-after-ocr-connectivity.txt').write_text(connectivity, encoding='utf-8')
+    assert 'Active default network: none' in connectivity, 'Network reconnected during OCR'
     report['offline_native_ocr'] = values
     tap('View on Goodreads')
     time.sleep(2)
@@ -250,11 +253,8 @@ try:
     report['online_native_ocr'] = texts(result)
     tap('Scan Another')
     tap('Choose Photo')
-    for _ in range(10):
-        picker = screen()
-        if any(n.attrib.get('content-desc') == 'Cancel' for n in picker.iter('node')): break
-        time.sleep(1)
-    tap(description='Cancel')
+    wait('Photos')
+    shell('input', 'keyevent', '4')
     wait('Point at a book cover', name='picker-cancelled')
     report['picker_cancellation'] = 'passed'
     tap('Allow camera')

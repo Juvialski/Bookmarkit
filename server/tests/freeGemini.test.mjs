@@ -34,13 +34,14 @@ test('unverified billing, project binding, model access and missing credentials 
  assert.equal((await createFreeGemini()('Warbreaker')).status,'disabled');
 });
 test('3.x verified free text never adds a Search tool; grounding cannot select it',async()=>{
- const p=project();p.models=[{...p.models[0],id:'gemini-3.5-flash-lite',grounding:false}];let body;
+ const p=project();p.models=[{...p.models[0],id:'gemini-3.5-flash-lite',grounding:false,freeRpd:1000}];let body;
+ assert.equal(parseFreeProjects(JSON.stringify([p]))[0].models[0].freeRpd,1000);
  const search=createFreeGemini({projects:[p],...checks,reserve:async()=>true,fetcher:async(_url,init)=>{body=JSON.parse(init.body);return Response.json({candidates:[{content:{parts:[{text:'Warbreaker'}]}}]});}});
  assert.equal((await search('Warbreaker','grounding')).status,'disabled');assert.equal((await search('Warbreaker','text')).status,'ok');assert.equal(body.tools,undefined);
 });
 test('billing verification must return the exact unbilled project and key owner',async()=>{
- const checks=createGoogleFreeChecks({accessToken:'fixture-oauth',fetcher:async url=>Response.json(url.includes('billingInfo')?{projectId:'authorized-one',billingEnabled:false}:url.includes('lookupKey')?{parent:'projects/123/locations/global',name:'projects/123/locations/global/keys/one'}:{supportedGenerationMethods:['generateContent']})});
- assert.equal(await checks.billingCheck('authorized-one'),true);assert.equal(await checks.billingCheck('wrong-project'),false);assert.equal(await checks.keyProjectCheck('fixture-key-one','123'),true);assert.equal(await checks.keyProjectCheck('fixture-key-one','456'),false);
+ const checks=createGoogleFreeChecks({accessToken:'fixture-oauth',fetcher:async url=>Response.json(url.includes('cloudresourcemanager')?{projectId:'authorized-one',name:'projects/123'}:url.includes('billingInfo')?{projectId:'authorized-one',billingEnabled:false}:url.includes('lookupKey')?{parent:'projects/123/locations/global',name:'projects/123/locations/global/keys/one'}:{supportedGenerationMethods:['generateContent']})});
+ assert.equal(await checks.billingCheck('authorized-one','123'),true);assert.equal(await checks.billingCheck('wrong-project','123'),false);assert.equal(await checks.billingCheck('authorized-one','456'),false);assert.equal(await checks.keyProjectCheck('fixture-key-one','123'),true);assert.equal(await checks.keyProjectCheck('fixture-key-one','456'),false);
  assert.equal(await createGoogleFreeChecks().billingCheck('authorized-one'),false);
 });
 test('timeouts, unavailable models and ungrounded answers never fabricate evidence',async()=>{

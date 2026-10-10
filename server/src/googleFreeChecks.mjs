@@ -18,7 +18,13 @@ export function createGoogleFreeChecks({ serviceAccount, accessToken, fetcher = 
   }
   async function authorized(url) { const value=await token(); if(!value)return null; const response=await fetcher(url,{headers:{Authorization:`Bearer ${value}`},signal:AbortSignal.timeout(3000)});return response.ok?response.json():null; }
   return {
-    billingCheck: async id => { try { const result=await authorized(`https://cloudbilling.googleapis.com/v1/projects/${id}/billingInfo`);return result?.projectId===id && result?.billingEnabled===false && !result?.billingAccountName; } catch{return false;} },
+    billingCheck: async (id,number) => { try {
+      // Bind the billing lookup ID to the same numeric project as the API key.
+      const project=await authorized(`https://cloudresourcemanager.googleapis.com/v3/projects/${id}`);
+      if(project?.projectId!==id || project?.name!==`projects/${number}`)return false;
+      const result=await authorized(`https://cloudbilling.googleapis.com/v1/projects/${id}/billingInfo`);
+      return result?.projectId===id && result?.billingEnabled===false && !result?.billingAccountName;
+    } catch{return false;} },
     keyProjectCheck: async (key,number) => { try { const result=await authorized(`https://apikeys.googleapis.com/v2/keys:lookupKey?keyString=${encodeURIComponent(key)}`);return result?.parent===`projects/${number}/locations/global`; }catch{return false;} },
     modelCheck: async (key,model) => { try { const response=await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model}`,{headers:{'x-goog-api-key':key},signal:AbortSignal.timeout(2000)});if(!response.ok)return false;return (await response.json()).supportedGenerationMethods?.includes('generateContent')===true; }catch{return false;} }
   };

@@ -50,7 +50,7 @@ Each independently authorized project has one entry. Duplicate IDs/numbers, reus
 2. Record external usage, including other apps and the shared 2.5 Flash/Flash-Lite grounding allowance. Refresh project/model attestations within 24 hours; expired entries stop working.
 3. Give the verifier only `resourcemanager.projects.get` and `apikeys.keys.lookup` on the authorized projects. A narrow custom role can grant these. Do not grant billing modification permissions. If verification APIs cannot be used without enabling billing, keep Gemini disabled.
 4. Set the secrets through Supabase Dashboard or a private env file passed to the Supabase CLI. Keep credentials outside the repository or in ignored local files. Do not print or commit them.
-5. Set `GEMINI_ENABLED=true` only after the roster and verifier are configured. Runtime GET checks verify disabled billing, actual key ownership and supported model generation before each request. Missing permissions, unavailable models, expired tokens and outages fail closed.
+5. Set `GEMINI_ENABLED=true` only after the roster and verifier are configured. Runtime GET checks bind the project ID to its numeric project, then verify disabled billing, actual key ownership and supported model generation before each request. Missing permissions, unavailable models, expired tokens and outages fail closed.
 
 API keys alone cannot establish billing status or free eligibility. This is why the read-only verifier and fresh project/model attestations are required. The application never modifies Google billing. Project owners must preserve the unbilled state; external billing changes are checked before subsequent generation.
 
