@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookResult } from '../models/book';
-import { goodreadsSearchUrl } from '../utils/goodreads';
+import { goodreadsReviewsUrl } from '../utils/goodreads';
 import { primaryRating } from '../utils/ratings';
 import { Action, Brand, palette, serif } from '../components/Editorial';
 import { groundedSearch, groundingAvailable, SearchEvidence } from '../services/groundedSearch';
 import { GroundedEvidence } from '../components/GroundedEvidence';
 import { BookCover } from '../components/BookCover';
 import { StarRating } from '../components/StarRating';
-import { ratingLabel, ratingSource } from '../utils/starRating';
+import { ratingLabel, ratingScore, ratingSource } from '../utils/starRating';
 import { coverIdentity } from '../utils/covers';
 export function BookResultScreen({ book, onScanAnother }: { book: BookResult; onScanAnother: () => void }) {
   const [linkError, setLinkError] = useState(false);
@@ -25,11 +25,11 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
     <Text style={styles.title}>{book.title || 'Title unavailable'}</Text>
     <Text style={styles.author}>{book.authors.join(', ') || 'Author unavailable'}</Text>
     <View style={styles.rating} accessible accessibilityLabel={rating ? ratingLabel(rating) : 'Not rated'}>
-      <Text style={styles.score}>{rating ? rating.average!.toFixed(1) : 'Not rated'}{rating && <Text style={styles.scale}> / 5</Text>}</Text>
+      <Text style={styles.score}>{rating ? ratingScore(rating) : 'Not rated'}{rating && <Text style={styles.scale}> / 5</Text>}</Text>
       {rating && <><StarRating average={rating.average!} /><Text style={styles.source}>{ratingSource(rating)}</Text></>}
     </View>
     <Text style={styles.series}>{series}</Text><View style={styles.rule} />
-    <Action title="View on Goodreads" onPress={() => { setLinkError(false); void Linking.openURL(goodreadsSearchUrl(book)).catch(() => setLinkError(true)); }} />
+    <Action title="Read Goodreads Reviews" onPress={() => { setLinkError(false); void Linking.openURL(goodreadsReviewsUrl(book)).catch(() => setLinkError(true)); }} />
     {linkError && <Text accessibilityRole="alert" style={styles.source}>Could not open link. Try again.</Text>}
     <Action quiet title="Scan another" onPress={onScanAnother} />
     {!rating && groundingEnabled && <Action quiet title={searching ? 'Searching…' : 'Search with Google'} disabled={searching} onPress={() => { setSearching(true); void groundedSearch([book.title, ...book.authors].join(' ')).then(result => { setEvidence(result); if (!result) setLinkError(true); }).finally(() => setSearching(false)); }} />}

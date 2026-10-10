@@ -1,0 +1,13 @@
+{
+  "planned": 100,
+  "attempted": 3,
+  "statuses": {
+    "blocked": 3,
+    "pending": 97
+  },
+  "verified": 0,
+  "verified_rate": 0.0,
+  "mean_seconds": 25.375000000009702,
+  "precision": "not independently adjudicated",
+  "circuit_open": true
+}

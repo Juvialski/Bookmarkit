@@ -1,0 +1,26 @@
+[
+  {
+    "book_id": "2767052",
+    "goodreads_work_id": "2792775",
+    "work_id": "/works/OL5735363W",
+    "isbn13": "9780439023481",
+    "average": 4.36,
+    "rating_count": 10311943,
+    "rating_scope": "work",
+    "url": "https://www.goodreads.com/book/show/2767052-the-hunger-games",
+    "retrieved_at": "2026-10-10T22:48:58.4326854Z",
+    "status": "verified",
+    "match_confidence": "exact_isbn",
+    "evidence": {
+      "method": "goodread-v0.3.1",
+      "title": "The Hunger Games",
+      "authors": [
+        "Suzanne Collins"
+      ],
+      "matched_isbn": "9780439023481",
+      "stats_via": "s1"
+    },
+    "series_name": "The Hunger Games",
+    "series_position": "1"
+  }
+]

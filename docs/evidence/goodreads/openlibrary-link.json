@@ -1,0 +1,25 @@
+{
+  "edition": {
+    "key": "/books/OL37079411M",
+    "title": "The Hunger Games",
+    "works": [
+      {
+        "key": "/works/OL5735363W"
+      }
+    ],
+    "authors": null,
+    "isbn_13": [
+      "9780439023481"
+    ]
+  },
+  "work": {
+    "title": "The Hunger Games",
+    "authors": [
+      "Suzanne Collins"
+    ],
+    "refs": [
+      "/authors/OL1394359A"
+    ]
+  },
+  "match": "exact ISBN, title and author verified against current Open Library endpoints"
+}

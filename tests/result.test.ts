@@ -20,7 +20,8 @@ test('five proportional star fills, with no rounding to half stars', () => {
   for (const invalid of [undefined, null, NaN, Infinity, -1, 6, '4.8']) assert.deepEqual(starFills(invalid), [0,0,0,0,0]);
 });
 test('counts and source belong to the selected rating, including stored evidence', () => {
-  const chosen = primaryRating([...book.ratings, { provider: 'Google Books', average: 5, count: 52918 }])!;
+  assert.equal(primaryRating([...book.ratings, { provider: 'Google Books', average: 5, count: 52918 }])!.provider, 'Google Books');
+  const chosen = primaryRating(book.ratings)!;
   assert.equal(ratingSource(chosen), '1,284 ratings · Open Library');
   assert.equal(ratingLabel(chosen), '4.4 out of 5 stars, 1,284 ratings, Open Library.');
   for (const [count, expected] of [[1,'1 rating'], [27,'27 ratings'], [52918,'52,918 ratings']] as const) assert.equal(ratingSource({ ...chosen, count }), `${expected} · Open Library`);
