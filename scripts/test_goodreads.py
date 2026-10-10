@@ -56,6 +56,7 @@ class GoodreadsTests(unittest.TestCase):
         class Process:
             returncode = 4
             def communicate(self, timeout=None): return b'', b'blocked: AWS WAF'
+            def poll(self): return self.returncode
         with tempfile.TemporaryDirectory() as tmp, database(Path(tmp)/'queue.sqlite') as db:
             enqueue(db, [{**TARGET, 'isbn13': str(i)} for i in range(5)])
             with patch('goodreads_worker.subprocess.Popen', return_value=Process()) as run, patch('goodreads_worker.time.sleep'), patch('goodreads_worker.time.monotonic', side_effect=range(0,10000,20)):
@@ -78,6 +79,23 @@ class GoodreadsTests(unittest.TestCase):
                 with patch('urllib.request.urlopen', return_value=io.BytesIO(b'{"acknowledged":1}')):
                     sync(db, 'unused')
                 self.assertTrue(db.execute('SELECT uploaded_at FROM queue').fetchone()[0])
+
+    def test_interruption_kills_child_and_next_start_recovers_queue(self):
+        class Process:
+            killed = False
+            def communicate(self, timeout=None):
+                if not self.killed: raise KeyboardInterrupt()
+                return b'', b''
+            def poll(self): return 1 if self.killed else None
+            def kill(self): self.killed = True
+        child=Process()
+        with tempfile.TemporaryDirectory() as tmp, database(Path(tmp)/'queue.sqlite') as db:
+            enqueue(db, [TARGET])
+            with patch('goodreads_worker.subprocess.Popen', return_value=child):
+                with self.assertRaises(KeyboardInterrupt): collect(db, 'unused', tmp, pilot=True)
+            self.assertTrue(child.killed)
+            Path(tmp, 'PAUSE').touch(); collect(db, 'unused', tmp, pilot=True)
+            self.assertEqual(db.execute('SELECT status FROM queue').fetchone()[0], 'pending')
 
     def test_optional_offline_column_and_allowlist(self):
         with tempfile.TemporaryDirectory() as tmp:

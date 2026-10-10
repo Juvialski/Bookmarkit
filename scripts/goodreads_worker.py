@@ -177,6 +177,7 @@ def collect(db, cli, state, interval=15, pilot=False, max_books=100):
         except OSError: lock.close(); return
     elif not pilot:
         lock.close(); return
+    process = None
     try:
         db.execute("UPDATE queue SET status='pending' WHERE status='running'"); db.commit()
         if db.execute("SELECT 1 FROM control WHERE key='blocked'").fetchone(): return
@@ -232,7 +233,10 @@ def collect(db, cli, state, interval=15, pilot=False, max_books=100):
             while time.monotonic() < until:
                 if (state / 'STOP').exists() or (state / 'PAUSE').exists(): return
                 time.sleep(0.25)
-    finally: lock.close()
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill(); process.communicate()
+        lock.close()
 
 
 def sync(db, credential):

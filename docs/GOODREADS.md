@@ -48,8 +48,9 @@ Edition summaries are separately scoped in storage and the app, but this audited
 collector never invents edition statistics from the work aggregate.
 
 The CLI has a SQLite graph/store and disk page-cache configuration (24-hour
-default TTL). Bookmarkit's queue avoids recollection until 30 days, and refreshes
-the page cache after its normal expiry. `--retries 0` disables HTTP retry loops.
+default TTL). The audited `lookup`/`book` path calls the HTTP client directly;
+page-cache reuse is not relied on. Bookmarkit's SQLite queue supplies the actual
+30-day collection deduplication. `--retries 0` disables HTTP retry loops.
 Actual blocking exits in this release were nonzero **1**, despite README text
 mentioning 4; the wrapper also recognizes block/WAF/challenge/robots messages.
 
@@ -73,6 +74,9 @@ with a bounded optional fetch before checksumming the SQLite file. Failure does
 not block publishing the Open Library catalog. Existing checksum/integrity,
 atomic installation and previous-version recovery are unchanged. No reviews,
 descriptions or scraped images are included in a snapshot.
+Existing installations can retain their older bundled SQLite file; it remains
+compatible and supplies fallbacks. Fresh installs include the reviewed summary,
+and later optional snapshots can add cached summaries to existing installations.
 
 ## Storage and authorization
 

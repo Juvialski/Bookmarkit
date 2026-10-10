@@ -64,12 +64,12 @@ jobs:
               changed = any(fnmatch.fnmatch(path, pattern) for path in files for pattern in patterns)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('changed=' + str(changed).lower() + '\n')
-              # Reuse an already built APK only when ALL differences are native
-              # acceptance scripts or the workflow, with identical build recipe.
+              # Reuse an APK only when ALL differences are outside build inputs
+              # or are native acceptance scripts, with an identical build recipe.
               # Source/assets/packages/config changes always require a new build.
               reuse = ''
               def acceptance(path):
-                  return path == '.github/workflows/android-test-apk.yml' or (path.startswith('scripts/android-') and path.endswith('.py'))
+                  return path == '.github/workflows/android-test-apk.yml' or (path.startswith('scripts/android-') and path.endswith('.py')) or not any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
               def recipe(ref):
                   workflow = subprocess.check_output(['git', 'show', ref + ':.github/workflows/android-test-apk.yml'], text=True)
                   return workflow.split('  apk:\n', 1)[1].split('  native-cover:\n', 1)[0].split('    env:\n', 1)[1]
