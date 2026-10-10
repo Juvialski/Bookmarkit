@@ -1,10 +1,29 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFreeGemini, parseFreeProjects, readFreeProjects } from '../src/freeGemini.mjs';
+import { createFreeGemini, parseFreeProjects, readFreeProjects, verifyFreeConfiguration } from '../src/freeGemini.mjs';
 import { createGoogleFreeChecks } from '../src/googleFreeChecks.mjs';
 const project = (id='authorized-one',number='123',key='fixture-key-one') => ({ id,number,keys:[key,'fixture-backup-'+id],authorized:true,billingEnabled:false,models:[{id:'gemini-2.5-flash-lite',grounding:true,freeEligible:true,verifiedAt:new Date().toISOString(),dailyLimit:5,freeRpd:500,externalUsage:0}] });
 const checks={billingCheck:async()=>true,keyProjectCheck:async()=>true,modelCheck:async()=>true};
 const answer=()=>Response.json({usageMetadata:{totalTokenCount:30},candidates:[{content:{parts:[{text:'Warbreaker by Brandon Sanderson.'}]},groundingMetadata:{searchEntryPoint:{renderedContent:'<div>Google</div>'},groundingChunks:[{web:{uri:'https://example.org/book',title:'Book'}}],groundingSupports:[{segment:{text:'Warbreaker'},groundingChunkIndices:[0]}]}}]});
+
+test('operational verification is service-only, sanitized and makes no generation request',async()=>{
+ const base={projects:[project()],checks,service:'fixture-service',authorization:'Bearer fixture-service'};
+ for(const authorization of [null,'Bearer anonymous','Bearer']) {
+  assert.deepEqual(await verifyFreeConfiguration({...base,authorization,checks:{billingCheck:()=>assert.fail('Unauthorized verification')}}),{status:'unauthorized'});
+ }
+ const result=await verifyFreeConfiguration(base);assert.equal(result.status,'verified');
+ assert.equal((await verifyFreeConfiguration({...base,authorization:'Bearer another-valid-service-jwt',serviceCheck:async()=>true})).status,'verified');
+ assert.equal((await verifyFreeConfiguration({...base,authorization:'Bearer forged-service-claim',serviceCheck:async()=>false})).status,'unauthorized');
+ assert.equal(JSON.stringify(result).includes('fixture-key'),false);
+ for(const override of [{billingCheck:async()=>false},{keyProjectCheck:async()=>false},{modelCheck:async()=>false},{billingCheck:async()=>{throw Error('fixture-private-key');}}]) {
+  const failed=await verifyFreeConfiguration({...base,checks:{...checks,...override}});assert.equal(failed.status,'disabled');assert.equal(JSON.stringify(failed).includes('private-key'),false);
+ }
+ const live=createGoogleFreeChecks({accessToken:'fixture-oauth',fetcher:async url=>{
+  assert.equal(url.includes(':generateContent'),false);
+  return Response.json(url.includes('cloudresourcemanager')?{projectId:'authorized-one',name:'projects/123'}:url.includes('billingInfo')?{projectId:'authorized-one',billingEnabled:false}:url.includes('lookupKey')?{parent:'projects/123/locations/global',name:'projects/123/locations/global/keys/one'}:{supportedGenerationMethods:['generateContent']});
+ }});
+ assert.equal((await verifyFreeConfiguration({...base,checks:live})).status,'verified');
+});
 test('paid, unverified, duplicate project and unsafe model configurations are rejected',()=>{
  const valid=project(); assert.equal(parseFreeProjects(JSON.stringify([valid])).length,1);
  for(const change of [{billingEnabled:true},{authorized:false},{number:'bad'},{models:[{...valid.models[0],id:'gemini-3.5-flash-lite'}]},{models:[{...valid.models[0],freeEligible:false}]}]) assert.throws(()=>parseFreeProjects(JSON.stringify([{...valid,...change}])));
@@ -56,6 +75,25 @@ test('empty successful usage/cooldown RPC bodies preserve the completed response
  await assert.rejects(readQuotaResponse(new Response('private error',{status:500})),/Usage store unavailable/);
  const search=createFreeGemini({projects:[project()],...checks,reserve:async()=>readQuotaResponse(Response.json(true)),recordUsage:async()=>readQuotaResponse(new Response(null,{status:204})),fetcher:async()=>answer()});
  assert.equal((await search('Warbreaker')).status,'ok');
+});
+
+test('text result survives each valid empty usage RPC response',async()=>{
+ const {readQuotaResponse}=await import('../src/quotaRpc.mjs');
+ const p=project();p.models=[{...p.models[0],id:'gemini-3.5-flash-lite',grounding:false}];
+ for(const status of [200,201,202,204]) {
+  const search=createFreeGemini({projects:[p],...checks,reserve:async()=>true,
+   recordUsage:async()=>readQuotaResponse(new Response(null,{status})),fetcher:async()=>answer()});
+  const result=await search('Warbreaker','text');assert.equal(result.status,'ok');assert.match(result.text,/Warbreaker/);
+ }
+});
+
+test('unexpired durable circuit blocks text and grounding; expiry uses normal reservation',async()=>{
+ const p=project();p.models.push({...p.models[0],id:'gemini-3.5-flash-lite',grounding:false});
+ const until=Date.parse('2026-10-11T07:46:02Z');let clock=until-1,calls=0;
+ const search=createFreeGemini({projects:[p],...checks,now:()=>clock,
+  reserve:async()=>clock>=until,fetcher:async()=>{calls++;return answer();}});
+ for(const task of ['text','grounding']) assert.equal((await search('Warbreaker',task)).status,'disabled');
+ assert.equal(calls,0);clock=until;assert.equal((await search('Warbreaker','text')).status,'ok');assert.equal(calls,1);
 });
 test('multiple keys share one project reservation; requests deduplicate without retaining answers',async()=>{
  let calls=0,reserved=[];
