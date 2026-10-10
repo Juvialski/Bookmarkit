@@ -66,12 +66,12 @@ def tap(text=None, resource=None, description=None):
 def launch():
     shell('am', 'force-stop', package)
     shell('am', 'start', '-n', f'{package}/.MainActivity')
-    wait('Point your camera at a book cover')
+    wait('Point at a book cover')
 
 def lookup(isbn, title, name):
     root = screen()
     if not any(n.attrib.get('content-desc') == 'Title, author, or ISBN' for n in root.iter('node')):
-        tap('Search Manually')
+        tap('Search')
     tap(description='Title, author, or ISBN')
     shell('input', 'keyevent', '123')
     for _ in range(100):
@@ -106,7 +106,7 @@ try:
     tap('Allow camera')
     wait('While using the app', name='permission-dialog')
     tap('While using the app')
-    wait('Torch on', name='camera')
+    wait('Scan Book', name='camera')
     report['camera_permission'] = 'Android dialog accepted; camera screen and torch control loaded'
     report['online'] = texts(lookup('9780765326355', 'The Way of Kings', 'online'))
     tap('View on Goodreads')
@@ -128,18 +128,18 @@ try:
     (out / 'offline-connectivity.txt').write_text(report.pop('offline_network'), encoding='utf-8')
     launch()
     report['offline_series'] = texts(lookup('9780765326355', 'The Way of Kings', 'offline-series'))
-    assert 'SERIES' in report['offline_series']
-    assert any('Book 1' in t for t in report['offline_series'])
+    assert any('#1' in t for t in report['offline_series'])
+    assert any('Stormlight' in t for t in report['offline_series'])
     assert any('★' in t for t in report['offline_series'])
     tap('Scan Another')
     report['offline_standalone'] = texts(lookup('9780765320308', 'Warbreaker', 'offline-standalone'))
-    assert 'STANDALONE' in report['offline_standalone']
+    assert 'Standalone' in report['offline_standalone']
     shell('svc', 'wifi', 'enable')
     shell('svc', 'data', 'enable')
     time.sleep(3)
     launch()
     report['reconnected'] = texts(lookup('9780140328721', 'Fantastic Mr', 'reconnected'))
-    assert 'TYPE UNKNOWN' in report['reconnected']
+    assert 'Series unknown' in report['reconnected']
     logs = shell('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
     (out / 'errors.log').write_text(logs, encoding='utf-8')
     assert 'FATAL EXCEPTION' not in logs

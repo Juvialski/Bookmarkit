@@ -1,0 +1,10 @@
+{
+  "works": 25265,
+  "isbns": 26464,
+  "bytes": 31838208,
+  "sha256": "ba7b45949586e03c9be2f747bd297053dfd84b3b464d2142e24b3602592c9b70",
+  "rated_works": 1703,
+  "works_with_authors": 4160,
+  "warm_isbn_median_ms": 0.3803999861702323,
+  "warm_isbn_p95_ms": 1.116100000217557
+}

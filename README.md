@@ -1,6 +1,6 @@
 # Bookmarkit
 
-Point your camera at a front cover and tap **Scan Book**. Bookmarkit reads one image locally and identifies the book through Open Library or the bundled catalog. No visible ISBN is required. Valid visible barcodes are automatic. **Choose Photo** and **Search Manually** use the same resolver and work without camera permission.
+Point your camera at a front cover and tap **Scan Book**. Bookmarkit reads one image locally and identifies the book through the central Supabase catalog, Open Library, Google Books or an optional Hardcover proxy. No visible ISBN is required. The optional expanded offline catalog contains 25,265 works and is downloaded separately. Valid visible barcodes are automatic. **Choose Photo** and **Search** use the same resolver and work without camera permission.
 
 Expo SDK 57 / React Native 0.86 / Expo Router. Native `expo-ocr-kit` 0.1.4 uses bundled ML Kit Latin recognition on Android and Apple Vision on iOS. Images stay on the device; no Firebase, LLM or image upload. Expo Go cannot run this module; use the standalone APK or a development build.
 
@@ -26,9 +26,9 @@ Routes: `src/app/`. Parser/ranking: `src/recognition/`. Providers: `src/services
 ## Identification and ratings
 
 - ISBN-13 and valid ISBN-10 (converted to ISBN-13) retain exact-edition lookup, including the existing optional Hardcover proxy.
-- Title/author and free text use Open Library Search with explicit fields and 12 results. At most four alternative queries run sequentially; outages stop fan-out. No Hardcover title search or Google Books.
+- Title/author searches coordinate central Supabase, Open Library and Google Books concurrently. Exact ISBN lookups also support the optional Hardcover proxy. Confident bundled/expanded matches return immediately; selection generations protect later enrichment.
 - Matching uses title/subtitle similarity, compatible authors, exact ISBN and work identity. Popularity does not establish identity. Weak/competing matches require selection. Different work IDs never share ratings.
-- Title results identify a work, not an exact edition; arbitrary ISBNs are not attached. Work ratings stay labeled Open Library. Hardcover ratings remain available for exact ISBN. Scores are never averaged. Missing series evidence means Type Unknown.
+- Title results identify a work, not an exact edition; arbitrary ISBNs are not attached. Work ratings stay labeled Open Library. Hardcover ratings remain available for exact ISBN. Scores are never averaged. Missing series evidence means Series unknown.
 - Goodreads opens an external search by exact ISBN when identified, otherwise title and author. No scraping or Goodreads rating ingestion.
 
 Optional Hardcover: set public HTTPS `EXPO_PUBLIC_BOOK_API_BASE_URL` to the existing proxy. `HARDCOVER_API_TOKEN` belongs only on the server; see [server setup](server/README.md). No proxy is needed for cover recognition, Open Library ratings or offline operation.
@@ -60,3 +60,7 @@ Physical front-cover focus/lighting/torch remains pending the user's phone testi
 ## Next phase (documentation only)
 
 Supabase central normalized catalog; title/author/ISBN indexes; provider enrichment; monthly bulk refresh with provenance/deduplication; optional downloadable SQLite packs and download/update management. None is implemented in Phase 8.
+
+## Bookmarkit V2
+
+See [catalog operations](docs/CATALOG.md), [permanently free Gemini configuration](docs/FREE-GEMINI.md), and [V2 validation](docs/V2-VALIDATION.md). The interface has a camera scanner, compact book results and Offline Books. No accounts or reading lists are required.

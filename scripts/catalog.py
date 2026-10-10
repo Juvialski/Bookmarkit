@@ -104,6 +104,7 @@ def build(source=SOURCE, output=OUTPUT):
         db.execute('CREATE TABLE books (isbn13 TEXT PRIMARY KEY, title TEXT NOT NULL, authors TEXT NOT NULL, work_id TEXT, series_status TEXT NOT NULL, series_name TEXT, series_position TEXT, rating REAL, rating_count INTEGER, classification_source TEXT NOT NULL) WITHOUT ROWID')
         db.execute('CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID')
         db.executemany('INSERT INTO books VALUES (?,?,?,?,?,?,?,?,?,?)', [rows[k] for k in sorted(rows)])
+        db.execute('CREATE INDEX books_work_id ON books(work_id)')
         db.executemany('INSERT INTO metadata VALUES (?,?)', [(k, data[k]) for k in ['version', 'generated_date', 'source']])
         db.execute('INSERT INTO metadata VALUES (?,?)', ('catalog_schema', 'v3'))
         db.execute('CREATE TABLE works (id TEXT PRIMARY KEY, isbn13 TEXT NOT NULL, normalized_title TEXT NOT NULL) WITHOUT ROWID')
@@ -134,8 +135,9 @@ def measure(output=OUTPUT):
     with closing(sqlite3.connect(output)) as db:
         count = db.execute('SELECT count(*) FROM books').fetchone()[0]
         books = db.execute('SELECT count(DISTINCT work_id) FROM books').fetchone()[0]
+        sample = db.execute('SELECT isbn13 FROM books LIMIT 1').fetchone()[0]
         start = time.perf_counter()
-        for _ in range(10000): db.execute('SELECT * FROM books WHERE isbn13=?', ('9780765326355',)).fetchone()
+        for _ in range(10000): db.execute('SELECT * FROM books WHERE isbn13=?', (sample,)).fetchone()
         elapsed = (time.perf_counter()-start)*1000/10000
     print(json.dumps({'books': books, 'isbns': count, 'sqlite_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'bytes_per_isbn': len(raw)/count, 'warm_lookup_ms': elapsed}, indent=2))
 

@@ -57,6 +57,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: python scripts/test_catalog.py
+      - run: python scripts/validate_expanded.py catalog/packages
       - run: npx expo install --check
       - run: npm run build:android-test
       - uses: actions/upload-artifact@v4

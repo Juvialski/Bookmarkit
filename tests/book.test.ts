@@ -115,15 +115,17 @@ test('Goodreads uses only checksum-valid ISBN as external search term', () => {
   assert.equal(url.hostname, 'www.goodreads.com'); assert.equal(url.searchParams.get('q'), isbn);
   assert.throws(() => goodreadsSearchUrl('bad'));
 });
-test('default lookup never contacts Google, even when both normal sources fail', async context => {
+test('default lookup coordinates catalog, Open Library, Google Books and optional Hardcover', async context => {
   const urls: string[] = [];
   const previous = process.env.EXPO_PUBLIC_BOOK_API_BASE_URL;
   process.env.EXPO_PUBLIC_BOOK_API_BASE_URL = 'https://proxy.test';
   context.after(() => { if (previous === undefined) delete process.env.EXPO_PUBLIC_BOOK_API_BASE_URL; else process.env.EXPO_PUBLIC_BOOK_API_BASE_URL = previous; });
   context.mock.method(globalThis, 'fetch', async (url: string) => { urls.push(String(url)); throw Error('offline'); });
   await assert.rejects(lookupBook(isbn), /Internet unavailable/);
-  assert.equal(urls.length, 2);
+  assert.equal(urls.length, 4);
   assert.ok(urls.some(url => url.startsWith('https://proxy.test/api/books/')));
   assert.ok(urls.some(url => url.startsWith('https://openlibrary.org/isbn/')));
-  assert.ok(urls.every(url => !/google|goodreads/.test(url)));
+  assert.ok(urls.some(url => url.startsWith('https://www.googleapis.com/books/')));
+  assert.ok(urls.some(url => url.includes('/rpc/search_catalog')));
+  assert.ok(urls.every(url => !/goodreads/.test(url)));
 });

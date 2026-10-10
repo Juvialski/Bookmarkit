@@ -5,7 +5,9 @@ import { openLibrary } from './providers/openLibrary';
 import { httpsCover, ProviderError } from './providers/shared';
 import { mergeClassification } from '../utils/classification';
 import { primaryRating } from '../utils/ratings';
-export async function lookupBook(value: string, providers = [hardcover, openLibrary], local?: (isbn: string) => Promise<BookResult | null>): Promise<BookResult> {
+import { centralCatalog } from './providers/centralCatalog';
+import { googleBooks } from './providers/googleBooks';
+export async function lookupBook(value: string, providers = [centralCatalog, openLibrary, googleBooks, hardcover], local?: (isbn: string) => Promise<BookResult | null>): Promise<BookResult> {
   const isbn = normalizeIsbn(value);
   if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
   const responses = await Promise.allSettled(providers.map(provider => provider(isbn)));
@@ -60,7 +62,7 @@ export function createCachedLookup(lookup: (isbn: string) => Promise<BookResult>
       // Retain partial successes briefly to avoid hammering a busy provider.
       for (const [key, value] of cache) if (value.expires <= now()) cache.delete(key);
       if (cache.size >= maxSize) cache.delete(cache.keys().next().value!);
-      cache.set(isbn, { book, expires: now() + (book.source === 'offline-catalog' || book.incomplete || book.warnings.length ? Math.min(ttlMs, 30000) : ttlMs) });
+      if (!book.ratings.some(r => r.provider === 'Google Books')) cache.set(isbn, { book, expires: now() + (book.source === 'offline-catalog' || book.incomplete || book.warnings.length ? Math.min(ttlMs, 30000) : ttlMs) });
       return book;
       })();
     pending.set(isbn, operation);
