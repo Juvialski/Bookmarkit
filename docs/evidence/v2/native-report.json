@@ -1,0 +1,103 @@
+{
+  "apk": "dist/bookmarkit-android-test.apk",
+  "sha256": "cfad312b0e94f0473386cdbcc7bacfaf6d0cddb1fd62b7f4d2b5fad2a6a09698",
+  "result": "passed",
+  "model_assets": [
+    "assets/mlkit-google-ocr-models/taser/detector/region_proposal_text_detector_tflite_vertical_mbv2_v1.bincfg",
+    "assets/mlkit-google-ocr-models/taser/detector/rpn_text_detector_mobile_space_to_depth_quantized_mbv2_v1.tflite",
+    "assets/mlkit-google-ocr-models/taser/rpn_text_detection_tflite_mobile_mbv2.binarypb"
+  ],
+  "install": "Performing Streamed Install\nSuccess\n",
+  "installed_version": "2",
+  "offline_native_ocr": [
+    "\u25a5",
+    "Bookmarkit",
+    "\u25a5",
+    "Warbreaker",
+    "Brandon Sanderson",
+    "\u2605 4.3",
+    "Open Library",
+    "Standalone",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "goodreads_title_intent": "passed",
+  "offline_multiline_native_ocr": [
+    "\u25a5",
+    "Bookmarkit",
+    "\u25a5",
+    "The Way of Kings",
+    "Brandon Sanderson",
+    "\u2605 4.5",
+    "Open Library",
+    "The Stormlight Archive \u00b7 #1",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "offline_manual_title_author": [
+    "\u25a5",
+    "Bookmarkit",
+    "\u25a5",
+    "The Way of Kings",
+    "Brandon Sanderson",
+    "\u2605 4.5",
+    "Open Library",
+    "The Stormlight Archive \u00b7 #1",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "offline_manual_isbn10": [
+    "\u25a5",
+    "Bookmarkit",
+    "\u25a5",
+    "Fantastic Mr. Fox",
+    "Roald Dahl",
+    "\u2605 4.0",
+    "Open Library",
+    "Series unknown",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "ambiguous_matches": [
+    "\u25a5",
+    "Bookmarkit",
+    "Which book?",
+    "The Way of Kings",
+    "Brandon Sanderson",
+    "Words of Radiance",
+    "Brandon Sanderson",
+    "Tress of the Emerald Sea",
+    "Brandon Sanderson",
+    "Yumi and the Nightmare Painter",
+    "Brandon Sanderson",
+    "Correct search",
+    "Scan another"
+  ],
+  "expanded_download": "Checksum and SQLite validation completed before installation",
+  "expanded_offline_book": [
+    "\u25a5",
+    "Bookmarkit",
+    "\u25a5",
+    "Little bookmobile",
+    "Author unavailable",
+    "Not rated",
+    "Series unknown",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "expanded_deletion": "Bundled fallback restored",
+  "online_native_ocr": [
+    "\u25a5",
+    "Bookmarkit",
+    "Warbreaker",
+    "Brandon Sanderson",
+    "\u2605 4.3",
+    "Open Library",
+    "Standalone",
+    "View on Goodreads",
+    "Scan another"
+  ],
+  "picker_cancellation": "passed",
+  "camera_permission": "Native Android permission dialog accepted; camera screen loaded",
+  "previous_harness_failure": "Cannot find Cancel"
+}

@@ -1,0 +1,22 @@
+{
+  "isbn": {
+    "found": true,
+    "elapsed_ms": 1627.9,
+    "title": "Little bookmobile"
+  },
+  "title": {
+    "found": true,
+    "elapsed_ms": 534.5,
+    "title": "Little bookmobile"
+  },
+  "gemini": {
+    "status": "disabled"
+  },
+  "manifest": {
+    "works": 25265,
+    "isbns": 26464,
+    "bytes": 31838208,
+    "sha256": "ba7b45949586e03c9be2f747bd297053dfd84b3b464d2142e24b3602592c9b70",
+    "url": "https://xxijxuekfsxuzhnujqem.supabase.co/storage/v1/object/public/book-catalogs/2026-10/ba7b45949586e03c9be2f747bd297053dfd84b3b464d2142e24b3602592c9b70.db"
+  }
+}

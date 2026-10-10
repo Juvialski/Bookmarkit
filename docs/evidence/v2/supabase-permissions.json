@@ -1,0 +1,13 @@
+{
+  "catalog_works": {
+    "status": 200,
+    "rows": 1
+  },
+  "catalog_ingestion": {
+    "status": 401
+  },
+  "grounding_usage": {
+    "status": 401
+  },
+  "public_write_status": 401
+}
