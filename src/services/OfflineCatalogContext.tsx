@@ -44,12 +44,14 @@ export function OfflineCatalogProvider({ children }: { children: ReactNode }) {
   }, [bundledDb]); // eslint-disable-line react-hooks/exhaustive-deps
   async function refresh() {
     setError('');
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/catalog_manifests?select=*&order=published_at.desc&limit=1`, { headers: { apikey: CATALOG_KEY }, signal: AbortSignal.timeout(5000) });
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/catalog_manifests?select=*&order=published_at.desc&limit=1`, { headers: { apikey: CATALOG_KEY }, signal: controller.signal });
       if (!response.ok) throw new Error();
       const rows = await response.json();
       if (rows[0]) setAvailable(validateManifest({ ...rows[0], schema: rows[0].schema_version }));
     } catch { setError('Could not check updates. Retry when connected.'); }
+    finally { clearTimeout(timer); }
   }
   async function download() {
     if (!available || busy.current) return;

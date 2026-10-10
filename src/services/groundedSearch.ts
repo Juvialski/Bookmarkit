@@ -3,7 +3,11 @@ const ANON_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 export interface SearchEvidence { text: string; html: string; sources: { title: string; url: string }[] }
 let availability: Promise<boolean> | undefined;
 export function groundingAvailable() {
-  return availability ||= fetch(`${SUPABASE_URL}/functions/v1/book-search`, { method: 'POST', headers: { apikey: CATALOG_KEY, Authorization: `Bearer ${ANON_JWT}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '' }), signal: AbortSignal.timeout(3000) }).then(async response => response.ok && (await response.json()).status === 'invalid').catch(() => false);
+  return availability ||= (async () => {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 3000);
+    try { const response = await fetch(`${SUPABASE_URL}/functions/v1/book-search`, { method: 'POST', headers: { apikey: CATALOG_KEY, Authorization: `Bearer ${ANON_JWT}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '' }), signal: controller.signal }); return response.ok && (await response.json()).status === 'invalid'; }
+    catch { return false; } finally { clearTimeout(timer); }
+  })();
 }
 export async function groundedSearch(query: string, signal?: AbortSignal): Promise<SearchEvidence | null> {
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 14000);

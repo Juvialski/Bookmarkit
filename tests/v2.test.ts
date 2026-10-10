@@ -4,6 +4,12 @@ import { googleBooksSearch } from '../src/services/providers/googleBooks';
 import { validateManifest } from '../src/services/catalogManifest';
 import { createProgressiveLookup } from '../src/services/progressiveLookup';
 import { ProviderBook } from '../src/models/book';
+import { groundingAvailable } from '../src/services/groundedSearch';
+test('native capability check works when AbortSignal.timeout is absent', async context => {
+  context.mock.method(AbortSignal, 'timeout', undefined);
+  context.mock.method(globalThis, 'fetch', async () => Response.json({ status: 'disabled' }));
+  assert.equal(await groundingAvailable(), false);
+});
 test('fast rated edition returns while a slow provider finishes; enrichment reuses requests', async () => {
   let finish!: (book: ProviderBook) => void, calls = 0;
   const book: ProviderBook = { isbn: '9780765320308', title: 'Warbreaker', authors: ['Brandon Sanderson'], seriesStatus: 'unknown', rating: { provider: 'Open Library', average: 4.4 } };
