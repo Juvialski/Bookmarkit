@@ -205,8 +205,18 @@ try:
     report['offline_native_ocr'] = values
     tap('View on Goodreads')
     time.sleep(2)
-    # Verify the external intent directly; an offline fresh browser's onboarding
-    # is outside application acceptance and may have no UI automation root.
+    # A fresh CI Chrome installation handles the first link with onboarding.
+    # Complete it without an account, then exercise the application link again.
+    for step in range(6):
+        activity = shell('dumpsys', 'activity', 'activities')
+        if 'FirstRunActivity' not in activity: break
+        browser = screen('browser-onboarding-' + str(step))
+        labels = texts(browser)
+        action = next((label for label in ('Use without an account', 'Continue without an account', 'Accept & continue', 'No thanks', 'Not now', 'Got it') if label.lower() in [text.lower() for text in labels]), None)
+        if not action: raise AssertionError('Unsupported emulator browser onboarding')
+        tap(action); time.sleep(2)
+    shell('am', 'start', '-n', f'{package}/.MainActivity')
+    wait('Warbreaker');tap('View on Goodreads');time.sleep(2)
     activity = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-title-activities.txt').write_text(activity, encoding='utf-8')
     assert 'goodreads.com/search?q=Warbreaker' in activity and 'Sanderson' in activity, 'Title browser intent missing'
