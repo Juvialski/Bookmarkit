@@ -16,13 +16,21 @@ export const providerSearch = async (query: BookQuery, signal?: AbortSignal): Pr
 };
 export function createCachedSearch(search = providerSearch, now = Date.now) {
   const cache = new Map<string, { books: BookResult[]; expires: number }>();
+  const pending = new Map<string, Promise<BookResult[]>>();
   return async (query: BookQuery, signal?: AbortSignal) => {
     ensureActive(signal);
     const key = JSON.stringify([normalizeText(query.text || query.title || ''), normalizeText(query.author || '')]);
     const hit = cache.get(key);
     if (hit && hit.expires > now()) return hit.books;
     cache.delete(key);
-    const books = await search(query, signal);
+    const existing = pending.get(key);
+    if (existing) { const books = await existing; ensureActive(signal); return books; }
+    // Only share calls without caller cancellation. A cancelled scan must not
+    // poison another independently active caller's request.
+    const operation = search(query, signal);
+    if (!signal) pending.set(key, operation);
+    let books: BookResult[];
+    try { books = await operation; } finally { if (pending.get(key) === operation) pending.delete(key); }
     ensureActive(signal);
     if (books.length && books.every(book => book.ratings.every(r => r.provider !== 'Google Books'))) {
       if (cache.size >= 20) cache.delete(cache.keys().next().value!);

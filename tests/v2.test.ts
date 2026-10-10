@@ -5,8 +5,8 @@ import { validateManifest } from '../src/services/catalogManifest';
 import { createProgressiveLookup } from '../src/services/progressiveLookup';
 import { ProviderBook } from '../src/models/book';
 import { groundingAvailable } from '../src/services/groundedSearch';
-test('native capability check works when AbortSignal.timeout is absent', async context => {
-  context.mock.method(AbortSignal, 'timeout', undefined);
+test('native capability check does not depend on AbortSignal.timeout', async context => {
+  context.mock.method(AbortSignal, 'timeout', () => { assert.fail('Unsupported native helper invoked'); });
   context.mock.method(globalThis, 'fetch', async () => Response.json({ status: 'disabled' }));
   assert.equal(await groundingAvailable(), false);
 });

@@ -22,7 +22,7 @@ export function createProgressiveLookup(local: (isbn: string) => Promise<BookRes
       })).catch(() => full);
       const immediate = stored.then(book => book || first);
       try { return await Promise.race([first, immediate]); }
-      finally { void full.finally(() => { const timer = setTimeout(() => { if (pending.get(isbn) === full) pending.delete(isbn); }, 15000); if (typeof timer === 'object' && 'unref' in timer) timer.unref(); }).catch(() => {}); }
+      finally { void full.finally(() => { if (pending.get(isbn) === full) pending.delete(isbn); }).catch(() => {}); }
     },
     async enrich(book: BookResult): Promise<BookResult> {
       return book.isbn && pending.has(book.isbn) ? pending.get(book.isbn)! : book;
