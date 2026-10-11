@@ -1,0 +1,21 @@
+name: Temporary bounded Goodreads environment test
+on:
+  pull_request:
+    paths: ['.github/workflows/goodreads-research-temporary.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p dist/research
+          python - <<'PY'
+          import json
+          target = {'url':'https://www.goodreads.com/book/show/2767052', 'title':'The Hunger Games', 'authors':['Suzanne Collins'], 'isbns':['9780439023481'], 'goodreads_work_id':'2792775'}
+          open('dist/research/target.json','w').write(json.dumps([target]))
+          PY
+          python scripts/research_goodreads.py --targets dist/research/target.json --output dist/research/runner.json --limit 1
+          cat dist/research/runner.json
