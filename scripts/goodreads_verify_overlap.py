@@ -11,8 +11,8 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 
-from goodreads_historical import load_xml, titles
-from research_goodreads import normalize, UA
+from goodreads_historical import load_xml, titles, normalize
+from research_goodreads import UA
 
 
 def check(row, record, edition, work, names):

@@ -12,12 +12,11 @@
   "book_and_work_counts_differ": 9986,
   "duplicate_conflicting_book_ids": [],
   "match_counts": {
-    "unmatched": 25068,
-    "title_only_unvalidated": 169,
+    "unmatched": 25075,
+    "title_only_unvalidated": 163,
     "title_author_candidate": 16,
     "exact_isbn_compatible_identity": 8,
-    "conflict": 3,
-    "ambiguous_candidate": 1
+    "conflict": 3
   },
   "independently_validated_matches": 8,
   "mathematically_usable_matched_pairs": 8,
@@ -47,5 +46,5 @@
   "sqlite_data_page_growth_bytes": 8192,
   "estimated_separate_offline_database_increase_bytes": 24576,
   "estimated_catalog_growth_percent": 0.0772,
-  "offline_wall_seconds": 10.264
+  "offline_wall_seconds": 10.526
 }

@@ -1,20 +1,27 @@
 """Offline original-XML coverage audit. Quarantined dry run; no live ingestion."""
 import argparse
 import hashlib
+import html
 import json
 import pathlib
 import re
 import sqlite3
 import time
+import unicodedata
 import zipfile
 import xml.etree.ElementTree as ET
 from collections import defaultdict, Counter
 from decimal import Decimal, ROUND_HALF_UP
 
-from research_goodreads import normalize
-
 SOURCE_COMMIT = '6dd165b555a7b47b2dd36743a425776e641ff50c'
 SOURCE_HASH = 'f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66'
+
+
+def normalize(value):
+    # Preserve letters in every script: ASCII-only stripping collapses unrelated
+    # Arabic/Cyrillic/etc. identities to the same empty string.
+    value=unicodedata.normalize('NFKD',html.unescape(value)).casefold()
+    return ''.join(character for character in value if character.isalnum())
 
 
 def valid_isbn(value):
@@ -73,12 +80,13 @@ def titles(record):
     # Only remove a trailing, explicitly numbered series marker; no fuzzy matching.
     values = [record['title'], record.get('original_title', '')]
     values.append(re.sub(r'\s*\([^()]*,\s*#\d[^()]*\)\s*$', '', record['title']))
-    return {normalize(t) for t in values if t}
+    return {normalize(t) for t in values if normalize(t)}
 
 
 def compatible(row, record):
     return normalize(row['title']) in titles(record) and bool(
-        {normalize(a) for a in row['authors']} & {normalize(a) for a in record['authors']})
+        {normalize(a) for a in row['authors'] if normalize(a)} &
+        {normalize(a) for a in record['authors'] if normalize(a)})
 
 
 def reconcile(catalog, records, mappings=()):

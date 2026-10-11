@@ -91,6 +91,14 @@ class HistoricalTests(unittest.TestCase):
         results,_=reconcile(duplicate,[self.record])
         self.assertEqual([r['match'] for r in results],['ambiguous_work_mapping']*2)
 
+    def test_non_latin_titles_and_authors_do_not_collapse_to_empty_matches(self):
+        record=dict(self.record,title='كتاب',original_title='كتاب',authors=['مؤلف'])
+        catalog=[dict(self.catalog[0],title='كتاب آخر',authors=['مؤلف آخر'])]
+        results,_=reconcile(catalog,[record])
+        self.assertEqual(results[0]['match'],'conflict')
+        results,_=reconcile([dict(catalog[0],title='كتاب',authors=['مؤلف'])],[record])
+        self.assertEqual(results[0]['match'],'exact_isbn_compatible_identity')
+
     def test_independent_isbn_evidence_rejects_wrong_work_and_author(self):
         row=self.catalog[0]
         edition=dict(key='/books/OL1M',isbn_13=[row['isbn13']],title='Example',works=[{'key':row['work_id']}],identifiers={'goodreads':['1']})

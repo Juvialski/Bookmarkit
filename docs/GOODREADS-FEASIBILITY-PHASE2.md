@@ -169,7 +169,9 @@ Priority 1 uses original exact checksum-valid ISBN and compatible title/author;
 missing authors cannot prove a match. Priority 2 accepts explicit independently
 corroborated work mappings. Priority 3 requires strict normalized title and author
 and stays candidate-only. Normalization removes accents/punctuation and an explicit
-trailing numbered series marker; there is no fuzzy title or author selection.
+trailing numbered series marker while preserving non-Latin letters; there is no
+fuzzy title or author selection. Non-Latin identities cannot collapse into empty
+strings and falsely match unrelated records.
 Conflicting source book IDs and multiple catalog works mapping to one Goodreads
 work are rejected. Edition-specific ISBN mappings never transfer to another edition.
 
@@ -188,10 +190,10 @@ These checks do not repair the catalog or establish publisher data freshness.
 | Independently validated work matches (subset of those 8) | 8 |
 | Additional Priority 2 work-only matches | 0 |
 | Strict title/author candidates requiring validation | 16 |
-| Ambiguous title/author candidate | 1 |
-| Title-only, missing-author records (unvalidated) | 169 |
+| Ambiguous title/author candidate | 0 |
+| Title-only, missing-author records (unvalidated) | 163 |
 | Conflicts rejected | 3 |
-| No candidate | 25,068 |
+| No candidate | 25,075 |
 | Total | 25,265 |
 | Mathematically usable matched historical pairs | 8 |
 | Approved production historical ratings | **0** |
@@ -204,7 +206,7 @@ differences (NaRae Lee versus James Patterson). All three are excluded.
 [Independent public identity evidence](evidence/goodreads/phase2-openlibrary.json)
 records accepted and rejected overlaps. No conflicting data was silently corrected.
 
-**Verified metadata coverage: 0.0317%.** Even all 186 unresolved title candidates
+**Verified metadata coverage: 0.0317%.** Even all 179 unresolved title candidates
 would not support a thousands-of-works claim. They are not accepted ratings.
 This phase does not independently validate title-only candidates or extrapolate
 their apparent matches to import coverage.
@@ -247,7 +249,7 @@ python -m unittest discover -s scripts -p test_goodreads_phase2.py
 
 The archive hash is enforced. Committed reports contain sanitized counts and
 identity evidence; raw source archive, per-work reconciliation, quarantine JSON
-and SQLite remain under ignored `dist/`. The offline full pass took **10.264 seconds**
+and SQLite remain under ignored `dist/`. The offline full pass took **10.526 seconds**
 on this host.
 
 ## Hosting comparison and defensible architecture
