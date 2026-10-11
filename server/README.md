@@ -1,5 +1,11 @@
 # Hardcover proxy
 
+Production integration now prefers the fixed-query Supabase Edge Function and
+additive cache in [HARDCOVER-PRODUCTION.md](../docs/HARDCOVER-PRODUCTION.md).
+This Node service remains compatible for existing deployments and local fixtures;
+no new Render service is required. Live activation remains blocked until the
+server-only Hardcover token and deployment acceptance are complete.
+
 Dependency-free Node.js 22.13+ HTTP service. No database, accounts, generic GraphQL endpoint or mobile credential. Production starts only `src/index.mjs`; the mock helper is separate.
 
 ```sh

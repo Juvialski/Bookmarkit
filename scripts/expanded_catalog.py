@@ -91,6 +91,8 @@ def run(target=25000):
         isbns = catalog.execute('SELECT count(*) FROM books').fetchone()[0]
     from goodreads_snapshot import attach, cached_summaries
     attach(output, cached_summaries())
+    from hardcover_snapshot import attach as attach_hardcover, cached_summaries as hardcover_summaries
+    attach_hardcover(output, hardcover_summaries())
     raw = output.read_bytes()
     manifest = {'version': time.strftime('%Y-%m'), 'schema': 'v3', 'works': works, 'isbns': isbns, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(), 'file': 'expanded.db', 'sources': [BASE.format(k) for k in ['editions', 'authors', 'ratings']]}
     (staging / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')

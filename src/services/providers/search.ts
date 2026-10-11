@@ -5,8 +5,21 @@ import { normalizeText } from '../../recognition/normalization';
 import { openLibrarySearch } from './openLibrarySearch';
 import { googleBooksSearch } from './googleBooks';
 import { centralSearch } from './centralCatalog';
+import { hardcoverSearch } from './hardcover';
 export const providerSearch = async (query: BookQuery, signal?: AbortSignal): Promise<BookResult[]> => {
-  const responses = await Promise.allSettled([centralSearch(query, signal), openLibrarySearch(query, fetch, signal), googleBooksSearch(query, fetch, signal)]);
+  const calls = [centralSearch(query, signal), openLibrarySearch(query, fetch, signal), googleBooksSearch(query, fetch, signal), hardcoverSearch(query, fetch, signal)];
+  if (query.title && query.author) {
+    try {
+      return await Promise.any(calls.map(async call => {
+        const books = await call;
+        const exact = books.filter(book => normalizeText(book.title) === normalizeText(query.title!) &&
+          book.authors.some(author => normalizeText(author) === normalizeText(query.author!)));
+        if (!exact.length) throw new Error('No exact identity yet');
+        return exact;
+      }));
+    } catch { /* Retain bounded broad results for the normal candidate picker. */ }
+  }
+  const responses = await Promise.allSettled(calls);
   const books = responses.flatMap(r => r.status === 'fulfilled' ? r.value : []);
   if (!books.length) {
     const failure = responses.find(r => r.status === 'rejected');

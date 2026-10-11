@@ -55,7 +55,7 @@ test('not found, offline and invalid input remain distinct', async () => {
 });
 test('series structured Hardcover; conflicts unknown; fallback fields deterministic', async () => {
   const primary = normalizeHardcover({ ...hardcoverBook, seriesName: 'Example', seriesPosition: '2' }, isbn)!;
-  const secondary = normalizeOpenLibrary({ ...edition, title: 'Other title', series: ['Example #2'] }, {}, authors, ratings, isbn)!;
+  const secondary = normalizeOpenLibrary({ ...edition, series: ['Example #2'] }, {}, authors, ratings, isbn)!;
   const result = await lookupBook(isbn, [async () => ({ ...primary, authors: [], coverUrl: undefined }), async () => secondary]);
   assert.equal(result.title, primary.title); assert.deepEqual(result.authors, secondary.authors);
   assert.equal(result.coverUrl, secondary.coverUrl); assert.equal(result.seriesName, 'Example');

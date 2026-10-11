@@ -9,6 +9,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: contract-only
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,11 +26,23 @@ jobs:
       - run: npm test
       - run: npm --prefix server test
       - run: npm --prefix server run check
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/hardcover/index.ts
       - run: python scripts/test_catalog.py
       - run: python -m unittest discover -s scripts -p 'test_catalog_publish.py'
       - run: python -m unittest discover -s scripts -p 'test_goodreads.py'
       - run: python -m unittest discover -s scripts -p 'test_research_goodreads.py'
       - run: python -m unittest discover -s scripts -p 'test_goodreads_phase2.py'
+      - run: python -m unittest discover -s scripts -p 'test_hardcover_snapshot.py'
+      - name: Isolated PostgreSQL Hardcover authorization and cache contracts
+        env:
+          PGPASSWORD: contract-only
+        run: |
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/hardcover-bootstrap.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261011011808_hardcover_cache.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/hardcover.sql
       - run: python scripts/validate_expanded.py catalog/packages
       - run: npm run typecheck
       - run: npm run lint

@@ -6,5 +6,5 @@ export function visibleRatings(ratings: Rating[]) {
 
 export function primaryRating(ratings: Rating[]): Rating | undefined {
   const visible = visibleRatings(ratings);
-  return visible.find(r => r.provider === 'Goodreads') ?? visible.find(r => r.provider === 'Hardcover' && !r.stored) ?? visible.find(r => r.provider === 'Open Library' && !r.stored) ?? visible.find(r => r.provider === 'Google Books' && !r.stored) ?? visible[0];
+  return visible.find(r => r.provider === 'Goodreads') ?? visible.find(r => r.provider === 'Hardcover' && !r.stored) ?? visible.find(r => r.provider === 'Open Library' && !r.stored) ?? visible.find(r => r.provider === 'Google Books' && !r.stored) ?? visible.find(r => r.provider === 'Hardcover' && r.verified) ?? visible[0];
 }
