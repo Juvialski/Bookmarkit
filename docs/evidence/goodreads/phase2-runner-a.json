@@ -1,0 +1,128 @@
+{
+  "target_sha256": "a157a7471211800936ba539dc7c3ad3dd45f5d1e9269b6e800fe7c15dd690333",
+  "selected": 13,
+  "rows": [
+    {
+      "url": "https://www.goodreads.com/book/show/2767052-the-hunger-games",
+      "target_title": "The Hunger Games",
+      "observed_at": "2026-10-11T00:52:28.324482+00:00",
+      "http_status": 200,
+      "blocked": false,
+      "result": {
+        "book_id": "2767052",
+        "goodreads_work_id": 2792775,
+        "url": "https://www.goodreads.com/book/show/2767052-the-hunger-games",
+        "catalog_work_id": null,
+        "title": "The Hunger Games",
+        "author": "Suzanne Collins",
+        "isbn13": "9780439023481",
+        "average_rating": 4.36,
+        "ratings_count": 10312057,
+        "rating_scope": "work",
+        "series": [
+          {
+            "title": "The Hunger Games",
+            "position": "1"
+          }
+        ],
+        "match": "exact_isbn_title_author",
+        "jsonld_agrees": true,
+        "population_evidence": "resolved Apollo Book.work -> Work.stats; JSON-LD average/ratingCount agreement"
+      },
+      "seconds": 1.181,
+      "cpu_seconds": 0.0313
+    },
+    {
+      "url": "https://www.goodreads.com/book/show/1885.Pride_and_Prejudice",
+      "target_title": "Pride and Prejudice",
+      "observed_at": "2026-10-11T00:52:44.509702+00:00",
+      "http_status": 200,
+      "blocked": false,
+      "error": "ISBN mismatch; edition must be reviewed separately",
+      "seconds": 0.911,
+      "cpu_seconds": 0.0213
+    },
+    {
+      "url": "https://www.goodreads.com/book/show/10964.Outlander",
+      "target_title": "Outlander",
+      "observed_at": "2026-10-11T00:53:00.424729+00:00",
+      "http_status": 200,
+      "blocked": false,
+      "result": {
+        "book_id": "10964",
+        "goodreads_work_id": 2489796,
+        "url": "https://www.goodreads.com/book/show/10964.Outlander",
+        "catalog_work_id": null,
+        "title": "Outlander",
+        "author": "Diana Gabaldon",
+        "isbn13": "9780440242949",
+        "average_rating": 4.27,
+        "ratings_count": 1189011,
+        "rating_scope": "work",
+        "series": [
+          {
+            "title": "Outlander",
+            "position": "1"
+          },
+          {
+            "title": "La saga di Claire Randall",
+            "position": "1"
+          },
+          {
+            "title": "נוכרייה",
+            "position": "1"
+          }
+        ],
+        "match": "exact_isbn_title_author",
+        "jsonld_agrees": true,
+        "population_evidence": "resolved Apollo Book.work -> Work.stats; JSON-LD average/ratingCount agreement"
+      },
+      "seconds": 0.863,
+      "cpu_seconds": 0.0218
+    },
+    {
+      "url": "https://www.goodreads.com/book/show/11870085-the-fault-in-our-stars",
+      "target_title": "The Fault in Our Stars",
+      "observed_at": "2026-10-11T00:53:16.291662+00:00",
+      "http_status": 202,
+      "blocked": true,
+      "error": "access_blocked",
+      "seconds": 0.074,
+      "cpu_seconds": 0.0032
+    },
+    {
+      "url": "https://www.goodreads.com/book/show/18007564-the-martian",
+      "target_title": "The Martian",
+      "observed_at": "2026-10-11T00:53:31.370702+00:00",
+      "http_status": 202,
+      "blocked": true,
+      "error": "access_blocked",
+      "seconds": 0.013,
+      "cpu_seconds": 0.0028
+    },
+    {
+      "url": "https://www.goodreads.com/book/show/6288.The_Road",
+      "target_title": "The Road",
+      "observed_at": "2026-10-11T00:53:46.388443+00:00",
+      "http_status": 202,
+      "blocked": true,
+      "error": "access_blocked",
+      "seconds": 0.015,
+      "cpu_seconds": 0.0029
+    }
+  ],
+  "consecutive_blocks": 3,
+  "circuit_open": true,
+  "segments": [
+    {
+      "wall_seconds": 93.237,
+      "cpu_seconds": 0.1251,
+      "peak_python_mib": 41.66
+    }
+  ],
+  "status": "access_circuit_open",
+  "attempted": 6,
+  "http_200": 3,
+  "blocks": 3,
+  "verified": 2
+}

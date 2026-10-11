@@ -1,0 +1,331 @@
+[
+  {
+    "catalog_work_id": "/works/OL547365W",
+    "isbn13": "9780439050227",
+    "catalog_title": "David gets in trouble",
+    "catalog_authors": [],
+    "goodreads_book_id": "120840",
+    "goodreads_work_id": "1704454",
+    "xml_title": "David Gets In Trouble",
+    "xml_authors": [
+      "David Shannon"
+    ],
+    "edition": "/books/OL3950867M",
+    "edition_title": "David gets in trouble",
+    "work_title": "David gets in trouble",
+    "work_authors": [
+      "David Shannon",
+      "Teresa Mlawer"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "120840"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780439050227.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL547365W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL2385305W",
+    "isbn13": "9780449206522",
+    "catalog_title": "Tales of the South Pacific",
+    "catalog_authors": [],
+    "goodreads_book_id": "133488",
+    "goodreads_work_id": "1094851",
+    "xml_title": "Tales of the South Pacific",
+    "xml_authors": [
+      "James A. Michener"
+    ],
+    "edition": "/books/OL22986601M",
+    "edition_title": "Tales of the South Pacific",
+    "work_title": "Die S\u00fcdsee. Roman",
+    "work_authors": [
+      "James A. Michener",
+      "Steve Berry (conflated)"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "133488"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780449206522.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL2385305W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL11976326W",
+    "isbn13": "9780060891275",
+    "catalog_title": "Attack of the Fiend",
+    "catalog_authors": [
+      "Joseph Delaney"
+    ],
+    "goodreads_book_id": "1395209",
+    "goodreads_work_id": "1385362",
+    "xml_title": "Attack of the Fiend (The Last Apprentice / Wardstone Chronicles, #4)",
+    "xml_authors": [
+      "Joseph Delaney"
+    ],
+    "edition": "/books/OL9807162M",
+    "edition_title": "Attack of the Fiend",
+    "work_title": "Attack of the Fiend",
+    "work_authors": [
+      "Joseph Delaney"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "1395209"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780060891275.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL11976326W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL61453W",
+    "isbn13": "9780060283261",
+    "catalog_title": "If you give a pig a party",
+    "catalog_authors": [],
+    "goodreads_book_id": "181601",
+    "goodreads_work_id": "573440",
+    "xml_title": "If You Give a Pig a Party",
+    "xml_authors": [
+      "Laura Joffe Numeroff"
+    ],
+    "edition": "/books/OL3675537M",
+    "edition_title": "If you give a pig a party",
+    "work_title": "If you give a pig a party",
+    "work_authors": [
+      "Laura Joffe Numeroff"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "181601",
+      "3527226"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780060283261.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL61453W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL5759990W",
+    "isbn13": "9781423109600",
+    "catalog_title": "The pigeon wants a puppy!",
+    "catalog_authors": [],
+    "goodreads_book_id": "1908511",
+    "goodreads_work_id": "1910398",
+    "xml_title": "The Pigeon Wants a Puppy!",
+    "xml_authors": [
+      "Mo Willems"
+    ],
+    "edition": "/books/OL11842796M",
+    "edition_title": "Pigeon Wants..., The",
+    "work_title": "The pigeon wants a puppy!",
+    "work_authors": [
+      "Mo Willems"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": false,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "1908511"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": false,
+    "evidence_url": "https://openlibrary.org/isbn/9781423109600.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL5759990W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL5956851W",
+    "isbn13": "9780802139252",
+    "catalog_title": "Peace Like a River",
+    "catalog_authors": [],
+    "goodreads_book_id": "227571",
+    "goodreads_work_id": "3332231",
+    "xml_title": "Peace Like a River",
+    "xml_authors": [
+      "Leif Enger"
+    ],
+    "edition": "/books/OL23208874M",
+    "edition_title": "Peace Like a River",
+    "work_title": "Peace like a river",
+    "work_authors": [
+      "Leif Enger"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "227571"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780802139252.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL5956851W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL5969752W",
+    "isbn13": "9780689865190",
+    "catalog_title": "Crank",
+    "catalog_authors": [],
+    "goodreads_book_id": "270730",
+    "goodreads_work_id": "262457",
+    "xml_title": "Crank (Crank, #1)",
+    "xml_authors": [
+      "Ellen Hopkins"
+    ],
+    "edition": "/books/OL3699489M",
+    "edition_title": "Crank",
+    "work_title": "Crank",
+    "work_authors": [
+      "Ellen Hopkins"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "270730"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780689865190.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL5969752W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL13770232W",
+    "isbn13": "9780759529519",
+    "catalog_title": "Maximum Ride",
+    "catalog_authors": [
+      "NaRae Lee"
+    ],
+    "goodreads_book_id": "3173558",
+    "goodreads_work_id": "3206010",
+    "xml_title": "Maximum Ride, Vol. 1 (Maximum Ride: The Manga, #1)",
+    "xml_authors": [
+      "James Patterson"
+    ],
+    "edition": "/books/OL23187237M",
+    "edition_title": "Maximum Ride",
+    "work_title": "Maximum Ride. The Manga 1",
+    "work_authors": [
+      "NaRae Lee"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": false,
+    "title_agrees": false,
+    "independent_goodreads_ids": [
+      "3173558"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": false,
+    "evidence_url": "https://openlibrary.org/isbn/9780759529519.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL13770232W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL66218W",
+    "isbn13": "9780060987107",
+    "catalog_title": "Wicked",
+    "catalog_authors": [
+      "Gregory Maguire"
+    ],
+    "goodreads_book_id": "37442",
+    "goodreads_work_id": "1479280",
+    "xml_title": "Wicked: The Life and Times of the Wicked Witch of the West (The Wicked Years, #1)",
+    "xml_authors": [
+      "Gregory Maguire"
+    ],
+    "edition": "/books/OL7286082M",
+    "edition_title": "Wicked",
+    "work_title": "Wicked",
+    "work_authors": [
+      "Gregory Maguire"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": false,
+    "independent_goodreads_ids": [
+      "37442"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9780060987107.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL66218W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL2010891W",
+    "isbn13": "9780446677479",
+    "catalog_title": "Rich dad's cashflow quadrant",
+    "catalog_authors": [],
+    "goodreads_book_id": "81922",
+    "goodreads_work_id": "42235",
+    "xml_title": "Rich Dad's Cashflow Quadrant: Rich Dad's Guide to Financial Freedom",
+    "xml_authors": [
+      "Robert T. Kiyosaki",
+      "Sharon L. Lechter"
+    ],
+    "edition": "/books/OL7538184M",
+    "edition_title": "Cashflow Quadrant",
+    "work_title": "Rich dad's cashflow quadrant",
+    "work_authors": [
+      "Robert T. Kiyosaki"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": false,
+    "author_agrees": true,
+    "title_agrees": false,
+    "independent_goodreads_ids": [
+      "81922"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": false,
+    "evidence_url": "https://openlibrary.org/isbn/9780446677479.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL2010891W.json"
+  },
+  {
+    "catalog_work_id": "/works/OL5738570W",
+    "isbn13": "9781400066339",
+    "catalog_title": "The descendants",
+    "catalog_authors": [],
+    "goodreads_book_id": "968403",
+    "goodreads_work_id": "953300",
+    "xml_title": "The Descendants",
+    "xml_authors": [
+      "Kaui Hart Hemmings"
+    ],
+    "edition": "/books/OL8363867M",
+    "edition_title": "The Descendants",
+    "work_title": "The descendants",
+    "work_authors": [
+      "Kaui Hart Hemmings"
+    ],
+    "isbn_present": true,
+    "work_link_agrees": true,
+    "author_agrees": true,
+    "title_agrees": true,
+    "independent_goodreads_ids": [
+      "968403"
+    ],
+    "goodreads_id_agrees": true,
+    "verified": true,
+    "evidence_url": "https://openlibrary.org/isbn/9781400066339.json",
+    "work_evidence_url": "https://openlibrary.org/works/OL5738570W.json"
+  }
+]

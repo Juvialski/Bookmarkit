@@ -1,6 +1,5 @@
 """Offline synthetic safety, identity and historical boundary tests."""
 import contextlib
-import copy
 import io
 import json
 import pathlib
@@ -10,7 +9,8 @@ import unittest
 
 from goodreads_phase2 import run
 from goodreads_historical import parse_xml, valid_isbn, reconcile, import_dry_run, prototype_record
-from test_research_goodreads import ResearchParserTests
+from goodreads_verify_overlap import check
+import test_research_goodreads as live_fixture
 
 
 XML = b'''<GoodreadsResponse><book><id>1</id><title>Example</title>
@@ -59,7 +59,7 @@ class RunnerTests(unittest.TestCase):
                 run(self.targets(3),output,fetch=fetch,sleep=lambda _:None)
 
     def test_exact_live_extraction_and_conservative_spacing(self):
-        fixture=ResearchParserTests(); fixture.setUp()
+        fixture=live_fixture.ResearchParserTests(); fixture.setUp()
         target=dict(fixture.target,provenance={'kind':'synthetic'})
         waits=[]
         def fetch(url):
@@ -85,6 +85,19 @@ class HistoricalTests(unittest.TestCase):
         self.assertFalse(valid_isbn('9780439023482'))
         record=parse_xml(XML.replace(b'<ratings_sum>450',b'<ratings_sum>451'))
         self.assertFalse(record['work_average_agrees'])
+
+    def test_two_catalog_works_cannot_silently_share_one_goodreads_work(self):
+        duplicate=[self.catalog[0],dict(self.catalog[0],work_id='/works/OL9W')]
+        results,_=reconcile(duplicate,[self.record])
+        self.assertEqual([r['match'] for r in results],['ambiguous_work_mapping']*2)
+
+    def test_independent_isbn_evidence_rejects_wrong_work_and_author(self):
+        row=self.catalog[0]
+        edition=dict(key='/books/OL1M',isbn_13=[row['isbn13']],title='Example',works=[{'key':row['work_id']}],identifiers={'goodreads':['1']})
+        work=dict(title='Example')
+        self.assertTrue(check(row,self.record,edition,work,['Example Author'])['verified'])
+        self.assertFalse(check(row,self.record,dict(edition,works=[{'key':'/works/OL99W'}]),work,['Example Author'])['verified'])
+        self.assertFalse(check(row,self.record,edition,work,['Other Author'])['verified'])
 
     def test_missing_author_wrong_edition_and_conflicting_duplicate_rejected(self):
         results,_=reconcile(self.catalog,[self.record])
@@ -119,6 +132,7 @@ class HistoricalTests(unittest.TestCase):
             self.assertEqual(import_dry_run(db,[prototype]),dict(inserted=1,unchanged=0,conflicts=0))
             self.assertEqual(import_dry_run(db,[prototype]),dict(inserted=0,unchanged=1,conflicts=0))
             self.assertEqual(import_dry_run(db,[dict(prototype,rating_count=101)]),dict(inserted=0,unchanged=0,conflicts=1))
+            self.assertEqual(import_dry_run(db,[dict(prototype,catalog_work_id='/works/OL99W')]),dict(inserted=0,unchanged=0,conflicts=1))
             self.assertEqual(json.loads(db.execute('SELECT payload FROM historical_quarantine').fetchone()[0])['rating_count'],100)
 
 

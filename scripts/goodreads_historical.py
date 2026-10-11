@@ -94,21 +94,34 @@ def reconcile(catalog, records, mappings=()):
         json.dumps({k:r[k] for k in ('title','authors','isbn13','goodreads_work_id','average_rating','work_rating_count')},
                    sort_keys=True) for r in rows}) > 1}
     independent = defaultdict(list)
+    contrary = defaultdict(list)
     for mapping in mappings:
         if mapping.get('verified') and mapping.get('evidence_url'):
             independent[mapping['catalog_work_id']].append(mapping)
+        elif mapping.get('evidence_url') and (mapping.get('work_link_agrees') is False or mapping.get('author_agrees') is False):
+            contrary[mapping['catalog_work_id']].append(mapping)
     grouped = defaultdict(list)
     for row in catalog:
         grouped[row['work_id']].append(row)
     results = []
     for work_id, editions in sorted(grouped.items()):
-        exact, rejected = {}, []
+        exact, rejected, unresolved = {}, [], []
         for row in editions:
             for record in isbn_index[row['isbn13']]:
-                if record['book_id'] in duplicate_conflicts or not record['identity_valid'] or not compatible(row, record):
+                trusted = any(m.get('isbn13') == row['isbn13'] and m.get('catalog_title') == row['title'] and
+                    str(m.get('goodreads_book_id')) == record['book_id'] and
+                    str(m.get('goodreads_work_id')) == record['goodreads_work_id']
+                    for m in independent[work_id])
+                known_conflict = any(m.get('isbn13') == row['isbn13'] and
+                    str(m.get('goodreads_book_id')) == record['book_id'] for m in contrary[work_id])
+                if record['book_id'] in duplicate_conflicts or not record['identity_valid'] or known_conflict:
                     rejected.append(record['book_id'])
-                else:
+                elif compatible(row,record) or trusted:
                     exact[record['book_id']] = (record, row['isbn13'])
+                elif not row['authors']:
+                    unresolved.append(record['book_id'])
+                else:
+                    rejected.append(record['book_id'])
         work_ids = {r['goodreads_work_id'] for r,_ in exact.values()}
         if len(work_ids) == 1 and not rejected:
             # Multiple editions of the SAME work are allowed as work metadata,
@@ -117,6 +130,8 @@ def reconcile(catalog, records, mappings=()):
             result = dict(work_id=work_id, match='exact_isbn_compatible_identity', isbn13=isbn, record=record)
         elif exact or rejected:
             result = dict(work_id=work_id, match='conflict', conflicting_book_ids=sorted(set(rejected)|set(exact)))
+        elif unresolved:
+            result = dict(work_id=work_id, match='unvalidated_isbn_identity', candidates=sorted(set(unresolved)))
         else:
             mapped = {}
             for mapping in independent[work_id]:
@@ -134,8 +149,11 @@ def reconcile(catalog, records, mappings=()):
                 candidates = {record['book_id']:record for row in editions
                     for record in title_index[normalize(row['title'])] if compatible(row,record) and
                     record['identity_valid'] and record['book_id'] not in duplicate_conflicts}
+                title_only = {record['book_id'] for row in editions if not row['authors']
+                              for record in title_index[normalize(row['title'])]}
                 result = dict(work_id=work_id, match='title_author_candidate' if len(candidates)==1 else
-                    'ambiguous_candidate' if candidates else 'unmatched', candidates=sorted(candidates))
+                    'ambiguous_candidate' if candidates else 'title_only_unvalidated' if title_only else 'unmatched',
+                    candidates=sorted(candidates or title_only))
         results.append(result)
     # Exact matches can ALSO have independent corroboration; report separately.
     for result in results:
@@ -144,6 +162,15 @@ def reconcile(catalog, records, mappings=()):
             str(m.get('goodreads_book_id')) == r['book_id'] and
             str(m.get('goodreads_work_id')) == r['goodreads_work_id']
             for m in independent[result['work_id']]))
+    reverse = defaultdict(list)
+    for result in results:
+        if result.get('record'):
+            reverse[result['record']['goodreads_work_id']].append(result)
+    for matches in reverse.values():
+        if len(matches) > 1:
+            for result in matches:
+                result.update(match='ambiguous_work_mapping', candidates=[result.pop('record')['book_id']],
+                              independently_validated=False)
     return results, sorted(duplicate_conflicts)
 
 
@@ -160,7 +187,7 @@ def prototype_record(result, digest):
 
 def import_dry_run(db, records):
     # This database is a SEPARATE ignored scratch artifact, never a catalog copy.
-    db.execute('CREATE TABLE IF NOT EXISTS historical_quarantine (catalog_work_id TEXT PRIMARY KEY, goodreads_book_id TEXT NOT NULL, payload TEXT NOT NULL)')
+    db.execute('CREATE TABLE IF NOT EXISTS historical_quarantine (catalog_work_id TEXT PRIMARY KEY, goodreads_book_id TEXT NOT NULL UNIQUE, payload TEXT NOT NULL)')
     counts = Counter(inserted=0, unchanged=0, conflicts=0)
     for record in records:
         payload = json.dumps(record,sort_keys=True,separators=(',',':'))
@@ -168,9 +195,12 @@ def import_dry_run(db, records):
         if previous:
             counts['unchanged' if previous[0] == payload else 'conflicts'] += 1
         else:
-            db.execute('INSERT INTO historical_quarantine VALUES (?,?,?)',
-                (record['catalog_work_id'],record['goodreads_book_id'],payload))
-            counts['inserted'] += 1
+            try:
+                db.execute('INSERT INTO historical_quarantine VALUES (?,?,?)',
+                    (record['catalog_work_id'],record['goodreads_book_id'],payload))
+                counts['inserted'] += 1
+            except sqlite3.IntegrityError:
+                counts['conflicts'] += 1
     db.commit()
     return dict(counts)
 
@@ -206,7 +236,7 @@ def main():
     if scratch.exists():
         parser.error('use a fresh output directory for reproducible storage measurement')
     with sqlite3.connect(scratch) as db:
-        db.execute('CREATE TABLE IF NOT EXISTS historical_quarantine (catalog_work_id TEXT PRIMARY KEY, goodreads_book_id TEXT NOT NULL, payload TEXT NOT NULL)')
+        db.execute('CREATE TABLE IF NOT EXISTS historical_quarantine (catalog_work_id TEXT PRIMARY KEY, goodreads_book_id TEXT NOT NULL UNIQUE, payload TEXT NOT NULL)')
         db.commit()
         empty_size=scratch.stat().st_size
         first=import_dry_run(db,prototype)
@@ -226,8 +256,10 @@ def main():
         snapshot_era='2017',exact_retrieval_time=None,reuse_permission='unresolved; quarantined',
         dry_run_first=first,dry_run_second=second,dry_run_conflict=conflict,
         compact_payload_bytes=sum(len(json.dumps(r,sort_keys=True,separators=(',',':')).encode()) for r in prototype),
-        sqlite_quarantine_bytes=scratch.stat().st_size,sqlite_additional_bytes=scratch.stat().st_size-empty_size,
-        estimated_catalog_growth_percent=round(100*(scratch.stat().st_size-empty_size)/catalog_path.stat().st_size,4),
+        sqlite_quarantine_bytes=scratch.stat().st_size,sqlite_empty_schema_bytes=empty_size,
+        sqlite_data_page_growth_bytes=scratch.stat().st_size-empty_size,
+        estimated_separate_offline_database_increase_bytes=scratch.stat().st_size,
+        estimated_catalog_growth_percent=round(100*scratch.stat().st_size/catalog_path.stat().st_size,4),
         offline_wall_seconds=round(time.perf_counter()-start,3))
     (output/'report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(report,indent=2))
