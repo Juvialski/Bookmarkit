@@ -1,0 +1,527 @@
+[
+  {
+    "url": "https://www.goodreads.com/book/show/2767052-the-hunger-games",
+    "title": "The Hunger Games",
+    "authors": [
+      "Suzanne Collins"
+    ],
+    "isbns": [
+      "9780439023481"
+    ],
+    "goodreads_work_id": "2792775",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "2767052"
+    },
+    "publication_year": 2008,
+    "historical_rating_count": 4946741,
+    "subset": "a",
+    "independent_work_title": "The Hunger Games"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/7235533-the-way-of-kings",
+    "title": "The Way of Kings",
+    "authors": [
+      "Brandon Sanderson"
+    ],
+    "isbns": [
+      "9780765326355"
+    ],
+    "goodreads_work_id": "8134945",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "7235533"
+    },
+    "publication_year": 2010,
+    "historical_rating_count": 164747,
+    "subset": "b",
+    "independent_work_title": "The Way of Kings"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/1885.Pride_and_Prejudice",
+    "title": "Pride and Prejudice",
+    "authors": [
+      "Jane Austen"
+    ],
+    "isbns": [
+      "9780679783268"
+    ],
+    "goodreads_work_id": "3060926",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "1885"
+    },
+    "publication_year": 1813,
+    "historical_rating_count": 2193751,
+    "subset": "a",
+    "independent_work_title": "Pride and Prejudice"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/6969.Emma",
+    "title": "Emma",
+    "authors": [
+      "Jane Austen"
+    ],
+    "isbns": [
+      "9780141439587"
+    ],
+    "goodreads_work_id": "3360164",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "6969"
+    },
+    "publication_year": 1815,
+    "historical_rating_count": 498332,
+    "subset": "b",
+    "independent_work_title": "Emma"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/10964.Outlander",
+    "title": "Outlander",
+    "authors": [
+      "Diana Gabaldon"
+    ],
+    "isbns": [
+      "9780440242949"
+    ],
+    "goodreads_work_id": "2489796",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "10964"
+    },
+    "publication_year": 1991,
+    "historical_rating_count": 579498,
+    "subset": "a",
+    "independent_work_title": "Outlander"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/15931.The_Notebook",
+    "title": "The Notebook",
+    "authors": [
+      "Nicholas Sparks"
+    ],
+    "isbns": [
+      "9780553816716"
+    ],
+    "goodreads_work_id": "1498135",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "15931"
+    },
+    "publication_year": 1996,
+    "historical_rating_count": 1077153,
+    "subset": "b",
+    "independent_work_title": "The Notebook"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/11870085-the-fault-in-our-stars",
+    "title": "The Fault in Our Stars",
+    "authors": [
+      "John Green"
+    ],
+    "isbns": [
+      "9780525478812"
+    ],
+    "goodreads_work_id": "16827462",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "11870085"
+    },
+    "publication_year": 2012,
+    "historical_rating_count": 2481652,
+    "subset": "a",
+    "independent_work_title": "The Fault in Our Stars"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/8442457-gone-girl",
+    "title": "Gone Girl",
+    "authors": [
+      "Gillian Flynn"
+    ],
+    "isbns": [
+      "9780297859383"
+    ],
+    "goodreads_work_id": "13306276",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "8442457"
+    },
+    "publication_year": 2012,
+    "historical_rating_count": 1628110,
+    "subset": "b",
+    "independent_work_title": "Gone Girl"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/18007564-the-martian",
+    "title": "The Martian",
+    "authors": [
+      "Andy Weir"
+    ],
+    "isbns": [
+      "9780804139021"
+    ],
+    "goodreads_work_id": "21825181",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "18007564"
+    },
+    "publication_year": 2012,
+    "historical_rating_count": 530286,
+    "subset": "a",
+    "independent_work_title": "The Martian"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/186074.The_Name_of_the_Wind",
+    "title": "The Name of the Wind",
+    "authors": [
+      "Patrick Rothfuss"
+    ],
+    "isbns": [
+      "9780756404079"
+    ],
+    "goodreads_work_id": "2502879",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "186074"
+    },
+    "publication_year": 2007,
+    "historical_rating_count": 450128,
+    "subset": "b",
+    "independent_work_title": "The Name of the Wind"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/6288.The_Road",
+    "title": "The Road",
+    "authors": [
+      "Cormac McCarthy"
+    ],
+    "isbns": [
+      "9780307265432"
+    ],
+    "goodreads_work_id": "3355573",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "6288"
+    },
+    "publication_year": 2006,
+    "historical_rating_count": 556104,
+    "subset": "a",
+    "independent_work_title": "The Road"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/234225.Dune",
+    "title": "Dune",
+    "authors": [
+      "Frank Herbert"
+    ],
+    "isbns": [
+      "9780340839935"
+    ],
+    "goodreads_work_id": "3634639",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "234225"
+    },
+    "publication_year": 1965,
+    "historical_rating_count": 526421,
+    "subset": "b",
+    "independent_work_title": "Dune"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/18342.It",
+    "title": "It",
+    "authors": [
+      "Stephen King"
+    ],
+    "isbns": [
+      "9780451169518"
+    ],
+    "goodreads_work_id": "150259",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "18342"
+    },
+    "publication_year": 1986,
+    "historical_rating_count": 480287,
+    "subset": "a",
+    "independent_work_title": "It"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/18774964-a-man-called-ove",
+    "title": "A Man Called Ove",
+    "authors": [
+      "Fredrik Backman"
+    ],
+    "isbns": [
+      "9781476738017"
+    ],
+    "goodreads_work_id": "21619954",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "18774964"
+    },
+    "publication_year": 2012,
+    "historical_rating_count": 244674,
+    "subset": "b",
+    "independent_work_title": "En man som heter Ove"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/9361589-the-night-circus",
+    "title": "The Night Circus",
+    "authors": [
+      "Erin Morgenstern"
+    ],
+    "isbns": [
+      "9780385534635"
+    ],
+    "goodreads_work_id": "14245059",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "9361589"
+    },
+    "publication_year": 2011,
+    "historical_rating_count": 475312,
+    "subset": "a",
+    "independent_work_title": "The Night Circus"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/3153910-the-art-of-racing-in-the-rain",
+    "title": "The Art of Racing in the Rain",
+    "authors": [
+      "Garth Stein"
+    ],
+    "isbns": [
+      "9781554681723"
+    ],
+    "goodreads_work_id": "3175590",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "3153910"
+    },
+    "publication_year": 2006,
+    "historical_rating_count": 354557,
+    "subset": "b",
+    "independent_work_title": "The Art of Racing in the Rain"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/16181775-the-rosie-project",
+    "title": "The Rosie Project",
+    "authors": [
+      "Graeme Simsion"
+    ],
+    "isbns": [
+      "9781476729084"
+    ],
+    "goodreads_work_id": "22084678",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "16181775"
+    },
+    "publication_year": 2013,
+    "historical_rating_count": 305889,
+    "subset": "a",
+    "independent_work_title": "The Rosie Project"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/29044.The_Secret_History",
+    "title": "The Secret History",
+    "authors": [
+      "Donna Tartt"
+    ],
+    "isbns": [
+      "9781400031702"
+    ],
+    "goodreads_work_id": "221359",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "29044"
+    },
+    "publication_year": 1992,
+    "historical_rating_count": 189854,
+    "subset": "b",
+    "independent_work_title": "The Secret History"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/40440.The_Thirteenth_Tale",
+    "title": "The Thirteenth Tale",
+    "authors": [
+      "Diane Setterfield"
+    ],
+    "isbns": [
+      "9780743298025"
+    ],
+    "goodreads_work_id": "849453",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "40440"
+    },
+    "publication_year": 2006,
+    "historical_rating_count": 228716,
+    "subset": "a",
+    "independent_work_title": "The Thirteenth Tale"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/50202953",
+    "title": "Piranesi",
+    "authors": [
+      "Susanna Clarke"
+    ],
+    "isbns": [
+      "9781432886578",
+      "9781432895082",
+      "9781526622419",
+      "9781526622426",
+      "9781526622433",
+      "9781526622440",
+      "9781526622600",
+      "9781526625977"
+    ],
+    "work_id": "/works/OL20893680W",
+    "provenance": {
+      "kind": "phase1_discovery_candidate_independent_OpenLibrary_ISBN_identity",
+      "evidence": "https://openlibrary.org/isbn/9781432886578.json",
+      "note": "URL candidate only; accept solely after exact ISBN/title/author on book page"
+    },
+    "publication_year": 2020,
+    "subset": "b"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/60531406",
+    "title": "Tress of the Emerald Sea",
+    "authors": [
+      "Brandon Sanderson"
+    ],
+    "isbns": [
+      "9781250899651"
+    ],
+    "work_id": "/works/OL28687656W",
+    "provenance": {
+      "kind": "phase1_discovery_candidate_independent_OpenLibrary_ISBN_identity",
+      "evidence": "https://openlibrary.org/isbn/9781250899651.json",
+      "note": "URL candidate only; accept solely after exact ISBN/title/author on book page"
+    },
+    "publication_year": 2023,
+    "subset": "a"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/60531416",
+    "title": "Yumi and the Nightmare Painter",
+    "authors": [
+      "Brandon Sanderson"
+    ],
+    "isbns": [
+      "9781250899699"
+    ],
+    "work_id": "/works/OL31146657W",
+    "provenance": {
+      "kind": "phase1_discovery_candidate_independent_OpenLibrary_ISBN_identity",
+      "evidence": "https://openlibrary.org/isbn/9781250899699.json",
+      "note": "URL candidate only; accept solely after exact ISBN/title/author on book page"
+    },
+    "publication_year": 2023,
+    "subset": "b"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/57945316",
+    "title": "Babel",
+    "authors": [
+      "R. F. Kuang",
+      "Michel Pagel"
+    ],
+    "isbns": [
+      "9780008501815",
+      "9780008501822",
+      "9780008501839",
+      "9780008501853",
+      "9780008660567",
+      "9780008669867",
+      "9780063021426",
+      "9780063021433"
+    ],
+    "work_id": "/works/OL26443093W",
+    "provenance": {
+      "kind": "phase1_discovery_candidate_independent_OpenLibrary_ISBN_identity",
+      "evidence": "https://openlibrary.org/isbn/9780008501815.json",
+      "note": "URL candidate only; accept solely after exact ISBN/title/author on book page"
+    },
+    "publication_year": 2022,
+    "subset": "a"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/7107665",
+    "title": "The Hunger Games",
+    "authors": [
+      "Suzanne Collins"
+    ],
+    "isbns": [
+      "9780545229937"
+    ],
+    "goodreads_work_id": "2792775",
+    "work_id": "/works/OL5735363W",
+    "provenance": {
+      "kind": "OpenLibrary_ISBN_Goodreads_identifier",
+      "evidence": "https://openlibrary.org/isbn/9780545229937.json",
+      "edition": "/books/OL31073614M"
+    },
+    "subset": "b"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/46292.The_Divan",
+    "title": "The Divan",
+    "independent_work_title": "\u062f\u06cc\u0648\u0627\u0646\u200e\u200e [D\u012bv\u0101n]",
+    "authors": [
+      "Hafez"
+    ],
+    "isbns": [
+      "9789646534780"
+    ],
+    "goodreads_work_id": "45423",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "46292"
+    },
+    "publication_year": 1380,
+    "historical_rating_count": 6325,
+    "subset": "a"
+  },
+  {
+    "url": "https://www.goodreads.com/book/show/17903381-diary-ng-panget",
+    "title": "Diary ng Panget",
+    "independent_work_title": "Diary ng Panget",
+    "authors": [
+      "HaveYouSeenThisGirL"
+    ],
+    "isbns": [
+      "9789710573653"
+    ],
+    "goodreads_work_id": "22010619",
+    "provenance": {
+      "kind": "original_goodreads_xml",
+      "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+      "book_id": "17903381"
+    },
+    "publication_year": 2013,
+    "historical_rating_count": 7045,
+    "subset": "b"
+  }
+]
