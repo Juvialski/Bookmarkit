@@ -14,8 +14,11 @@ jobs:
           mkdir -p dist/research
           python - <<'PY'
           import json
-          target = {'url':'https://www.goodreads.com/book/show/2767052', 'title':'The Hunger Games', 'authors':['Suzanne Collins'], 'isbns':['9780439023481'], 'goodreads_work_id':'2792775'}
-          open('dist/research/target.json','w').write(json.dumps([target]))
+          targets = [
+            {'url':'https://www.goodreads.com/book/show/7235533', 'title':'The Way of Kings', 'authors':['Brandon Sanderson'], 'isbns':['9780765326355'], 'goodreads_work_id':'8134945'},
+            {'url':'https://www.goodreads.com/book/show/3', 'title':"Harry Potter and the Sorcerer's Stone", 'authors':['J. K. Rowling'], 'isbns':['9780439554930'], 'goodreads_work_id':'4640799'},
+            {'url':'https://www.goodreads.com/book/show/2657', 'title':'To Kill a Mockingbird', 'authors':['Harper Lee'], 'isbns':['9780061120084'], 'goodreads_work_id':'3275794'}]
+          open('dist/research/target.json','w').write(json.dumps(targets))
           PY
-          python scripts/research_goodreads.py --targets dist/research/target.json --output dist/research/runner.json --limit 1
+          python scripts/research_goodreads.py --targets dist/research/target.json --output dist/research/runner.json --limit 3
           cat dist/research/runner.json
