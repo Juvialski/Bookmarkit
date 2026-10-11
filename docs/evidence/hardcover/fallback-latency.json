@@ -1,0 +1,41 @@
+[
+  {
+    "isbn": "9780439023481",
+    "title": "The Hunger Games",
+    "initialMs": 57.94,
+    "enrichedMs": 3074.7,
+    "initialProvider": "Goodreads",
+    "finalProvider": "Goodreads",
+    "average": 4.36,
+    "count": 10311943,
+    "source": "real bundled catalog plus public fallback APIs; Hardcover disabled"
+  },
+  {
+    "isbn": "9780765320308",
+    "title": "Warbreaker",
+    "initialMs": 3.18,
+    "enrichedMs": 949.11,
+    "initialProvider": "Open Library",
+    "finalProvider": "Open Library",
+    "average": 4.291666666666667,
+    "count": 24,
+    "source": "real bundled catalog plus public fallback APIs; Hardcover disabled"
+  },
+  {
+    "isbn": "9780765326355",
+    "title": "The Way of Kings",
+    "initialMs": 1.39,
+    "enrichedMs": 1036.28,
+    "initialProvider": "Open Library",
+    "finalProvider": "Open Library",
+    "average": 4.508982035928144,
+    "count": 167,
+    "source": "real bundled catalog plus public fallback APIs; Hardcover disabled"
+  },
+  {
+    "query": "The Way of Kings / Brandon Sanderson",
+    "firstSearchMs": 253.31,
+    "results": 1,
+    "source": "public fallback search; Hardcover disabled"
+  }
+]

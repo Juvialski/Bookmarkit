@@ -1,0 +1,21 @@
+{
+  "project_ref": "xxijxuekfsxuzhnujqem",
+  "verified_on": "2026-10-11",
+  "sql_contract": "pass",
+  "transaction": "rolled_back",
+  "hardcover_cache_after_rollback": null,
+  "catalog_works_after_rollback": 25266,
+  "migration_sha256": "787937b1828cc0afd87de742a563ece64be5e777d8bc15c1bd8713d81a458ca5",
+  "scope": [
+    "public_cache_read",
+    "denied_anon_write",
+    "denied_anon_privileged_rpc",
+    "private_queue_denied",
+    "identity_conflict",
+    "duplicate_lease",
+    "spacing",
+    "daily_budget",
+    "durable_cooldown"
+  ],
+  "live_provider": false
+}

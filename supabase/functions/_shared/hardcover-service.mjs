@@ -10,6 +10,13 @@ export const DETAILS = `query CandidateBooks($ids: [Int!]!) {
     featured_book_series { compilation position series { name } }
   }
 }`;
+export const EXACT_TITLE = `query ExactTitleBooks($title: String!, $author: String!) {
+  books(where: {title: {_eq: $title}, book_status_id: {_eq: 1}, canonical_id: {_is_null: true}, contributions: {author: {name: {_eq: $author}}}}, order_by: {id: asc}, limit: 9) {
+    id title slug book_status_id canonical_id rating ratings_count image { url }
+    contributions(limit: 8, order_by: {id: asc}) { contribution author { name } }
+    featured_book_series { compilation position series { name } }
+  }
+}`;
 export function validateQuery(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(k => !['isbn','title','author'].includes(k))) throw new LookupError(400);
   if (input.isbn !== undefined) {
@@ -25,6 +32,7 @@ export function normalizeCandidates(payload, query, ids) {
   const candidates = new Map();
   for (const book of payload.data.books) {
     if (!ids.includes(book.id)) throw new LookupError();
+    if((book.book_status_id !== undefined && book.book_status_id !== 1) || book.canonical_id != null) continue;
     // Synthetic wrapper reuses work normalization, never an edition/ISBN claim.
     const normalized = normalizeHardcover({ data: { editions: [{ isbn_13: '9780439023481', title: book.title, book }] } }, '9780439023481');
     delete normalized.isbn;
@@ -65,11 +73,11 @@ export function createHardcoverService({ token='', store, fetcher=fetch, now=Dat
     const query=validateQuery(input), key=await queryKey(query);
     if (pending.has(key)) return pending.get(key);
     const operation=(async () => {
-      const cached=await store.get(key);
+      const cached=await store.get(key,query);
       if (cached && Date.parse(cached.expires_at)>now()) return {...cached.payload,cacheHit:true};
       if (!token.trim()) throw new LookupError(503);
       // One persistent budget across isolates; reservation also leases this key.
-      if (!await store.reserve(key,query,query.isbn ? 1 : 2)) throw new LookupError(429);
+      if (!await store.reserve(key,query,1)) throw new LookupError(429);
       try {
         let result;
         if (query.isbn) {
@@ -78,16 +86,13 @@ export function createHardcoverService({ token='', store, fetcher=fetch, now=Dat
           result=normalizeHardcover(payload,query.isbn);
         }
         else {
-          const search=await request(SEARCH,{query:query.title+' '+query.author});
-          if (search.errors) throw new LookupError();
-          let results=search.data?.search?.results;
-          if (typeof results==='string') results=JSON.parse(results);
-          if (!results || !Array.isArray(results.hits) || results.hits.length>8 || results.found>8) result={found:false,ambiguous:true};
-          else {
-            const ids=[...new Set(results.hits.map(hit=>Number(hit.document?.id)))];
-            if (ids.some(id=>!Number.isSafeInteger(id)||id<=0)) throw new LookupError();
-            result=ids.length ? normalizeCandidates(await request(DETAILS,{ids}),query,ids) : {found:false};
-          }
+          // Exact title equality is supported by the official GraphQL schema.
+          // Unlike the fuzzy search index, related study guides cannot crowd
+          // out a popular novel. The ninth row is a truncation sentinel.
+          const exact=await request(EXACT_TITLE,{title:query.title,author:query.author});
+          if(exact.errors || !Array.isArray(exact.data?.books)) throw new LookupError();
+          result=exact.data.books.length>=9 ? {found:false,ambiguous:true} :
+            normalizeCandidates(exact,query,exact.data.books.map(b=>b.id));
         }
         if (result.found) {
           if (!result.authors.length) throw new LookupError();

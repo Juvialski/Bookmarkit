@@ -13,7 +13,17 @@ async function api(path: string, body?: object) {
   return boundedJson(response);
 }
 const lookup=createHardcoverService({token:Deno.env.get('HARDCOVER_API_TOKEN') || '',store:{
-  get:async(key: string)=>(await api('hardcover_cache?select=payload,expires_at&cache_key=eq.'+key))[0],
+  get:async(key: string,query: {title?: string;author?: string})=>{
+    const direct=(await api('hardcover_cache?select=payload,expires_at&cache_key=eq.'+key))[0];
+    if(direct || !query.title || !query.author) return direct;
+    const rows=await api('hardcover_cache?select=payload,expires_at&title=eq.'+encodeURIComponent(query.title)+
+      '&primary_author=eq.'+encodeURIComponent(query.author)+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&limit=9');
+    if(!rows.length || rows.length>=9 || new Set(rows.map((r: {payload:{hardcoverId:string}})=>r.payload.hardcoverId)).size!==1) return null;
+    rows.sort((a: {expires_at:string},b: {expires_at:string})=>Date.parse(b.expires_at)-Date.parse(a.expires_at));
+    const result=rows[0]; const payload={...result.payload,identity:'work'};
+    delete payload.isbn; delete payload.hardcoverEditionId;
+    return {...result,payload};
+  },
   reserve:(key: string,request: object,cost: number)=>api('rpc/reserve_hardcover',{key,request,cost}),
   put:(key: string,request: object,record: object)=>api('rpc/put_hardcover',{key,request,record}),
   finish:(key: string,seconds: number)=>api('rpc/finish_hardcover',{key,seconds}),

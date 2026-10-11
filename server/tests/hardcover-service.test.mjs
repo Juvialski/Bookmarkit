@@ -24,11 +24,11 @@ test('title/primary-author search hydrates IDs; work result has no fabricated IS
  const store=memoryStore();const seen=[];
  const lookup=createHardcoverService({token:'test-only',store,now:()=>0,fetcher:async(_url,init)=>{
   const q=JSON.parse(init.body);seen.push(q);
-  return Response.json(seen.length===1?{data:{search:{results:{found:1,hits:[{document:{id:'123'}}]}}}}:{data:{books:[book]}});
+  return Response.json({data:{books:[book]}});
  }});
  const result=await lookup({title:book.title,author:'Brandon Sanderson'});
  assert.equal(result.identity,'work');assert.equal(result.isbn,undefined);assert.equal(result.rating,4.56);
- assert.equal(seen.length,2);assert.equal(store.events[0][3],2);assert.deepEqual(seen[1].variables,{ids:[123]});
+ assert.equal(seen.length,1);assert.equal(store.events[0][3],1);assert.deepEqual(seen[0].variables,{title:book.title,author:'Brandon Sanderson'});
 });
 test('conflicting authors/titles, translations and duplicate work identities are rejected',()=>{
  const query={title:book.title,author:'Brandon Sanderson'};
@@ -37,6 +37,7 @@ test('conflicting authors/titles, translations and duplicate work identities are
  }
  assert.equal(normalizeCandidates({data:{books:[book,{...book,id:456}]}},query,[123,456]).ambiguous,true);
  assert.throws(()=>normalizeCandidates({data:{books:[book,{...book,rating:1}]}},query,[123]));
+ assert.equal(normalizeCandidates({data:{books:[book,{...book,id:456,book_status_id:4}]}},query,[123,456]).hardcoverId,'123');
 });
 test('invalid inputs, missing token, lease denial never request upstream',async()=>{
  for(const input of [{title:'Only title'}, {isbn:'9780765326356'}, {isbn,query:'mutation'}, {title:'',author:'X'}]) assert.throws(()=>validateQuery(input));

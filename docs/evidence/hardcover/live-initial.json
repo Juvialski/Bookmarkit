@@ -1,0 +1,1171 @@
+[
+  {
+    "target": "The Hunger Games",
+    "query": {
+      "isbn": "9780439023481"
+    },
+    "status": 200,
+    "lookup_ms": 4382.18,
+    "result": {
+      "found": true,
+      "isbn": "9780439023481",
+      "title": "The Hunger Games",
+      "authors": [
+        "Suzanne Collins"
+      ],
+      "hardcoverId": "88639",
+      "hardcoverEditionId": "1589497",
+      "coverUrl": "https://assets.hardcover.app/editions/1589497/2979196565308831-lf%202.jpeg",
+      "rating": 4.128054240757324,
+      "ratingsCount": 7817,
+      "seriesName": "The Hunger Games",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-hunger-games",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:50:06.522Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780439023481"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 619.82,
+    "cache_hit": true
+  },
+  {
+    "target": "The Hunger Games",
+    "query": {
+      "title": "The Hunger Games",
+      "author": "Suzanne Collins"
+    },
+    "status": 200,
+    "lookup_ms": 2387.01,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "The Way of Kings",
+    "query": {
+      "isbn": "9780765326355"
+    },
+    "status": 200,
+    "lookup_ms": 2129.1,
+    "result": {
+      "found": true,
+      "isbn": "9780765326355",
+      "title": "The Way of Kings",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "hardcoverId": "386446",
+      "hardcoverEditionId": "3134360",
+      "coverUrl": "https://assets.hardcover.app/edition/3134360/a18d937805a28e3214a556442c8d33f41c02f2cb.jpeg",
+      "rating": 4.638603696098563,
+      "ratingsCount": 3896,
+      "seriesName": "The Stormlight Archive",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-way-of-kings",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:50:23.822Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780765326355"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 540.33,
+    "cache_hit": true
+  },
+  {
+    "target": "The Way of Kings",
+    "query": {
+      "title": "The Way of Kings",
+      "author": "Brandon Sanderson"
+    },
+    "status": 200,
+    "lookup_ms": 2126.23,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Warbreaker",
+    "query": {
+      "isbn": "9780765320308"
+    },
+    "status": 200,
+    "lookup_ms": 2051.67,
+    "result": {
+      "found": true,
+      "isbn": "9780765320308",
+      "title": "Warbreaker",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "hardcoverId": "385491",
+      "hardcoverEditionId": "28188510",
+      "coverUrl": "https://assets.hardcover.app/edition/28188510/d2bfa4645e6a05879e663f2b72264dc150610210.jpeg",
+      "rating": 4.210574293527803,
+      "ratingsCount": 2194,
+      "seriesName": "Warbreaker",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/warbreaker",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:50:40.541Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780765320308"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 577.97,
+    "cache_hit": true
+  },
+  {
+    "target": "Warbreaker",
+    "query": {
+      "title": "Warbreaker",
+      "author": "Brandon Sanderson"
+    },
+    "status": 200,
+    "lookup_ms": 2696.09,
+    "result": {
+      "found": true,
+      "title": "Warbreaker",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "hardcoverId": "385491",
+      "coverUrl": "https://assets.hardcover.app/edition/28188510/d2bfa4645e6a05879e663f2b72264dc150610210.jpeg",
+      "rating": 4.210574293527803,
+      "ratingsCount": 2194,
+      "seriesName": "Warbreaker",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/warbreaker",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:50:49.807Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "Warbreaker",
+        "author": "Brandon Sanderson"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 550.89,
+    "cache_hit": true
+  },
+  {
+    "target": "Harry Potter and the Philosopher's Stone",
+    "query": {
+      "isbn": "9780195798586"
+    },
+    "status": 200,
+    "lookup_ms": 1815.57,
+    "result": {
+      "found": true,
+      "isbn": "9780195798586",
+      "title": "Harry Potter and the Sorcerer's Stone",
+      "authors": [
+        "J.K. Rowling"
+      ],
+      "hardcoverId": "328491",
+      "hardcoverEditionId": "2537201",
+      "coverUrl": "https://assets.hardcover.app/edition/2537201/716be790647984f862f5d3ac5ef12af89e4f0fd3.jpeg",
+      "rating": 4.281237197869726,
+      "ratingsCount": 9764,
+      "seriesName": "Harry Potter",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/harry-potter-and-the-philosophers-stone",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:50:58.298Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780195798586"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": false,
+    "cache_status": 200,
+    "cache_ms": 584.08,
+    "cache_hit": true
+  },
+  {
+    "target": "Harry Potter and the Philosopher's Stone",
+    "query": {
+      "title": "Harry Potter and the Philosopher's Stone",
+      "author": "J. K. Rowling"
+    },
+    "status": 200,
+    "lookup_ms": 2678.94,
+    "result": {
+      "found": true,
+      "title": "Harry Potter and the Philosopher's Stone",
+      "authors": [
+        "J.K. Rowling"
+      ],
+      "hardcoverId": "328491",
+      "coverUrl": "https://assets.hardcover.app/external_data/4257970/a3a1bbb3dae498a7a8316be0cc9bc5e91f6c34c9.jpeg",
+      "rating": 4.281237197869726,
+      "ratingsCount": 9764,
+      "seriesName": "Harry Potter",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/harry-potter-and-the-philosophers-stone",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:51:07.446Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "Harry Potter and the Philosopher's Stone",
+        "author": "J. K. Rowling"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 477.89,
+    "cache_hit": true
+  },
+  {
+    "target": "Dune",
+    "query": {
+      "isbn": "9780143111580"
+    },
+    "status": 200,
+    "lookup_ms": 1834.74,
+    "result": {
+      "found": true,
+      "isbn": "9780143111580",
+      "title": "Dune",
+      "authors": [
+        "Frank Herbert"
+      ],
+      "hardcoverId": "312460",
+      "hardcoverEditionId": "30549074",
+      "coverUrl": "https://assets.hardcover.app/external_data/40278592/d45c8e10efb376123075be7de06c9403c3ef7d84.jpeg",
+      "rating": 4.334039432947694,
+      "ratingsCount": 6137,
+      "seriesName": "Dune",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/dune",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:51:15.744Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780143111580"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 431.62,
+    "cache_hit": true
+  },
+  {
+    "target": "Dune",
+    "query": {
+      "title": "Dune",
+      "author": "Frank Herbert"
+    },
+    "status": 200,
+    "lookup_ms": 1703.98,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "The Road",
+    "query": {
+      "isbn": "9780307265432"
+    },
+    "status": 200,
+    "lookup_ms": 1891.77,
+    "result": {
+      "found": true,
+      "isbn": "9780307265432",
+      "title": "The Road",
+      "authors": [
+        "Cormac McCarthy"
+      ],
+      "hardcoverId": "36087",
+      "hardcoverEditionId": "31785615",
+      "coverUrl": "https://assets.hardcover.app/edition/31785615/0af0821b60021187e6a37840ffb1a8543fd90169.jpeg",
+      "rating": 4.0200471698113205,
+      "ratingsCount": 2544,
+      "url": "https://hardcover.app/books/the-road",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:51:31.937Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780307265432"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 555.82,
+    "cache_hit": true
+  },
+  {
+    "target": "The Road",
+    "query": {
+      "title": "The Road",
+      "author": "Cormac McCarthy"
+    },
+    "status": 200,
+    "lookup_ms": 964.2,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Pride and Prejudice",
+    "query": {
+      "isbn": "9780003700756"
+    },
+    "status": 200,
+    "lookup_ms": 1605.89,
+    "result": {
+      "found": false,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Pride and Prejudice",
+    "query": {
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen"
+    },
+    "status": 502,
+    "lookup_ms": 2067.05,
+    "result": {}
+  },
+  {
+    "target": "Emma",
+    "query": {
+      "isbn": "9780004244136"
+    },
+    "status": 200,
+    "lookup_ms": 1644.23,
+    "result": {
+      "found": false,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Emma",
+    "query": {
+      "title": "Emma",
+      "author": "Jane Austen"
+    },
+    "status": 200,
+    "lookup_ms": 2589.25,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "It",
+    "query": {
+      "isbn": "9780142427873"
+    },
+    "status": 200,
+    "lookup_ms": 1773.64,
+    "result": {
+      "found": true,
+      "isbn": "9780142427873",
+      "title": "It",
+      "authors": [
+        "Stephen King"
+      ],
+      "hardcoverId": "373525",
+      "hardcoverEditionId": "21116624",
+      "coverUrl": "https://assets.hardcover.app/edition/21116624/6db2d20572e9d0f48c44366a138d3587ab019ddf.jpeg",
+      "rating": 4.161938202247191,
+      "ratingsCount": 1780,
+      "url": "https://hardcover.app/books/it",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:52:19.144Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780142427873"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 424.49,
+    "cache_hit": true
+  },
+  {
+    "target": "It",
+    "query": {
+      "title": "It",
+      "author": "Stephen King"
+    },
+    "status": 200,
+    "lookup_ms": 1967.95,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "To Kill a Mockingbird",
+    "query": {
+      "isbn": "9780061120084"
+    },
+    "status": 200,
+    "lookup_ms": 1706.6,
+    "result": {
+      "found": true,
+      "isbn": "9780061120084",
+      "title": "To Kill a Mockingbird",
+      "authors": [
+        "Harper Lee"
+      ],
+      "hardcoverId": "149361",
+      "hardcoverEditionId": "26018643",
+      "coverUrl": "https://assets.hardcover.app/external_data/26723348/d70301539cd9f242bd583f2d631c3806fa91c698.jpeg",
+      "rating": 4.173886883273165,
+      "ratingsCount": 4986,
+      "seriesName": "To Kill a Mockingbird",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/to-kill-a-mockingbird",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:52:35.239Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780061120084"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 444.59,
+    "cache_hit": true
+  },
+  {
+    "target": "To Kill a Mockingbird",
+    "query": {
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee"
+    },
+    "status": 200,
+    "lookup_ms": 1692.17,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Piranesi",
+    "query": {
+      "isbn": "9781432886578"
+    },
+    "status": 200,
+    "lookup_ms": 1782.13,
+    "result": {
+      "found": true,
+      "isbn": "9781432886578",
+      "title": "Piranesi",
+      "authors": [
+        "Susanna Clarke"
+      ],
+      "hardcoverId": "175280",
+      "hardcoverEditionId": "32805677",
+      "coverUrl": "https://assets.hardcover.app/edition/32805677/c3019866-30b9-42a3-9e24-6497464ac6e9.jpg",
+      "rating": 4.220870967741935,
+      "ratingsCount": 3100,
+      "url": "https://hardcover.app/books/piranesi",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:52:51.164Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9781432886578"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 431.51,
+    "cache_hit": true
+  },
+  {
+    "target": "Piranesi",
+    "query": {
+      "title": "Piranesi",
+      "author": "Susanna Clarke"
+    },
+    "status": 200,
+    "lookup_ms": 1671.62,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Tress of the Emerald Sea",
+    "query": {
+      "isbn": "9781250899651"
+    },
+    "status": 200,
+    "lookup_ms": 2644.29,
+    "result": {
+      "found": true,
+      "isbn": "9781250899651",
+      "title": "Tress of the Emerald Sea",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "hardcoverId": "602482",
+      "hardcoverEditionId": "30594454",
+      "coverUrl": "https://assets.hardcover.app/external_data/60564134/fc31b11ae8f367e5717cf7916e557846dbc356f7.jpeg",
+      "rating": 4.395277207392197,
+      "ratingsCount": 1948,
+      "seriesName": "Hoid's Travails",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/tress-of-the-emerald-sea",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:53:07.894Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9781250899651"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 446.51,
+    "cache_hit": true
+  },
+  {
+    "target": "Tress of the Emerald Sea",
+    "query": {
+      "title": "Tress of the Emerald Sea",
+      "author": "Brandon Sanderson"
+    },
+    "status": 200,
+    "lookup_ms": 592.52,
+    "result": {
+      "url": "https://hardcover.app/books/tress-of-the-emerald-sea",
+      "found": true,
+      "title": "Tress of the Emerald Sea",
+      "rating": 4.395277207392197,
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "coverUrl": "https://assets.hardcover.app/external_data/60564134/fc31b11ae8f367e5717cf7916e557846dbc356f7.jpeg",
+      "identity": "work",
+      "verified": true,
+      "seriesName": "Hoid's Travails",
+      "hardcoverId": "602482",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:53:07.894Z",
+      "ratingsCount": 1948,
+      "matchEvidence": {
+        "isbn": "9781250899651",
+        "method": "exact_isbn_parent_book"
+      },
+      "seriesPosition": "1",
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 563.76,
+    "cache_hit": true
+  },
+  {
+    "target": "Yumi and the Nightmare Painter",
+    "query": {
+      "isbn": "9781250899699"
+    },
+    "status": 200,
+    "lookup_ms": 1680.47,
+    "result": {
+      "found": true,
+      "isbn": "9781250899699",
+      "title": "Yumi and the Nightmare Painter",
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "hardcoverId": "763207",
+      "hardcoverEditionId": "30607196",
+      "coverUrl": "https://assets.hardcover.app/edition/30607196/1843637c1e8bb0c49077d12f3f03e0afce1f149c.jpeg",
+      "rating": 4.4392797319933,
+      "ratingsCount": 1194,
+      "seriesName": "Hoid's Travails",
+      "seriesPosition": "2",
+      "url": "https://hardcover.app/books/yumi-and-the-nightmare-painter",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:53:23.210Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9781250899699"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 441.05,
+    "cache_hit": true
+  },
+  {
+    "target": "Yumi and the Nightmare Painter",
+    "query": {
+      "title": "Yumi and the Nightmare Painter",
+      "author": "Brandon Sanderson"
+    },
+    "status": 200,
+    "lookup_ms": 677.88,
+    "result": {
+      "url": "https://hardcover.app/books/yumi-and-the-nightmare-painter",
+      "found": true,
+      "title": "Yumi and the Nightmare Painter",
+      "rating": 4.4392797319933,
+      "authors": [
+        "Brandon Sanderson"
+      ],
+      "coverUrl": "https://assets.hardcover.app/edition/30607196/1843637c1e8bb0c49077d12f3f03e0afce1f149c.jpeg",
+      "identity": "work",
+      "verified": true,
+      "seriesName": "Hoid's Travails",
+      "hardcoverId": "763207",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:53:23.210Z",
+      "ratingsCount": 1194,
+      "matchEvidence": {
+        "isbn": "9781250899699",
+        "method": "exact_isbn_parent_book"
+      },
+      "seriesPosition": "2",
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 512.7,
+    "cache_hit": true
+  },
+  {
+    "target": "Babel",
+    "query": {
+      "isbn": "9780008501815"
+    },
+    "status": 200,
+    "lookup_ms": 1812.84,
+    "result": {
+      "found": true,
+      "isbn": "9780008501815",
+      "title": "Babel: Or the Necessity of Violence: An Arcane History of the Oxford Translators\u2019 Revolution",
+      "authors": [
+        "R.F. Kuang"
+      ],
+      "hardcoverId": "496492",
+      "hardcoverEditionId": "30422952",
+      "coverUrl": "https://assets.hardcover.app/edition/30422952/02b010ca7029a218d659bed8ad896bf2e0a200ea.jpeg",
+      "rating": 4.046233766233766,
+      "ratingsCount": 1925,
+      "url": "https://hardcover.app/books/babel",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:53:38.659Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780008501815"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": false,
+    "cache_status": 200,
+    "cache_ms": 411.65,
+    "cache_hit": true
+  },
+  {
+    "target": "Babel",
+    "query": {
+      "title": "Babel",
+      "author": "R. F. Kuang"
+    },
+    "status": 200,
+    "lookup_ms": 989.7,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "target": "Fantastic Mr. Fox",
+    "query": {
+      "isbn": "9780140328721"
+    },
+    "status": 200,
+    "lookup_ms": 1822.04,
+    "result": {
+      "found": true,
+      "isbn": "9780140328721",
+      "title": "Fantastic Mr. Fox",
+      "authors": [
+        "Roald Dahl"
+      ],
+      "hardcoverId": "15579",
+      "hardcoverEditionId": "1525225",
+      "coverUrl": "https://assets.hardcover.app/external_data/3343060/4e7432582390d0dcfcc436aff6f5a8b4602fac6a.jpeg",
+      "rating": 3.8938775510204082,
+      "ratingsCount": 245,
+      "url": "https://hardcover.app/books/fantastic-mr-fox",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:53:53.881Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780140328721"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 406.67,
+    "cache_hit": true
+  },
+  {
+    "target": "Fantastic Mr. Fox",
+    "query": {
+      "title": "Fantastic Mr. Fox",
+      "author": "Roald Dahl"
+    },
+    "status": 200,
+    "lookup_ms": 616.07,
+    "result": {
+      "url": "https://hardcover.app/books/fantastic-mr-fox",
+      "found": true,
+      "title": "Fantastic Mr. Fox",
+      "rating": 3.8938775510204082,
+      "authors": [
+        "Roald Dahl"
+      ],
+      "coverUrl": "https://assets.hardcover.app/external_data/3343060/4e7432582390d0dcfcc436aff6f5a8b4602fac6a.jpeg",
+      "identity": "work",
+      "verified": true,
+      "hardcoverId": "15579",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:53:53.881Z",
+      "ratingsCount": 245,
+      "matchEvidence": {
+        "isbn": "9780140328721",
+        "method": "exact_isbn_parent_book"
+      },
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 577.82,
+    "cache_hit": true
+  },
+  {
+    "target": "The Hobbit",
+    "query": {
+      "isbn": "9780547928227"
+    },
+    "status": 200,
+    "lookup_ms": 1904.91,
+    "result": {
+      "found": true,
+      "isbn": "9780547928227",
+      "title": "The Hobbit",
+      "authors": [
+        "J.R.R. Tolkien"
+      ],
+      "hardcoverId": "2459845",
+      "hardcoverEditionId": "18521437",
+      "coverUrl": "https://assets.hardcover.app/edition/18521437/a35044c6817357b701da3bcac5dce295244c32ba.jpeg",
+      "rating": 4.3132188091425245,
+      "ratingsCount": 6869,
+      "seriesName": "Middle Earth",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-hobbit",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:54:09.353Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780547928227"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 450.72,
+    "cache_hit": true
+  },
+  {
+    "target": "The Hobbit",
+    "query": {
+      "title": "The Hobbit",
+      "author": "J.R.R. Tolkien"
+    },
+    "status": 200,
+    "lookup_ms": 609.18,
+    "result": {
+      "url": "https://hardcover.app/books/the-hobbit",
+      "found": true,
+      "title": "The Hobbit",
+      "rating": 4.3132188091425245,
+      "authors": [
+        "J.R.R. Tolkien"
+      ],
+      "coverUrl": "https://assets.hardcover.app/edition/18521437/a35044c6817357b701da3bcac5dce295244c32ba.jpeg",
+      "identity": "work",
+      "verified": true,
+      "seriesName": "Middle Earth",
+      "hardcoverId": "2459845",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:54:09.353Z",
+      "ratingsCount": 6869,
+      "matchEvidence": {
+        "isbn": "9780547928227",
+        "method": "exact_isbn_parent_book"
+      },
+      "seriesPosition": "1",
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 528.34,
+    "cache_hit": true
+  },
+  {
+    "target": "The Shining",
+    "query": {
+      "isbn": "9780307743657"
+    },
+    "status": 200,
+    "lookup_ms": 2110.03,
+    "result": {
+      "found": true,
+      "isbn": "9780307743657",
+      "title": "The Shining",
+      "authors": [
+        "Stephen King"
+      ],
+      "hardcoverId": "280359",
+      "hardcoverEditionId": "9417482",
+      "coverUrl": "https://assets.hardcover.app/edition/9417482/0efb5b5786521d5b4345557b40d1a3452053b372.jpeg",
+      "rating": 4.1950959488272925,
+      "ratingsCount": 2345,
+      "seriesName": "The Shining",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-shining",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:54:25.084Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780307743657"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 442.26,
+    "cache_hit": true
+  },
+  {
+    "target": "The Shining",
+    "query": {
+      "title": "The Shining",
+      "author": "Stephen King"
+    },
+    "status": 200,
+    "lookup_ms": 517.03,
+    "result": {
+      "url": "https://hardcover.app/books/the-shining",
+      "found": true,
+      "title": "The Shining",
+      "rating": 4.1950959488272925,
+      "authors": [
+        "Stephen King"
+      ],
+      "coverUrl": "https://assets.hardcover.app/edition/9417482/0efb5b5786521d5b4345557b40d1a3452053b372.jpeg",
+      "identity": "work",
+      "verified": true,
+      "seriesName": "The Shining",
+      "hardcoverId": "280359",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:54:25.084Z",
+      "ratingsCount": 2345,
+      "matchEvidence": {
+        "isbn": "9780307743657",
+        "method": "exact_isbn_parent_book"
+      },
+      "seriesPosition": "1",
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 567.77,
+    "cache_hit": true
+  },
+  {
+    "target": "The Name of the Wind",
+    "query": {
+      "isbn": "9780345805362"
+    },
+    "status": 200,
+    "lookup_ms": 1818.45,
+    "result": {
+      "found": true,
+      "isbn": "9780345805362",
+      "title": "El nombre del viento",
+      "authors": [
+        "Patrick Rothfuss"
+      ],
+      "hardcoverId": "379217",
+      "hardcoverEditionId": "28439347",
+      "coverUrl": "https://assets.hardcover.app/edition/28439347/ccc250df7b7b0c4bef14f8e58306a1ea14489993.jpeg",
+      "rating": 4.478768577494692,
+      "ratingsCount": 3768,
+      "seriesName": "The Kingkiller Chronicle",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-name-of-the-wind",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:54:40.447Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780345805362"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": false,
+    "cache_status": 200,
+    "cache_ms": 437.62,
+    "cache_hit": true
+  },
+  {
+    "target": "The Name of the Wind",
+    "query": {
+      "title": "The Name of the Wind",
+      "author": "Patrick Rothfuss"
+    },
+    "status": 200,
+    "lookup_ms": 1938.24,
+    "result": {
+      "found": true,
+      "title": "The Name of the Wind",
+      "authors": [
+        "Patrick Rothfuss"
+      ],
+      "hardcoverId": "379217",
+      "coverUrl": "https://assets.hardcover.app/editions/19454574/9509867934646082.jpg",
+      "rating": 4.478768577494692,
+      "ratingsCount": 3768,
+      "seriesName": "The Kingkiller Chronicle",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-name-of-the-wind",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:54:48.823Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "The Name of the Wind",
+        "author": "Patrick Rothfuss"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 430.73,
+    "cache_hit": true
+  },
+  {
+    "target": "The Martian",
+    "query": {
+      "isbn": "9780091956134"
+    },
+    "status": 200,
+    "lookup_ms": 1824.59,
+    "result": {
+      "found": true,
+      "isbn": "9780091956134",
+      "title": "The Martian",
+      "authors": [
+        "Andy Weir"
+      ],
+      "hardcoverId": "292354",
+      "hardcoverEditionId": "2787814",
+      "coverUrl": "https://assets.hardcover.app/external_data/38922830/e0a1de9dc206bef4a4ed99f3b44847b1acc36e3d.jpeg",
+      "rating": 4.445482866043614,
+      "ratingsCount": 5778,
+      "url": "https://hardcover.app/books/the-martian",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:54:57.065Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780091956134"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 445.2,
+    "cache_hit": true
+  },
+  {
+    "target": "The Martian",
+    "query": {
+      "title": "The Martian",
+      "author": "Andy Weir"
+    },
+    "status": 200,
+    "lookup_ms": 559.47,
+    "result": {
+      "url": "https://hardcover.app/books/the-martian",
+      "found": true,
+      "title": "The Martian",
+      "rating": 4.445482866043614,
+      "authors": [
+        "Andy Weir"
+      ],
+      "coverUrl": "https://assets.hardcover.app/external_data/38922830/e0a1de9dc206bef4a4ed99f3b44847b1acc36e3d.jpeg",
+      "identity": "work",
+      "verified": true,
+      "hardcoverId": "292354",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:54:57.065Z",
+      "ratingsCount": 5778,
+      "matchEvidence": {
+        "isbn": "9780091956134",
+        "method": "exact_isbn_parent_book"
+      },
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 589.73,
+    "cache_hit": true
+  },
+  {
+    "target": "Gone Girl",
+    "query": {
+      "isbn": "9780297859383"
+    },
+    "status": 200,
+    "lookup_ms": 1900.57,
+    "result": {
+      "found": true,
+      "isbn": "9780297859383",
+      "title": "Gone Girl",
+      "authors": [
+        "Gillian Flynn"
+      ],
+      "hardcoverId": "1145808",
+      "hardcoverEditionId": "18766321",
+      "coverUrl": "https://assets.hardcover.app/external_data/38958479/a72ab38295123510ff08963258f529ff11faffea.jpeg",
+      "rating": 3.9732730263157894,
+      "ratingsCount": 2432,
+      "url": "https://hardcover.app/books/gone-girl",
+      "identity": "isbn",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:55:12.571Z",
+      "matchEvidence": {
+        "method": "exact_isbn_parent_book",
+        "isbn": "9780297859383"
+      },
+      "cacheHit": false
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 430.74,
+    "cache_hit": true
+  },
+  {
+    "target": "Gone Girl",
+    "query": {
+      "title": "Gone Girl",
+      "author": "Gillian Flynn"
+    },
+    "status": 200,
+    "lookup_ms": 588.65,
+    "result": {
+      "url": "https://hardcover.app/books/gone-girl",
+      "found": true,
+      "title": "Gone Girl",
+      "rating": 3.9732730263157894,
+      "authors": [
+        "Gillian Flynn"
+      ],
+      "coverUrl": "https://assets.hardcover.app/external_data/38958479/a72ab38295123510ff08963258f529ff11faffea.jpeg",
+      "identity": "work",
+      "verified": true,
+      "hardcoverId": "1145808",
+      "ratingScope": "work",
+      "retrievedAt": "2026-10-11T01:55:12.571Z",
+      "ratingsCount": 2432,
+      "matchEvidence": {
+        "isbn": "9780297859383",
+        "method": "exact_isbn_parent_book"
+      },
+      "cacheHit": true
+    },
+    "independent_identity_agrees": true,
+    "cache_status": 200,
+    "cache_ms": 560.84,
+    "cache_hit": true
+  }
+]

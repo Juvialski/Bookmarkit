@@ -1,11 +1,13 @@
-# Hardcover ratings integration — 11 October 2026
+# Hardcover ratings integration â€” 11 October 2026
 
-**Implemented, credential-gated; live Hardcover production acceptance is blocked.**
-No `HARDCOVER_API_TOKEN` exists in authorized project environment files, process/
-user/machine environment, GitHub project secrets or Supabase project secrets.
-The Supabase operator connection is available. No Hardcover API request was made,
-no paid service was enabled and no provider credential is bundled in mobile code.
-The mobile enable flag remains unset and existing sources continue operating.
+**Implemented and deployed; authenticated Hardcover and cache observations verified.**
+The user created and confirmed a free Hardcover account in the Al Chrome profile,
+then authorized a read-only catalog PAT. It has only `read:catalog:data` and
+`read:catalog:search`, expires 11 October 2027, and is configured as a Supabase
+server secret. The temporary local transfer file was deleted. No token is in chat,
+commits, mobile configuration or the APK. The additive migration and `hardcover`
+Edge Function are deployed on `xxijxuekfsxuzhnujqem`. No paid plan was activated.
+The mobile and bounded monthly enable variables are now set to `1`.
 
 ## Implementation and reuse
 
@@ -15,8 +17,11 @@ Edge Function. No Render service is necessary. ISBN responses include the actual
 Hardcover edition ID and parent work; wrong ISBNs, disagreeing parent IDs and
 multiple matching works are rejected. Work rating and rating count remain paired.
 
-Title/author lookup uses Hardcover's documented `search` field, at most eight
-candidate IDs, then a fixed book-details query. An exact normalized work title
+Live validation showed that the fuzzy search index includes study guides and
+commentaries for popular novels. Title/author lookup therefore uses the official
+GraphQL exact-title and author relationship filters, accepts only OK records with
+no canonical-duplicate pointer, and fetches at most eight candidates plus one
+truncation sentinel. It never chooses a work by popularity or rating count. An exact normalized work title
 and primary author are required. Multiple plausible IDs, truncated candidate
 sets, conflicting duplicates and translations/subtitle differences are declined.
 A work-only result carries no invented edition ISBN. Missing authors cannot
@@ -50,7 +55,8 @@ library, review, user-rating or mutation scopes are required. Tokens may expire
 or be reset while the API is in beta. The endpoint is
 `https://api.hardcover.app/v1/graphql`, with server-only Bearer authorization.
 The current free plan lists 5,000 top-level queries/day, burst 10 and 60/minute.
-Each top-level field consumes one unit, so title search reserves two units.
+Each top-level field consumes one unit. The final ISBN and exact-title queries
+each use and reserve one unit.
 Search's documented timeout is two seconds; general queries allow 30 seconds,
 but this integration uses much shorter deadlines. No subscription is activated.
 
@@ -59,8 +65,8 @@ Hardcover rating. Individual user-owned ratings, reviews and reading data are
 excluded. Images are user uploads and public use requires a takedown policy;
 image licensing is not guaranteed by an API URL. This implementation retains
 cover URLs for online book metadata, but **does not ship image URLs or images
-in offline snapshots**. Before public activation, establish the required image
-takedown contact/policy. No user library data, reviews or LLM-training use occurs.
+in offline snapshots**. The repository [content policy](CONTENT-POLICY.md) provides a takedown/reporting
+route; it does not claim that third-party images are copyright-cleared. No user library data, reviews or LLM-training use occurs.
 
 ## Backend, cache and authorization
 
@@ -103,7 +109,7 @@ remaining records priority 3. Failed automatic jobs stop after three attempts;
 queue state/checkpoints remain in Supabase. No new recurring workflow is added.
 
 The operator variable `HARDCOVER_ENABLED=1` enables that optional drain. It is
-currently unset. Missing credentials, missing functions, rate limits and provider
+now configured. Missing credentials, missing functions, rate limits and provider
 outages skip enrichment and keep normal monthly publication working.
 Optional cached aggregate records are attached in a `hardcover_json` column,
 then the staging database is rechecksummed before validation/publication.
@@ -120,6 +126,17 @@ agreement, source priority/Goodreads precision, cache TTL, input restrictions,
 coalescing, deadlines, rate-limit cooldowns, progressive metadata, stale selection
 guards, reviews links and legacy/snapshot compatibility. Synthetic fixture values
 such as 4.56 / 18,432 are **not observed Hardcover ratings**.
+Current local results: **99 mobile tests, 44 server tests and 2 snapshot tests
+passed**, along with lint, typecheck and Deno Edge typecheck. The real SQL
+transaction evidence is [recorded separately](evidence/hardcover/hosted-rollback.json).
+
+Using actual bundled rows and public fallback APIs on Windows, the progressive
+Node code path returned initial ISBN results in **57.94 ms** (Hunger Games),
+**3.18 ms** (Warbreaker) and **1.39 ms** (Way of Kings). Full enrichment completed
+in 3,074.70 / 949.11 / 1,036.28 ms respectively. The exact Way of Kings title/author
+search returned in **253.31 ms**. These are [Node-path measurements](evidence/hardcover/fallback-latency.json)
+with real stored data, not native render timings, fixtures or Hardcover API timings.
+The observed Goodreads score/count remained selected after enrichment.
 
 Hosted PostgreSQL executed the new schema and contract tests **inside a rolled-back
 transaction**: public cache reads, denied client writes/RPCs/private queue reads,
@@ -128,9 +145,25 @@ passed. This proves real SQL authorization behavior, **not a deployed cache or l
 provider lookup**. No synthetic rating survived that transaction. CI also runs
 the contract against an isolated PostgreSQL 17 service.
 
-Live API coverage: **unmeasured, zero authenticated Hardcover test books**. Live
-lookup/cache hit latency is unmeasured. The reproducible small acceptance script
-selects 15–25 diverse catalog books and both recognition paths, records identities,
+The initial authenticated sample tested **20 distinct books on both ISBN and
+title/author paths (40 queries)**. ISBN: 18 found, **15/20 strict independent
+title/author agreements**; three alternate title/subtitle differences are not
+counted as strict matches. Title/author: **10/20 verified**. Either path strictly
+identified **17/20 (85%)**. This development sample spans multiple server revisions
+and includes the discovery issue that prompted the final exact-title/canonical
+query; it is not a fixed-head precision claim. Median lookup latency was 1,823.315
+ms for ISBN and 1,681.895 ms for title; median verified repeated cache requests were
+443.425 / 555.865 ms. [Full sanitized observations](evidence/hardcover/live-initial.json).
+
+A second Hunger Games ISBN returned a distinct edition (8717381 versus 1589497)
+under the same work 88639 and the same work rating/count pair. An explicit wrong
+author was declined. Cold title-only validation verified The Rosie Project from
+Graeme Simsion without any prior ISBN cache record: **3.863934… / 610 ratings**,
+Don Tillman #1, at 1,931.2 ms. [Cold-title evidence](evidence/hardcover/final-cold-title.json).
+No HTTP 429 quota exhaustion occurred; the budget remained well below the free
+limits. Additional ambiguous/missing records are declined, not filled with guessed
+scores. The server cache and live provider evidence are distinct from fixtures. The reproducible small acceptance script
+selects 15â€“25 diverse catalog books and both recognition paths, records identities,
 pair/scope, series/cover, API errors, lookup/cache-hit latency, and stops immediately
 on authentication or rate-limit failures:
 
@@ -138,27 +171,23 @@ on authentication or rate-limit failures:
 python scripts/validate_hardcover_live.py --output dist/hardcover/live.json
 ```
 
-APK/native acceptance results and artifact links will be recorded with the PR
+The enabled APK/native acceptance results and artifact links will be recorded with the PR
 once its cloud build and emulator checks complete. No physical-phone acceptance
 is implied by emulator evidence.
 
-## Remaining activation steps
+## Configuration and operational follow-up
 
-1. Configure `HARDCOVER_API_TOKEN` server-side in Supabase project
-   `xxijxuekfsxuzhnujqem` with the two catalog-read scopes. Do not paste it into
-   mobile configuration, GitHub public variables, logs or this document.
-2. Apply the additive migration through the operator's normal migration process.
-   Deploy only `hardcover` with `--project-ref xxijxuekfsxuzhnujqem --no-verify-jwt
-   --use-api`. The function validates publishable-key admission itself; private
-   RPC grants and shared budgets remain authoritative.
-3. Execute the small live acceptance set, inspect identity rejections and verify
-   the real cache-hit path. Confirm source/image conditions before public use.
-4. Only after that succeeds, set `EXPO_PUBLIC_HARDCOVER_ENABLED=1` for mobile
-   builds and `HARDCOVER_ENABLED=1` for optional monthly work; create the enabled
-   standalone APK and repeat native acceptance. No provider token is needed on
-   the phone or in the Actions build.
+The deployed server PAT is read-only and expires 11 October 2027. Rotate it in
+Supabase before expiry; beta token resets may require earlier rotation. The app
+uses only the public project key and HTTPS Edge URL. No Render service is needed.
+The existing compatibility Node proxy remains available for existing deployments,
+but is not the production backend for this phase.
 
-The delivered default APK leaves live Hardcover disabled because this credential
-gate is unresolved. Existing Goodreads/Open Library/Google Books and offline
-results remain available. Merge/production-readiness must not be claimed merely
-from fixture tests when authenticated deployment acceptance remains blocked.
+Keep `EXPO_PUBLIC_HARDCOVER_ENABLED=1` for release builds and
+`HARDCOVER_ENABLED=1` for bounded monthly enrichment. Set them to `0` to pause new
+provider enrichment without deleting last-good records or disrupting the other
+providers. Never clear cooldowns simply to force acceptance. Cache identity
+conflicts remain operator-review items. The initial SQL contract was rolled back;
+the separately applied additive migration and real provider observations now
+persist. Exact-head CI, the enabled APK and emulator evidence are required before
+merge; physical-phone acceptance remains separate.

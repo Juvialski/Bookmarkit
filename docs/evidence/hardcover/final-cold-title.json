@@ -1,0 +1,47 @@
+[
+  {
+    "query": {
+      "title": "The Secret History",
+      "author": "Donna Tartt"
+    },
+    "status": 200,
+    "lookup_ms": 3308.28,
+    "result": {
+      "found": false,
+      "ambiguous": true,
+      "cacheHit": false
+    }
+  },
+  {
+    "query": {
+      "title": "The Rosie Project",
+      "author": "Graeme Simsion"
+    },
+    "status": 200,
+    "lookup_ms": 1931.2,
+    "result": {
+      "found": true,
+      "title": "The Rosie Project",
+      "authors": [
+        "Graeme Simsion"
+      ],
+      "hardcoverId": "97936",
+      "coverUrl": "https://assets.hardcover.app/edition/30399465/131eb50c7ee758a9e72fa35952cde8ec06f960a8.jpeg",
+      "rating": 3.863934426229508,
+      "ratingsCount": 610,
+      "seriesName": "Don Tillman",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/the-rosie-project",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T01:57:24.311Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "The Rosie Project",
+        "author": "Graeme Simsion"
+      },
+      "cacheHit": false
+    }
+  }
+]
