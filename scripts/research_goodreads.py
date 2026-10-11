@@ -66,6 +66,8 @@ def extract(body, target):
         raise ValueError('JSON-LD/Apollo rating disagreement')
     if normalize(ld.get('isbn', '')) != normalize(isbn or ''):
         raise ValueError('JSON-LD/Apollo ISBN disagreement')
+    if not re.fullmatch(r'https://www\.goodreads\.com/book/show/' + bid + r'(?:[-.][A-Za-z0-9_%.-]+)?', book.get('webUrl', '')):
+        raise ValueError('canonical URL mismatch')
     series = []
     for placement in book.get('bookSeries', []):
         item = placement.get('series', {})
@@ -112,6 +114,8 @@ def main():
             parser.error('only exact public Goodreads book URLs are allowed')
     rows = []
     output.parent.mkdir(parents=True, exist_ok=True)
+    if (output.parent / 'PAUSE').exists() or (output.parent / 'STOP').exists():
+        return
     def save():
         output.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding='utf-8')
     def request(url):
