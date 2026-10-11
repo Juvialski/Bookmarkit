@@ -1,0 +1,21 @@
+{
+  "cohort": "20 selected books; replaces initial Pride and Prejudice/Emma misses with previously tested Project Hail Mary/The Night Circus; not catalog-wide random sampling",
+  "code_commit": "76d21a6d6d5da68aa251f7454568e5b00ccbff74",
+  "service_sha256": "81d38c3e6cedf341726f6078989ab8fd5667261499ce290f8e654ae93d68ff87",
+  "books": 20,
+  "queries": 40,
+  "http_200": 40,
+  "strict_books_either_path": 19,
+  "cache_hits": 37,
+  "hardcover_rating_pairs": 36,
+  "isbn": {
+    "found": 20,
+    "strict_agreement": 17,
+    "median_lookup_ms": 531.69
+  },
+  "title": {
+    "found": 19,
+    "strict_agreement": 19,
+    "median_lookup_ms": 569.94
+  }
+}

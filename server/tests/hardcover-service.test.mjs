@@ -28,7 +28,15 @@ test('exact title/primary-author canonical lookup; work result has no fabricated
  }});
  const result=await lookup({title:book.title,author:'Brandon Sanderson'});
  assert.equal(result.identity,'work');assert.equal(result.isbn,undefined);assert.equal(result.rating,4.56);
- assert.equal(seen.length,1);assert.equal(store.events[0][3],1);assert.deepEqual(seen[0].variables,{title:book.title,author:'Brandon Sanderson'});
+ assert.equal(seen.length,1);assert.equal(store.events[0][3],3);assert.deepEqual(seen[0].variables,{title:book.title,author:'Brandon Sanderson'});
+});
+test('cold lowercase search hydrates canonical work and never trusts index ratings',async()=>{
+ const store=memoryStore();let calls=0;
+ const lookup=createHardcoverService({token:'test',store,now:()=>0,fetcher:async()=>{
+  calls++;return Response.json(calls===1?{data:{books:[]}}:calls===2?{data:{search:{results:{found:1,hits:[{document:{id:'123',title:book.title,author_names:['Brandon Sanderson'],rating:5}}]}}}}:{data:{books:[book]}});
+ }});
+ const result=await lookup({title:'the way of kings',author:'brandon sanderson'});
+ assert.equal(calls,3);assert.equal(result.rating,4.56);assert.equal(result.identity,'work');assert.equal(result.isbn,undefined);
 });
 test('conflicting authors/titles, translations and duplicate work identities are rejected',()=>{
  const query={title:book.title,author:'Brandon Sanderson'};
@@ -40,7 +48,7 @@ test('conflicting authors/titles, translations and duplicate work identities are
  assert.equal(normalizeCandidates({data:{books:[book,{...book,id:456,book_status_id:4}]}},query,[123,456]).hardcoverId,'123');
 });
 test('invalid inputs, missing token, lease denial never request upstream',async()=>{
- for(const input of [{title:'Only title'}, {isbn:'9780765326356'}, {isbn,query:'mutation'}, {title:'',author:'X'}]) assert.throws(()=>validateQuery(input));
+ for(const input of [{title:'Only title'}, {isbn:9780765326355}, {isbn:'9780765326356'}, {isbn,query:'mutation'}, {title:'',author:'X'}]) assert.throws(()=>validateQuery(input));
  let calls=0;const store=memoryStore(),fetcher=async()=>{calls++;throw Error('secret');};
  await assert.rejects(createHardcoverService({store,fetcher})({isbn}),e=>e.status===503);
  store.reserve=async()=>false;

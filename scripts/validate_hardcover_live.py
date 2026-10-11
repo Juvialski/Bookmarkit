@@ -9,11 +9,16 @@ from goodreads_historical import normalize
 
 def main():
  parser=argparse.ArgumentParser(description=__doc__)
- parser.add_argument('--output',required=True);args=parser.parse_args()
+ parser.add_argument('--output',required=True)
+ parser.add_argument('--titles',help='Optional JSON list of 15-25 reviewed target titles')
+ args=parser.parse_args()
  output=pathlib.Path(args.output).resolve()
  if not output.is_relative_to(pathlib.Path(__file__).resolve().parents[1]/'dist'):parser.error('output must be ignored dist/')
  records=json.loads(pathlib.Path('catalog/source.json').read_text(encoding='utf-8'))['records']
  titles=['The Hunger Games','The Way of Kings','Warbreaker',"Harry Potter and the Philosopher's Stone",'Dune','The Road','Pride and Prejudice','Emma','It','To Kill a Mockingbird','Piranesi','Tress of the Emerald Sea','Yumi and the Nightmare Painter','Babel','Fantastic Mr. Fox','The Hobbit','The Shining','The Name of the Wind','The Martian','Gone Girl']
+ if args.titles:
+  titles=json.loads(pathlib.Path(args.titles).read_text(encoding='utf-8'))
+  if not isinstance(titles,list) or not 15<=len(titles)<=25 or len(set(titles))!=len(titles) or not all(isinstance(t,str) and t for t in titles):parser.error('target titles must be 15-25 unique strings')
  selected=[next((r for r in records if normalize(r['title'])==normalize(title) and r.get('author_name') and r.get('isbn')),None) for title in titles]
  selected=[r for r in selected if r]
  if not 15<=len(selected)<=25:parser.error('catalog lacks enough selected targets; review target set before testing')

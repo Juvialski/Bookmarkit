@@ -21,6 +21,9 @@ do $$ declare k text:=repeat('a',64); r jsonb; begin
  if not exists(select 1 from public.hardcover_budget where cooldown_until>=now()+interval '1 hour') then raise exception 'cooldown not persisted'; end if;
  update public.hardcover_budget set used=499,next_allowed='epoch',cooldown_until='epoch';
  if public.reserve_hardcover(repeat('c',64),'{}',2) then raise exception 'daily budget exceeded'; end if;
+ update public.hardcover_budget set used=0,next_allowed='epoch',cooldown_until='epoch';
+ if not public.reserve_hardcover(repeat('e',64),'{"title":"lowercase title","author":"writer"}',3) then raise exception 'case-search reservation denied'; end if;
+ if not exists(select 1 from public.hardcover_budget where used=3 and next_allowed>=now()+interval '9 seconds') then raise exception 'case-search budget not charged'; end if;
 end $$;
 set local role anon;
 do $$ begin

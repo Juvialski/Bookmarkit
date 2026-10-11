@@ -184,7 +184,10 @@ try:
     if installed.returncode:
         raise AssertionError('Installation failed: ' + report['install'])
     report['installed_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
-    assert report['installed_version'] == '3'
+    expected_version = str(json.loads(Path('app.json').read_text('utf-8'))['expo']['android']['versionCode'])
+    assert report['installed_version'] == expected_version, report
+    if args.baseline_apk:
+        assert int(report['installed_version']) > int(report['baseline_version']), 'Upgrade did not increase versionCode'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     # Cold CI emulators can finish radio initialization during APK installation.

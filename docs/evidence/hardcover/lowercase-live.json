@@ -1,0 +1,30 @@
+{
+  "query": {
+    "title": "the secret history",
+    "author": "donna tartt"
+  },
+  "status": 200,
+  "lookup_ms": 5290.33,
+  "result": {
+    "found": true,
+    "title": "The Secret History",
+    "authors": [
+      "Donna Tartt"
+    ],
+    "hardcoverId": "166849",
+    "coverUrl": "https://assets.hardcover.app/edition/30823800/10a85a6a452e60500f4a545a7d86ae824e030144.jpeg",
+    "rating": 4.074969400244798,
+    "ratingsCount": 1634,
+    "url": "https://hardcover.app/books/the-secret-history",
+    "identity": "work",
+    "ratingScope": "work",
+    "verified": true,
+    "retrievedAt": "2026-10-11T02:25:10.234Z",
+    "matchEvidence": {
+      "method": "exact_title_primary_author",
+      "title": "the secret history",
+      "author": "donna tartt"
+    },
+    "cacheHit": false
+  }
+}

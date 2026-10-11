@@ -1,0 +1,103 @@
+[
+  {
+    "query": {
+      "title": "Project Hail Mary",
+      "author": "Andy Weir"
+    },
+    "status": 200,
+    "lookup_ms": 3697.03,
+    "result": {
+      "found": true,
+      "title": "Project Hail Mary",
+      "authors": [
+        "Andy Weir"
+      ],
+      "hardcoverId": "427578",
+      "coverUrl": "https://assets.hardcover.app/editions/3274049/8741341047797682-91mYu67RfUL._SL1500_.jpg",
+      "rating": 4.507491310080307,
+      "ratingsCount": 8343,
+      "url": "https://hardcover.app/books/project-hail-mary",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T02:01:30.020Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "Project Hail Mary",
+        "author": "Andy Weir"
+      },
+      "cacheHit": false
+    }
+  },
+  {
+    "query": {
+      "title": "The Night Circus",
+      "author": "Erin Morgenstern"
+    },
+    "status": 200,
+    "lookup_ms": 2588.32,
+    "result": {
+      "found": true,
+      "title": "The Night Circus",
+      "authors": [
+        "Erin Morgenstern"
+      ],
+      "hardcoverId": "375064",
+      "coverUrl": "https://assets.hardcover.app/edition/30445612/3e8445ce-8b26-4138-a49e-b4274e670bef.jpg",
+      "rating": 3.9237983587338805,
+      "ratingsCount": 1706,
+      "url": "https://hardcover.app/books/the-night-circus",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T02:01:36.490Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "The Night Circus",
+        "author": "Erin Morgenstern"
+      },
+      "cacheHit": false
+    }
+  },
+  {
+    "query": {
+      "title": "Outlander",
+      "author": "Diana Gabaldon"
+    },
+    "status": 200,
+    "lookup_ms": 2465.52,
+    "result": {
+      "found": true,
+      "title": "Outlander",
+      "authors": [
+        "Diana Gabaldon"
+      ],
+      "hardcoverId": "427404",
+      "coverUrl": "https://assets.hardcover.app/edition/32259804/8dc6325f-ea56-498d-94df-053658a7b4e2.jpg",
+      "rating": 3.9054203539823007,
+      "ratingsCount": 904,
+      "seriesName": "Outlander",
+      "seriesPosition": "1",
+      "url": "https://hardcover.app/books/outlander",
+      "identity": "work",
+      "ratingScope": "work",
+      "verified": true,
+      "retrievedAt": "2026-10-11T02:01:43.099Z",
+      "matchEvidence": {
+        "method": "exact_title_primary_author",
+        "title": "Outlander",
+        "author": "Diana Gabaldon"
+      },
+      "cacheHit": false
+    }
+  },
+  {
+    "query": {
+      "title": "The Secret History",
+      "author": "Donna Tartt"
+    },
+    "status": 429,
+    "lookup_ms": 847.91,
+    "result": {}
+  }
+]

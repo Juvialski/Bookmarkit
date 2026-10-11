@@ -21,7 +21,11 @@ Live validation showed that the fuzzy search index includes study guides and
 commentaries for popular novels. Title/author lookup therefore uses the official
 GraphQL exact-title and author relationship filters, accepts only OK records with
 no canonical-duplicate pointer, and fetches at most eight candidates plus one
-truncation sentinel. It never chooses a work by popularity or rating count. An exact normalized work title
+truncation sentinel. It never chooses a work by popularity or rating count. A cold case-variant query
+with no exact database rows can fall back to at most 25 search-index hits, only if
+that is the complete returned set. At most eight exact normalized title/author
+candidate IDs are hydrated from canonical GraphQL work records. Search-index
+ratings are never imported. Truncation or ambiguity still declines the match. An exact normalized work title
 and primary author are required. Multiple plausible IDs, truncated candidate
 sets, conflicting duplicates and translations/subtitle differences are declined.
 A work-only result carries no invented edition ISBN. Missing authors cannot
@@ -56,7 +60,8 @@ or be reset while the API is in beta. The endpoint is
 `https://api.hardcover.app/v1/graphql`, with server-only Bearer authorization.
 The current free plan lists 5,000 top-level queries/day, burst 10 and 60/minute.
 Each top-level field consumes one unit. The final ISBN and exact-title queries
-each use and reserve one unit.
+use one unit for ISBN and one to three units for cold title lookup. Title lookup
+conservatively reserves three units in advance; cached reads consume none.
 Search's documented timeout is two seconds; general queries allow 30 seconds,
 but this integration uses much shorter deadlines. No subscription is activated.
 
@@ -86,7 +91,7 @@ work/ISBN/title/author assignments; older observations cannot replace newer ones
 The Edge Function accepts only the project's public publishable key and a small
 validated ISBN or title/author object. This key is admission, not a secret or user
 identity. There is no arbitrary GraphQL, URL, user-data or mutation proxy.
-It enforces a 2 KiB/one-second input-body bound, 64 KiB upstream JSON bound,
+It enforces a 2 KiB/one-second input-body bound, 64 KiB work JSON / 256 KiB search-index JSON bounds,
 2.2-second upstream calls and 1.8-second database calls. Mobile enrichment has a
 six-second deadline and never holds the initial cached result behind that call.
 
@@ -106,7 +111,8 @@ at most 25 due jobs over at most two minutes, while the same server safety budge
 remains authoritative. Recently scanned queries are priority 0, up to 20 popular
 catalog seeds priority 1, verified refreshes priority 2, and operator-supplied
 remaining records priority 3. Failed automatic jobs stop after three attempts;
-queue state/checkpoints remain in Supabase. No new recurring workflow is added.
+queue state/checkpoints remain in Supabase. Fresh cache hits advance monthly
+checkpoints to their existing expiry instead of repeatedly occupying the due queue. No new recurring workflow is added.
 
 The operator variable `HARDCOVER_ENABLED=1` enables that optional drain. It is
 now configured. Missing credentials, missing functions, rate limits and provider
@@ -126,7 +132,7 @@ agreement, source priority/Goodreads precision, cache TTL, input restrictions,
 coalescing, deadlines, rate-limit cooldowns, progressive metadata, stale selection
 guards, reviews links and legacy/snapshot compatibility. Synthetic fixture values
 such as 4.56 / 18,432 are **not observed Hardcover ratings**.
-Current local results: **99 mobile tests, 44 server tests and 2 snapshot tests
+Current local results: **99 mobile tests, 45 server tests and 2 snapshot tests
 passed**, along with lint, typecheck and Deno Edge typecheck. The real SQL
 transaction evidence is [recorded separately](evidence/hardcover/hosted-rollback.json).
 
@@ -160,19 +166,55 @@ under the same work 88639 and the same work rating/count pair. An explicit wrong
 author was declined. Cold title-only validation verified The Rosie Project from
 Graeme Simsion without any prior ISBN cache record: **3.863934… / 610 ratings**,
 Don Tillman #1, at 1,931.2 ms. [Cold-title evidence](evidence/hardcover/final-cold-title.json).
+The final `76d21a6` serving-path check completed 40 HTTP 200 responses for a
+20-book cohort: **19/20 title/author matches and 19/20 strict books through at
+least one path**. All 20 ISBNs returned a record, but three alternate title/subtitle
+differences remain excluded (17/20 strict ISBN agreements). Median lookup was
+**531.69 ms ISBN / 569.945 ms title/author**, predominantly persistent cache reads.
+This cohort replaces two initial classical misses with the already-tested Project
+Hail Mary and Night Circus; it is not a random catalog-wide sample. Across all 25
+unique titles attempted during development, the final lowercase correction brings
+strict matches through at least one path to **22/25 (88%)**; the remaining gaps are
+Babel, Pride and Prejudice and Emma. [Summary](evidence/hardcover/live-summary.json),
+[all final queries](evidence/hardcover/live-final-cache.json),
+[final cohort](evidence/hardcover/final-target-titles.json).
+
+Fresh title-only requests also verified Project Hail Mary, Night Circus and
+Outlander on the final canonical query. A Secret History request was refused by
+its existing retry cooldown; that circuit was not cleared. After normal expiry,
+`the secret history / donna tartt` verified a cold work without an ISBN or prior
+positive cache: 4.074969... / 1,634 ratings, in 5,290.33 ms. This case used canonical
+hydration, not search-index ratings. [Lowercase live evidence](evidence/hardcover/lowercase-live.json).
+[Final cold title evidence](evidence/hardcover/final-title-verification.json).
+
+The [installed authorization checks](evidence/hardcover/hosted-authorization.json)
+returned 200 for public cache reads and 401 for anonymous writes, privileged RPCs,
+private queue reads and wrong-key Edge requests. Supabase security advisors reported
+no issues. A scratch snapshot attached the one independently mapped work to eight
+ISBN rows, passed SQLite integrity and retained Goodreads unchanged; the production
+catalog was not modified. [Snapshot evidence](evidence/hardcover/offline-snapshot.json).
+
 No HTTP 429 quota exhaustion occurred; the budget remained well below the free
 limits. Additional ambiguous/missing records are declined, not filled with guessed
 scores. The server cache and live provider evidence are distinct from fixtures. The reproducible small acceptance script
-selects 15â€“25 diverse catalog books and both recognition paths, records identities,
+selects 15-25 diverse catalog books and both recognition paths, records identities,
 pair/scope, series/cover, API errors, lookup/cache-hit latency, and stops immediately
 on authentication or rate-limit failures:
 
 ```powershell
-python scripts/validate_hardcover_live.py --output dist/hardcover/live.json
+python scripts/validate_hardcover_live.py --titles docs/evidence/hardcover/final-target-titles.json --output dist/hardcover/live.json
 ```
 
-The enabled APK/native acceptance results and artifact links will be recorded with the PR
-once its cloud build and emulator checks complete. No physical-phone acceptance
+The enabled standalone **1.2.0 / versionCode 4** APK was built in
+[run 38103758594](https://github.com/Juvialski/Bookmarkit/actions/runs/38103758594).
+[Direct APK artifact](https://github.com/Juvialski/Bookmarkit/actions/runs/38103758594/artifacts/11689256311):
+180,392,225-byte APK, SHA-256
+`4b346be76fde99abbf18c1a3118cd4dd40e07cb3f1a3c25a72588f9420abe6d0`.
+The first native run installed it successfully over immediately previous main
+version 3, then stopped at an outdated harness assertion expecting version 3.
+The assertion now checks the configured version and a strict version increase;
+the same APK is reused for the corrected acceptance run because mobile inputs
+and the build recipe are unchanged. Final emulator results will be linked in the PR. No physical-phone acceptance
 is implied by emulator evidence.
 
 ## Configuration and operational follow-up

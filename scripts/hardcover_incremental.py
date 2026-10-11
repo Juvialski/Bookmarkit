@@ -1,5 +1,6 @@
 """Bounded monthly queue drain. Server budgets remain authoritative; no bulk crawl."""
 import os,json,hashlib,sqlite3,time,urllib.request,urllib.error,urllib.parse
+from datetime import datetime
 from goodreads_snapshot import BASE,PUBLIC_KEY
 
 def main():
@@ -31,7 +32,14 @@ def main():
    request=urllib.request.Request(BASE+'/functions/v1/hardcover',data=json.dumps(job['query']).encode(),headers={'apikey':PUBLIC_KEY,'Content-Type':'application/json'})
    try:
     with urllib.request.urlopen(request,timeout=8) as response:
-     response.read(65537);completed+=1
+     raw=response.read(65537)
+     if len(raw)>65536: raise ValueError('response too large')
+     result=json.loads(raw);completed+=1
+     if result.get('cacheHit') and result.get('found') and result.get('retrievedAt'):
+      # A pre-existing cache hit makes no reservation in Edge. Advance this
+      # queue checkpoint too, so it cannot crowd out remaining due jobs.
+      expires=datetime.fromisoformat(result['retrievedAt'].replace('Z','+00:00')).timestamp()+604800
+      api('rpc/finish_hardcover',{'key':job['cache_key'],'seconds':max(300,int(expires-time.time()))})
    except urllib.error.HTTPError as error:
     if error.code in(401,403,404,429,503):break
    time.sleep(6)  # enough for a two-field search reservation, never bypass 429

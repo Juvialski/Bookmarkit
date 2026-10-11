@@ -20,6 +20,7 @@ const https = value => {
   try { const url = new URL(text(value)); return url.protocol === 'https:' && !url.username && !url.password ? url.href : undefined; } catch { return undefined; }
 };
 export function validIsbn(isbn) {
+  if(typeof isbn !== 'string') return false;
   return /^(978|979)\d{10}$/.test(isbn) && [...isbn].reduce((sum, digit, i) => sum + Number(digit) * (i % 2 ? 3 : 1), 0) % 10 === 0;
 }
 export function normalizeHardcover(payload, isbn) {

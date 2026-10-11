@@ -42,6 +42,7 @@ jobs:
         run: |
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/hardcover-bootstrap.sql
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261011011808_hardcover_cache.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261011022322_hardcover_search_budget.sql
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/hardcover.sql
       - run: python scripts/validate_expanded.py catalog/packages
       - run: npm run typecheck
