@@ -1,0 +1,41 @@
+name: Goodreads bounded manual research
+
+on:
+  workflow_dispatch:
+    inputs:
+      subset:
+        description: 'Fixed disjoint target subset (never run b after a is access-blocked)'
+        required: true
+        type: choice
+        options: [a, b]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: goodreads-manual-research
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Offline acceptance tests
+        run: |
+          python -m unittest discover -s scripts -p 'test_research_goodreads.py'
+          python -m unittest discover -s scripts -p 'test_goodreads_phase2.py'
+      - name: Bounded sequential public book documents
+        env:
+          SUBSET: ${{ inputs.subset }}
+        run: python scripts/goodreads_phase2.py --subset "$SUBSET" --output dist/phase2/results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goodreads-phase2-${{ inputs.subset }}-${{ github.run_id }}
+          path: dist/phase2/results.json
+          if-no-files-found: error
+          retention-days: 14

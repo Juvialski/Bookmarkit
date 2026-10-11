@@ -1,0 +1,50 @@
+{
+  "catalog_works": 25265,
+  "catalog_isbns": 26464,
+  "compared_works": 25265,
+  "catalog_sha256": "ba7b45949586e03c9be2f747bd297053dfd84b3b464d2142e24b3602592c9b70",
+  "source_commit": "6dd165b555a7b47b2dd36743a425776e641ff50c",
+  "source_sha256": "f9724dddfbd4d744e97977c4d631684b2aa238739893749ffc66b7cb8f5f3a66",
+  "source_records": 10000,
+  "valid_xml_isbn13": 9371,
+  "invalid_or_missing_isbn13": 629,
+  "work_average_count_distribution_agreement": 10000,
+  "book_and_work_counts_differ": 9986,
+  "duplicate_conflicting_book_ids": [],
+  "match_counts": {
+    "unmatched": 25075,
+    "title_only_unvalidated": 163,
+    "title_author_candidate": 16,
+    "exact_isbn_compatible_identity": 8,
+    "conflict": 3
+  },
+  "independently_validated_matches": 8,
+  "mathematically_usable_matched_pairs": 8,
+  "production_safe_ratings": 0,
+  "metadata_coverage_percent": 0.0317,
+  "snapshot_era": "2017",
+  "exact_retrieval_time": null,
+  "reuse_permission": "unresolved; quarantined",
+  "dry_run_first": {
+    "inserted": 8,
+    "unchanged": 0,
+    "conflicts": 0
+  },
+  "dry_run_second": {
+    "inserted": 0,
+    "unchanged": 8,
+    "conflicts": 0
+  },
+  "dry_run_conflict": {
+    "inserted": 0,
+    "unchanged": 0,
+    "conflicts": 1
+  },
+  "compact_payload_bytes": 5290,
+  "sqlite_quarantine_bytes": 24576,
+  "sqlite_empty_schema_bytes": 16384,
+  "sqlite_data_page_growth_bytes": 8192,
+  "estimated_separate_offline_database_increase_bytes": 24576,
+  "estimated_catalog_growth_percent": 0.0772,
+  "offline_wall_seconds": 10.526
+}
