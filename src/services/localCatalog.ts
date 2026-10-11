@@ -6,6 +6,7 @@ import { BookCatalog } from '../recognition/types';
 import { normalizeText } from '../recognition/normalization';
 import { matchBook } from '../recognition/matching';
 import { attachGoodreads } from './providers/goodreads';
+import { normalizeHardcover, normalizeHardcoverWork } from './providers/hardcover';
 
 export interface CatalogDatabase {
   getFirstAsync<T>(sql: string, ...params: string[]): Promise<T | null>;
@@ -29,7 +30,20 @@ export function normalizeLocalRecord(value: unknown, isbn: string, workOnly = fa
     ratings: [{ provider: 'Open Library', stored: true, ...rating(row.rating, row.rating_count) }], warnings: [] };
   try {
     const summaries = JSON.parse(row.goodreads_json || '[]');
-    const enriched = Array.isArray(summaries) ? attachGoodreads(book, summaries) : book;
+    let enriched = Array.isArray(summaries) ? attachGoodreads(book, summaries) : book;
+    let hardcoverRows: unknown;
+    try { hardcoverRows = JSON.parse(row.hardcover_json || '[]'); } catch { hardcoverRows = []; }
+    for (const record of Array.isArray(hardcoverRows) ? hardcoverRows : []) {
+      try {
+      if (!record || typeof record !== 'object') continue;
+      if (record.olWorkId !== book.workId || record.verified !== true || record.ratingScope !== 'work') continue;
+      const match = record.isbn === isbn && !workOnly ? normalizeHardcover(record, isbn) :
+        normalizeHardcoverWork({ ...record, isbn: undefined, identity: 'work' }, { title: book.title, author: book.authors[0] });
+      if (!match) continue;
+      enriched = { ...enriched, ratings: [...enriched.ratings, { ...match.rating, stored: true }],
+        hardcoverId: match.hardcoverId, hardcoverUrl: match.hardcoverUrl };
+      } catch { /* An optional bad provider record never removes Goodreads. */ }
+    }
     return { ...enriched, ratings: enriched.ratings.map(r => ({ ...r, stored: true })) };
   } catch { return book; }
 }

@@ -8,11 +8,15 @@ import { mergeClassification } from '../utils/classification';
 import { primaryRating } from '../utils/ratings';
 import { centralCatalog } from './providers/centralCatalog';
 import { googleBooks } from './providers/googleBooks';
+import { normalizeText } from '../recognition/normalization';
 export async function lookupBook(value: string, providers = [centralCatalog, openLibrary, googleBooks, hardcover], local?: (isbn: string) => Promise<BookResult | null>): Promise<BookResult> {
   const isbn = normalizeIsbn(value);
   if (!isValidIsbn(isbn)) throw new Error('Enter a valid book ISBN-13 beginning with 978 or 979.');
   const responses = await Promise.allSettled(providers.map(provider => provider(isbn)));
-  const books = responses.flatMap(r => r.status === 'fulfilled' && r.value && (!r.value.isbn || r.value.isbn === isbn) ? [r.value] : []);
+  const identified = responses.flatMap(r => r.status === 'fulfilled' && r.value && (!r.value.isbn || r.value.isbn === isbn) ? [r.value] : []);
+  const reference = identified.find(b => b.rating.provider !== 'Hardcover' && b.authors.length);
+  const books = identified.filter(b => b.rating.provider !== 'Hardcover' || !reference ||
+    (normalizeText(b.title) === normalizeText(reference.title) && normalizeText(b.authors[0] || '') === normalizeText(reference.authors[0])));
   if (!books.length) {
     if (local) {
       try {

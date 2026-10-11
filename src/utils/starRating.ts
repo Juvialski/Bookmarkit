@@ -12,4 +12,4 @@ export function ratingSource(rating: Rating): string {
 export function ratingLabel(rating: Rating): string {
   return `${ratingScore(rating)} out of 5 stars, ${ratingSource(rating).replace(' · ', ', ')}.`;
 }
-export function ratingScore(rating: Rating): string { return rating.average!.toFixed(rating.provider === 'Goodreads' ? 2 : 1); }
+export function ratingScore(rating: Rating): string { return rating.average!.toFixed(rating.provider === 'Goodreads' || rating.provider === 'Hardcover' ? 2 : 1); }

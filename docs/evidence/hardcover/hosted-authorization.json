@@ -1,0 +1,7 @@
+{
+  "public_cache_read": 200,
+  "anonymous_write": 401,
+  "anonymous_reservation": 401,
+  "private_queue_read": 401,
+  "edge_wrong_key": 401
+}

@@ -94,6 +94,8 @@ jobs:
     env:
       EXPO_NO_DOTENV: '1'
       EXPO_PUBLIC_BOOK_API_BASE_URL: ${{ vars.EXPO_PUBLIC_BOOK_API_BASE_URL }}
+      # Enabled only after the authenticated backend/cache acceptance in this PR.
+      EXPO_PUBLIC_HARDCOVER_ENABLED: ${{ vars.EXPO_PUBLIC_HARDCOVER_ENABLED || '1' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -111,6 +113,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+        env:
+          # Fixture suites explicitly inject their provider responses. The
+          # release enable flag belongs to the APK, never implicit test traffic.
+          EXPO_PUBLIC_HARDCOVER_ENABLED: '0'
       - run: python scripts/test_catalog.py
       - run: python scripts/validate_expanded.py catalog/packages
       - run: npx expo install --check
@@ -145,10 +151,10 @@ jobs:
       - name: Fetch public cover fixture
         run: |
           python -c "import urllib.request; from pathlib import Path; Path('dist/ocr-images/warbreaker-real.jpg').write_bytes(urllib.request.urlopen('https://covers.openlibrary.org/b/isbn/9780765320308-L.jpg?default=false', timeout=30).read())"
-      - name: Fetch previous test APK for update acceptance
+      - name: Fetch immediately previous main APK for update acceptance
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release download android-test-2026-10-04 --repo Juvialski/Bookmarkit --pattern bookmarkit-android-test.apk --dir dist/baseline
+        run: gh run download 38096735083 --repo Juvialski/Bookmarkit --name bookmarkit-android-test --dir dist/baseline
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -166,6 +172,7 @@ jobs:
             python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
             python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
             python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
+            python scripts/android-hardcover-smoke.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -173,5 +180,6 @@ jobs:
           path: |
             dist/android-phase8
             dist/android-result
+            dist/android-hardcover
           if-no-files-found: warn
           retention-days: 30
