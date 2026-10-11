@@ -20,7 +20,7 @@ test('ISBN edition parent, exact work pair, persistent cache and deduplication',
  store.rows.get(await queryKey({isbn})).expires_at=new Date(0).toISOString();
  await lookup({isbn});assert.equal(calls,2);
 });
-test('title/primary-author search hydrates IDs; work result has no fabricated ISBN',async()=>{
+test('exact title/primary-author canonical lookup; work result has no fabricated ISBN',async()=>{
  const store=memoryStore();const seen=[];
  const lookup=createHardcoverService({token:'test-only',store,now:()=>0,fetcher:async(_url,init)=>{
   const q=JSON.parse(init.body);seen.push(q);

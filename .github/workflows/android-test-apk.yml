@@ -113,6 +113,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+        env:
+          # Fixture suites explicitly inject their provider responses. The
+          # release enable flag belongs to the APK, never implicit test traffic.
+          EXPO_PUBLIC_HARDCOVER_ENABLED: '0'
       - run: python scripts/test_catalog.py
       - run: python scripts/validate_expanded.py catalog/packages
       - run: npx expo install --check
@@ -168,6 +172,7 @@ jobs:
             python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
             python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
             python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
+            python scripts/android-hardcover-smoke.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -175,5 +180,6 @@ jobs:
           path: |
             dist/android-phase8
             dist/android-result
+            dist/android-hardcover
           if-no-files-found: warn
           retention-days: 30
