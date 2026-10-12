@@ -28,6 +28,7 @@ export function OfflineCatalogProvider({ children }: { children: ReactNode }) {
   const bundledDb = useSQLiteContext(), [bundled, setBundled] = useState(0);
   const [installed, setInstalled] = useState<CatalogManifest | null>(null), [available, setAvailable] = useState<CatalogManifest | null>(null);
   const [progress, setProgress] = useState<number | null>(null), [error, setError] = useState('');
+  useEffect(() => { void personal.catch(() => setError('Personal offline cache could not be opened. Existing files retained.')); }, [personal]);
   const current = useRef<CatalogManifest | null>(null), operation = useRef<FS.DownloadResumable | null>(null), generation = useRef(0), busy = useRef(false);
   const directory = `${FS.documentDirectory}catalogs/`, name = (m: CatalogManifest) => `${m.sha256}.db`;
   async function select(manifest: CatalogManifest | null) {

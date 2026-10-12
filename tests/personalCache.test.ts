@@ -76,3 +76,12 @@ test('exact edition Goodreads ID produces link independently of score; wrong ISB
   assert.equal(normalizeOpenLibrary({ ...e, identifiers: { goodreads: ['12', '13'] } }, {}, [], {}, book.isbn!)!.goodreadsUrl, undefined);
   assert.ok(goodreadsReviewsUrl({ ...book, goodreadsUrl: 'https://evil.example/book/show/12' }).includes('/search?'));
 });
+
+
+test('progressive work identity replaces provisional text key atomically', async () => {
+ const db=new DatabaseSync(':memory:'),cache=createPersonalCache(adapter(db));
+ await cache.save({...book,isbn:undefined});
+ await cache.save({...book,isbn:undefined,workId:'/works/OL123W'});
+ assert.equal(db.prepare('SELECT count(*) n FROM personal_books').get()!.n,1);
+ assert.equal((await cache.search({title:book.title,author:book.authors[0]}))[0].workId,'/works/OL123W');db.close();
+});

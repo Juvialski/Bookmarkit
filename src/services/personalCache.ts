@@ -1,4 +1,4 @@
-import { BookResult } from '../models/book';
+import { BookResult, Rating } from '../models/book';
 import { BookQuery } from '../recognition/types';
 import { normalizeText } from '../recognition/normalization';
 import { matchBook } from '../recognition/matching';
@@ -13,9 +13,11 @@ export interface CacheDatabase {
   getAllAsync<T>(sql: string, ...params: string[]): Promise<T[]>;
 }
 export const personalSchema = `PRAGMA journal_mode=WAL;
+BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS personal_books (identity TEXT PRIMARY KEY, isbn TEXT, metadata TEXT NOT NULL, retrieved_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS personal_isbn ON personal_books(isbn);
-PRAGMA user_version=1;`;
+PRAGMA user_version=1;
+COMMIT;`;
 
 // Edition identities never collapse into work identities, even with identical text.
 export function cacheIdentity(book: BookResult): string | null {
@@ -27,8 +29,10 @@ export function cacheIdentity(book: BookResult): string | null {
   return `text:${JSON.stringify([normalizeText(book.title), book.authors.map(normalizeText).sort()])}`;
 }
 export function reusableBook(book: BookResult, previous?: BookResult): BookResult {
-  const ratings = [...book.ratings.filter(r => !r.unavailable && r.average !== undefined && Number.isFinite(r.average) && r.average > 0 && r.average <= 5
-    && (r.count === undefined || (Number.isSafeInteger(r.count) && r.count >= 0)) && (r.provider !== 'Goodreads' || r.verified === true))];
+  const usable = book.ratings.filter(r => !r.unavailable && r.average !== undefined && Number.isFinite(r.average) && r.average > 0 && r.average <= 5
+    && (r.count === undefined || (Number.isSafeInteger(r.count) && r.count >= 0)) && (r.provider !== 'Goodreads' || r.verified === true));
+  const ratings: Rating[] = usable.filter((r, i) => !usable.slice(0, i).some(n => n.provider === r.provider && n.scope === r.scope))
+    .map(r => ({ ...r, retrievedAt: r.retrievedAt || new Date().toISOString() }));
   for (const r of previous?.ratings || []) if (!ratings.some(n => n.provider === r.provider && n.scope === r.scope)) ratings.push(r);
   return { ...book, workId: book.workId || previous?.workId, hardcoverId: book.hardcoverId || previous?.hardcoverId,
     coverUrl: book.coverUrl || previous?.coverUrl, coverUrls: book.coverUrls?.length ? book.coverUrls : previous?.coverUrls,
@@ -53,14 +57,23 @@ export function createPersonalCache(db: CacheDatabase) {
       const write = queue.catch(() => {}).then(async () => {
         await ready;
         if (!active()) return;
-        const row = await db.getFirstAsync<{metadata: string}>('SELECT metadata FROM personal_books WHERE identity=?', key);
+        // A text-only result may acquire a verified work ID during enrichment.
+        // Migrate that provisional key atomically, without merging two known works.
+        const provisional = !book.isbn ? cacheIdentity({ ...book, workId: undefined, hardcoverId: undefined }) : null;
+        const alias = provisional && provisional !== key ? await db.getFirstAsync<{metadata: string}>('SELECT metadata FROM personal_books WHERE identity=?', provisional) : null;
+        const row = await db.getFirstAsync<{metadata: string}>('SELECT metadata FROM personal_books WHERE identity=?', key) || alias;
         let previous: BookResult | undefined;
         try { previous = row ? JSON.parse(row.metadata) : undefined; } catch { /* replace only this damaged row */ }
         if (previous && (normalizeText(previous.title) !== normalizeText(book.title) || previous.authors.map(normalizeText).sort().join('|') !== book.authors.map(normalizeText).sort().join('|'))) return;
         const saved = reusableBook(book, previous);
         if (!active()) return;
-        await db.runAsync('INSERT INTO personal_books(identity,isbn,metadata,retrieved_at) VALUES (?,?,?,?) ON CONFLICT(identity) DO UPDATE SET metadata=excluded.metadata,retrieved_at=excluded.retrieved_at',
-          key, saved.isbn || '', JSON.stringify(saved), saved.retrievedAt!);
+        await db.execAsync('BEGIN IMMEDIATE');
+        try {
+          await db.runAsync('INSERT INTO personal_books(identity,isbn,metadata,retrieved_at) VALUES (?,?,?,?) ON CONFLICT(identity) DO UPDATE SET metadata=excluded.metadata,retrieved_at=excluded.retrieved_at',
+            key, saved.isbn || '', JSON.stringify(saved), saved.retrievedAt!);
+          if (alias && provisional) await db.runAsync('DELETE FROM personal_books WHERE identity=?', provisional);
+          await db.execAsync('COMMIT');
+        } catch (error) { await db.execAsync('ROLLBACK').catch(() => {}); throw error; }
       });
       queue = write;
       return write;
