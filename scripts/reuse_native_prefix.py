@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def verify(evidence, apk, source, head):
-    allowed = {'.github/workflows/android-test-apk.yml', 'scripts/android-cache-smoke.py', 'scripts/reuse_native_prefix.py'}
+    allowed = {'.github/workflows/android-test-apk.yml', 'scripts/android-cache-smoke.py', 'scripts/reuse_native_prefix.py', 'scripts/android-upgrade-smoke.py'}
     changed = subprocess.check_output(['git', 'diff', '--name-only', source, head], text=True).splitlines()
     if not changed or 'scripts/android-cache-smoke.py' not in changed or not set(changed) <= allowed:
         raise ValueError('App, backend or unaffected acceptance inputs changed')
