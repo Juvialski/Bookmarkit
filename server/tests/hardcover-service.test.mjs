@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHardcoverService,normalizeCandidates,queryKey,validateQuery,publicClassification} from '../../supabase/functions/_shared/hardcover-service.mjs';
 const isbn='9780765326355';
-const book={id:123,title:'The Way of Kings',slug:'the-way-of-kings',rating:4.56,ratings_count:18432,
+const book={id:123,book_status_id:1,canonical_id:null,title:'The Way of Kings',slug:'the-way-of-kings',rating:4.56,ratings_count:18432,
  contributions:[{contribution:'author',author:{name:'Brandon Sanderson'}}],featured_book_series:{compilation:false,position:1,series:{name:'Stormlight'}}};
 const edition={id:9,book_id:123,isbn_13:isbn,title:book.title,book};
 function memoryStore(time=()=>0) {

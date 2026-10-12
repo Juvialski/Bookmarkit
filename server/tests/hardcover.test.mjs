@@ -17,6 +17,11 @@ test('exact ISBN hit, work rating/count, authors, cover, featured series and URL
   assert.equal(result.url, 'https://hardcover.app/books/the-way-of-kings'); assert.match(result.coverUrl, /^https:/);
 });
 test('ISBN miss is an explicit found false', () => assert.deepEqual(normalizeHardcover({ data: { editions: [] } }, isbn), { found: false }));
+test('deprecated or redirected parent works cannot supply a canonical rating',()=>{
+ assert.throws(()=>normalizeHardcover(payload({canonical_id:456}),isbn));
+ assert.throws(()=>normalizeHardcover(payload({book_status_id:2}),isbn));
+ assert.match(QUERY,/canonical_id/);assert.match(QUERY,/book_status_id/);
+});
 test('missing and invalid ratings/counts do not invent data', () => {
   for (const rating of [null, undefined, '', 'bad', -1, 6, Infinity]) assert.equal(normalizeHardcover(payload({ rating }), isbn).rating, undefined);
   for (const ratings_count of [null, undefined, '', 'bad', -1, 1.5, Infinity]) assert.equal(normalizeHardcover(payload({ ratings_count }), isbn).ratingsCount, undefined);

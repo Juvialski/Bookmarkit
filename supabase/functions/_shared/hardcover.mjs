@@ -3,7 +3,7 @@ export const QUERY = `query BookByIsbn($isbn: String!) {
   editions(where: {isbn_13: {_eq: $isbn}}, order_by: {id: asc}, limit: 2) {
     id book_id isbn_13 title image { url }
     book {
-      id title slug rating ratings_count image { url }
+      id title slug book_status_id canonical_id rating ratings_count image { url }
       contributions(limit: 8, order_by: {id: asc}) { contribution author { name } }
       featured_book_series { compilation position series { name } }
     }
@@ -29,6 +29,7 @@ export function normalizeHardcover(payload, isbn) {
   if (!editions.length) return { found: false };
   if (editions.some(e => object(e).isbn_13 !== isbn || (e.book_id !== undefined && e.book_id !== e.book?.id))) throw new LookupError();
   const edition = object(editions[0]), book = object(edition.book);
+  if ((book.book_status_id !== undefined && book.book_status_id !== 1) || book.canonical_id != null) throw new LookupError();
   const title = text(edition.title) || text(book.title);
   if (!title || !Number.isSafeInteger(book.id) || book.id <= 0 || editions.some(e => object(object(e).book).id !== book.id)) throw new LookupError();
   const count = number(book.ratings_count), average = number(book.rating);

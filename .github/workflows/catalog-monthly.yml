@@ -62,3 +62,13 @@ jobs:
           python scripts/catalog_publish.py
           # Confirm the same immutable catalog cleanly skips repeat publication.
           python scripts/catalog_publish.py
+      - name: Measure published coverage
+        run: python scripts/catalog_audit.py --output dist/catalog/published-audit --package dist/catalog/expanded.db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-catalog-evidence
+          path: |
+            dist/catalog/manifest.json
+            dist/catalog/validation.json
+            dist/catalog/published-audit/audit.json
+          if-no-files-found: error
