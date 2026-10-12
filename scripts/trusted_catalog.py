@@ -11,9 +11,12 @@ def credential():
     return next(r['api_key'] for r in rows if r.get('name')=='service_role')
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('operation',choices=['publish','enrich','authorization','references']);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('operation',choices=['publish','enrich','authorization','references','links']);args=parser.parse_args()
     os.environ['SUPABASE_SERVICE_ROLE_KEY']=credential()
     if args.operation=='publish':publish();return
+    if args.operation=='links':
+        from catalog_work_links import main as links
+        links();return
     if args.operation=='references':
         from pathlib import Path
         from catalog_publish import request

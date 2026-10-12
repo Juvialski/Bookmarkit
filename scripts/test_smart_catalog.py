@@ -2,17 +2,20 @@ import gzip,json,sqlite3,tempfile,unittest
 from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
-from smart_catalog import preserve,resolve_authors,popular_targets,select_popular,reviewed_metadata,snapshot_observations
+from smart_catalog import preserve,resolve_authors,popular_targets,select_popular,reviewed_metadata,snapshot_observations,canonical_stamp
 from catalog import build
 from bulk_cache import download
 from catalog_audit import summarize
 
 class SmartTests(unittest.TestCase):
+ def test_timestamp_roundtrip_does_not_trigger_identical_rebuild(self):
+  self.assertEqual(canonical_stamp('2026-10-12T00:00:00Z'),canonical_stamp('2026-10-12T00:00:00+00:00'))
  def test_metadata_only_cache_keeps_last_good_rating_timestamp_and_pair(self):
   rows=snapshot_observations({'catalog_provider_works':[dict(provider_id='123',work_id='hardcover:123')],
    'catalog_works':[dict(id='hardcover:123',title='Known',authors=['Author'])],
    'catalog_ratings':[dict(work_id='hardcover:123',source='Hardcover',average=4.21,count=1234,source_updated='2026-10-01')],
    'hardcover_cache':[dict(book_id='123',payload={'found':True,'rating':None,'retrievedAt':'2026-10-12'})]})
+  self.assertEqual(len(rows),1)
   value=rows[-1]['payload'];self.assertEqual(value['rating'],4.21);self.assertEqual(value['ratingsCount'],1234);self.assertEqual(value['retrievedAt'],'2026-10-01')
  def test_reviewed_standalone_and_planned_sequel_are_independent_of_ratings(self):
   records={'t':dict(title='Tress of the Emerald Sea',author_name=['Brandon Sanderson'],series_status='series',series_name="Hoid's Travails",ratings_average=4.2),

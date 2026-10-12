@@ -10,6 +10,11 @@ from bulk_cache import download, lines, BASE, AGENT
 
 ROOT=Path(__file__).resolve().parents[1]
 
+def canonical_stamp(value):
+    stamp=datetime.fromisoformat(value.replace('Z','+00:00'))
+    if stamp.tzinfo is None:stamp=stamp.replace(tzinfo=timezone.utc)
+    return stamp.astimezone(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00','Z')
+
 def reviewed_metadata(records):
     reviewed=json.loads((ROOT/'docs/catalog-classifications.json').read_text('utf-8'))
     for record in records.values():
@@ -27,9 +32,12 @@ def snapshot_observations(data):
     for identity,mapping in mappings.items():
         work=works[mapping['work_id']];rating=ratings.get(work['id'])
         if identity not in positive and rating and work['authors']:
+            observations=[r for r in observations if r['book_id']!=identity]
             # Separate last-good aggregate provenance from newer metadata-only reads.
             observations.append({'book_id':identity,'catalog_work_id':work['id'],'payload':dict(found=True,identity='work',title=work['title'],authors=work['authors'],
                 hardcoverId=identity,url=mapping.get('url'),verified=True,ratingScope='work',rating=float(rating['average']),ratingsCount=rating['count'],retrievedAt=rating['source_updated'])})
+    for link in data.get('catalog_work_links',[]):
+        observations.extend({**r,'catalog_work_id':link['alias_work_id']} for r in list(observations) if r['catalog_work_id']==link['canonical_work_id'])
     return observations
 
 def preserve(data, previous):
@@ -43,12 +51,12 @@ def preserve(data, previous):
             'author_refs':w.get('author_refs') or old.get('author_refs',[]),
             'isbn':[],'isbn_editions':{},'source_provider':w['source'],'series_status':w['series_status'],
             'series_name':w['series_name'],'series_position':w['series_position'],'classification_source':w['classification_source'],
-            'source_updated':w['source_updated']}
+            'source_updated':canonical_stamp(w['source_updated'])}
     for i in data['catalog_isbns']:
         e=editions[i['edition_id']];r=records[e['work_id']]
         r['isbn'].append(i['isbn13']);r['isbn_editions'][i['isbn13']]=e['id'];r.setdefault('edition_key',e['id'])
     for r in data['catalog_ratings']:
-        if r['source']=='Open Library':records[r['work_id']].update(ratings_average=float(r['average']),ratings_count=r['count'],rating_retrieved_at=r['source_updated'])
+        if r['source']=='Open Library':records[r['work_id']].update(ratings_average=float(r['average']),ratings_count=r['count'],rating_retrieved_at=canonical_stamp(r['source_updated']))
     return records
 
 def resolve_authors(records, staging, seconds=480):
@@ -86,7 +94,7 @@ def resolve_authors(records, staging, seconds=480):
         # Partial resolution cannot replace an already complete/correct author list.
         if refs and len(resolved)==len(refs) and len(set(resolved))>=len(previous_authors):r['author_name']=list(dict.fromkeys(resolved))
         elif not r.get('author_name'):r['author_name']=list(dict.fromkeys(resolved))
-        if r.get('author_name')!=previous_authors:r['source_updated']=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())
+        if r.get('author_name')!=previous_authors:r['source_updated']=canonical_stamp(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()))
     temporary=staging/'authors.json.part';temporary.write_text(json.dumps(names,sort_keys=True),encoding='utf-8');temporary.replace(staging/'authors.json')
     return names
 
@@ -147,15 +155,16 @@ def main():
     # Reviewed exact editions from the established bundle are useful seeds, not
     # work-search ISBN guesses. Never displace a currently assigned ISBN.
     claimed={i for r in records.values() for i in r['isbn']}
-    for r in json.loads((ROOT/'catalog/source.json').read_text('utf-8'))['records']:
+    bundled=json.loads((ROOT/'catalog/source.json').read_text('utf-8'))
+    for r in bundled['records']:
         if r.get('edition_key') and r['key'] not in records and r.get('author_name'):
             isbns=sorted({isbn13(i) for i in r.get('isbn',[])}-{None})
             if isbns and not claimed.intersection(isbns):
-                records[r['key']]={**r,'isbn':isbns,'isbn_editions':{i:r['edition_key'] for i in isbns},'source_provider':'open-library'};claimed.update(isbns)
+                records[r['key']]={**r,'isbn':isbns,'isbn_editions':{i:r['edition_key'] for i in isbns},'source_provider':'open-library','rating_retrieved_at':canonical_stamp(bundled['generated_date'])};claimed.update(isbns)
     if not args.skip_popular:
         try:
             ratings=download('ratings',staging/'bulk',seconds=120);targets,counts=popular_targets(ratings)
-            observed=datetime.fromtimestamp(ratings.with_suffix('.json').stat().st_mtime,timezone.utc).isoformat()
+            observed=canonical_stamp(datetime.fromtimestamp(ratings.with_suffix('.json').stat().st_mtime,timezone.utc).isoformat())
             with closing(sqlite3.connect(counts)) as db:
                 for key,r in records.items():
                     rating=db.execute('select total,n from counts where work=?',(key,)).fetchone()

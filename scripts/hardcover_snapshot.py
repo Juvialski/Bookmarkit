@@ -24,6 +24,9 @@ def cached_summaries():
         for r in rows:
             r['catalog_work_id']=mappings.get(r.get('book_id'))
             r['catalog_accepted']=r.get('book_id') in mappings
+        request=urllib.request.Request(BASE+'/rest/v1/catalog_work_links?select=alias_work_id,canonical_work_id&limit=5000',headers={'apikey':PUBLIC_KEY})
+        with urllib.request.urlopen(request,timeout=4) as response:links=json.load(response)
+        for link in links:rows.extend({**r,'catalog_work_id':link['alias_work_id']} for r in list(rows) if r.get('catalog_work_id')==link['canonical_work_id'])
     except (OSError,ValueError):pass
     return rows
 

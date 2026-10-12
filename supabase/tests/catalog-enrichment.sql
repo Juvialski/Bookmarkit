@@ -38,6 +38,13 @@ do $$ declare k text:=repeat('9',64); r jsonb; n integer; begin
   'authors','[]'::jsonb,'normalized_title','reference fixture','source','open-library','source_updated',now()+interval '1 hour',
   'series_status','unknown','classification_source','unknown')));
  if not exists(select 1 from public.catalog_works where id='/works/OL999999999999W' and jsonb_array_length(authors)=2) then raise exception 'resumed publication erased authors';end if;
+ insert into public.hardcover_cache(cache_key,book_id,isbn13,title,primary_author,payload,retrieved_at,expires_at)
+ values(repeat('7',64),'777999','9780000000002','Alias contract fixture','Synthetic Author',
+  r||jsonb_build_object('hardcoverId','777999','hardcoverEditionId','777999','isbn','9780000000002','title','Alias contract fixture'),now(),now()+interval '7 days');
+ insert into public.catalog_works(id,title,authors,normalized_title,source,source_updated)
+ values('/works/OL777999W','Alias contract fixture','["Synthetic Author"]','alias contract fixture','open-library',now());
+ if not public.accept_catalog_work_link(repeat('7',64),'{"key":"/books/OL777999M","work_id":"/works/OL777999W","title":"Alias contract fixture","isbn13":"9780000000002"}') then raise exception 'exact ISBN link refused';end if;
+ if public.accept_catalog_work_link(repeat('7',64),'{"key":"/books/OL777999M","work_id":"/works/OL777999W","title":"Alias contract fixture","isbn13":"9780140328721"}') then raise exception 'wrong ISBN link accepted';end if;
 end $$;
 set local role anon;
 do $$ begin
@@ -46,6 +53,7 @@ do $$ begin
  begin delete from public.catalog_provider_works;raise exception 'anonymous writes allowed';exception when insufficient_privilege then null;end;
  begin perform public.retain_catalog_author_refs('[]');raise exception 'anonymous references allowed';exception when insufficient_privilege then null;end;
  begin perform public.merge_catalog_works('[]');raise exception 'anonymous publication allowed';exception when insufficient_privilege then null;end;
+ begin perform public.accept_catalog_work_link(repeat('7',64),'{}');raise exception 'anonymous links allowed';exception when insufficient_privilege then null;end;
 end $$;
 set local role authenticated;
 do $$ begin

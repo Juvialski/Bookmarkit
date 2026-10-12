@@ -1,5 +1,18 @@
 # Book catalog operations
 
+V5 supersedes the initial sample below. The current verified publication contains
+26,000 source work IDs, 27,216 ISBNs and 16,988 works with author names; source
+ratings are 2,413 Open Library, 26 Hardcover and one Goodreads work. See
+[V5 measurements and limits](BOOKMARKIT_V5.md) for the fixed-cohort comparison,
+permissions, canonical identity policy and native upgrade evidence.
+
+The supported refresh is `python scripts/smart_catalog.py`, followed by
+`python scripts/validate_expanded.py` and trusted `catalog_publish.py` publication.
+It starts from the complete hosted inventory and preserves prior metadata.
+`expanded_catalog.py` is retained as the historical initial-sample importer;
+it is not the current monthly refresh path. The remaining sections describe that
+original baseline and the unchanged immutable-download installation contract.
+
 Existing project: `xxijxuekfsxuzhnujqem`, Singapore. The central database and Storage snapshot were deployed during V2. Public readers have SELECT only; ingestion, Gemini usage and circuit records are private. Every public table has RLS. Trusted service-role operations perform imports; credentials never enter the APK.
 
 The downloaded SQLite snapshot contains **25,265 distinct works, 25,265 linked editions and 26,464 checksum-valid ISBN-13s**. ISBN-10 equivalents are derived only for the 978 range. **1,703 works have Open Library ratings; 4,160 works have resolved author names**, corresponding to 3,987 distinct referenced authors. Unresolved authors stay empty. Missing series remains unknown.

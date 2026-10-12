@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Intermezzo",
+    "status": 200,
+    "found": false,
+    "hardcover_id": null,
+    "average": null,
+    "count": null,
+    "scope": null,
+    "retrieved_at": null
+  },
+  {
+    "title": "Onyx Storm",
+    "status": 200,
+    "found": true,
+    "hardcover_id": "1197328",
+    "average": 3.953375086986778,
+    "count": 1437,
+    "scope": "work",
+    "retrieved_at": "2026-10-12T04:31:59.677Z"
+  },
+  {
+    "title": "The Mysterious Mr. Quin",
+    "status": 200,
+    "found": true,
+    "hardcover_id": "175686",
+    "average": 3.4767441860465116,
+    "count": 43,
+    "scope": "work",
+    "retrieved_at": "2026-10-12T04:32:11.116Z"
+  }
+]
