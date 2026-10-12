@@ -3,7 +3,7 @@ import sqlite3
 from pathlib import Path
 exec(compile(Path('scripts/android-result-smoke.py').read_text('utf-8').split('original_font =')[0], 'result-helpers', 'exec'))
 out = Path('dist/android-cache'); out.mkdir(parents=True, exist_ok=True)
-report = {'result': 'running', 'offline_records': 0, 'latency_scope': 'UI automation includes typing and accessibility polling'}
+report = {'result': 'running', 'offline_records': 0, 'latency_scope': 'Lookup button tap to title; includes accessibility polling, excludes typing'}
 isbn, title = '9780593321201', 'Tomorrow, and Tomorrow, and Tomorrow'
 try:
     with sqlite3.connect('assets/catalog-v3.db') as db:
@@ -11,7 +11,7 @@ try:
         assert not db.execute("SELECT 1 FROM books WHERE title='Intermezzo'").fetchone()
     network(True); launch()
     start = time.monotonic(); lookup(isbn, title, 'new-online-initial')
-    report['initial_ui_seconds'] = round(time.monotonic()-start, 3)
+    report['initial_lookup_seconds'] = round(lookup_latency, 3)
     root = description('out of 5 stars', name='new-online-rated')
     label = rating_evidence(root); report['online_rating'] = label
     # Let bounded progressive enrichment finish before comparing persisted values.
@@ -20,7 +20,7 @@ try:
     network(False); launch()
     start = time.monotonic(); lookup(isbn, title, 'restart-offline')
     description(label, name='restart-offline-rated')
-    report['offline_ui_seconds'] = round(time.monotonic()-start, 3)
+    report['offline_lookup_seconds'] = round(lookup_latency, 3)
     report['offline_records'] += 1
     network(True); launch(); lookup('Intermezzo Sally Rooney', 'Intermezzo', 'no-isbn-online')
     book_result('Intermezzo', 'no-isbn-selected'); time.sleep(8)
