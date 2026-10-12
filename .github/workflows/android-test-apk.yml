@@ -42,6 +42,8 @@ jobs:
     outputs:
       changed: ${{ steps.scope.outputs.changed }}
       apk_run_id: ${{ steps.scope.outputs.apk_run_id }}
+      native_run_id: ${{ steps.scope.outputs.native_run_id }}
+      native_sha: ${{ steps.scope.outputs.native_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -68,13 +70,14 @@ jobs:
               # or are native acceptance scripts, with an identical build recipe.
               # Source/assets/packages/config changes always require a new build.
               reuse = ''
+              native_reuse = ''; native_sha = ''
               def acceptance(path):
                   return path == '.github/workflows/android-test-apk.yml' or (path.startswith('scripts/android-') and path.endswith('.py')) or not any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
               def recipe(ref):
                   workflow = subprocess.check_output(['git', 'show', ref + ':.github/workflows/android-test-apk.yml'], text=True)
                   return workflow.split('  apk:\n', 1)[1].split('  native-cover:\n', 1)[0].split('    env:\n', 1)[1]
               if changed and os.environ['EVENT_NAME'] != 'workflow_dispatch':
-                  runs = json.loads(subprocess.check_output(['gh', 'run', 'list', '--workflow', 'android-test-apk.yml', '--branch', os.environ['HEAD_BRANCH'], '--limit', '10', '--json', 'databaseId,headSha,status'], text=True))
+                  runs = json.loads(subprocess.check_output(['gh', 'run', 'list', '--workflow', 'android-test-apk.yml', '--branch', os.environ['HEAD_BRANCH'], '--limit', '20', '--json', 'databaseId,headSha,status'], text=True))
                   for run in runs:
                       if run['status'] != 'completed': continue
                       if subprocess.run(['git', 'cat-file', '-e', run['headSha']], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode: continue
@@ -84,6 +87,19 @@ jobs:
                       artifacts = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + str(run['databaseId']) + '/artifacts'], text=True))['artifacts']
                       if any(a['name'] == 'bookmarkit-android-test' and not a['expired'] for a in artifacts):
                           reuse = str(run['databaseId']); break
+                  # A cache-fixture-only correction may reuse individually passed
+                  # prefix reports; the failed cache case is always executed again.
+                  prefix_changes = {'.github/workflows/android-test-apk.yml', 'scripts/android-cache-smoke.py', 'scripts/reuse_native_prefix.py'}
+                  for run in runs:
+                      if run['status'] != 'completed': continue
+                      if subprocess.run(['git', 'cat-file', '-e', run['headSha']], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode: continue
+                      differences = subprocess.check_output(['git', 'diff', '--name-only', run['headSha'], os.environ['HEAD_SHA']], text=True).splitlines()
+                      if 'scripts/android-cache-smoke.py' not in differences or not set(differences) <= prefix_changes: continue
+                      artifacts = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + str(run['databaseId']) + '/artifacts'], text=True))['artifacts']
+                      if any(a['name'] == 'bookmarkit-native-cover-evidence' and not a['expired'] for a in artifacts):
+                          native_reuse = str(run['databaseId']); native_sha = run['headSha']; break
+              output.write('native_run_id=' + native_reuse + '\n')
+              output.write('native_sha=' + native_sha + '\n')
               output.write('apk_run_id=' + reuse + '\n')
           PY
   apk:
@@ -137,6 +153,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -146,6 +164,20 @@ jobs:
           path: dist/apk
           run-id: ${{ inputs.apk_run_id || needs.mobile-scope.outputs.apk_run_id || github.run_id }}
           github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        if: ${{ needs.mobile-scope.outputs.native_run_id != '' }}
+        with:
+          name: bookmarkit-native-cover-evidence
+          path: dist/prior-native
+          run-id: ${{ needs.mobile-scope.outputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - id: prefix
+        if: ${{ needs.mobile-scope.outputs.native_run_id != '' }}
+        env:
+          SOURCE_SHA: ${{ needs.mobile-scope.outputs.native_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SOURCE_RUN: ${{ needs.mobile-scope.outputs.native_run_id }}
+        run: python scripts/reuse_native_prefix.py --evidence dist/prior-native --apk dist/apk/bookmarkit-android-test.apk --source "$SOURCE_SHA" --head "$HEAD_SHA" --run-id "$SOURCE_RUN"
       - run: pip install Pillow
       - run: python scripts/create-ocr-images.py
       - name: Fetch public cover fixture
@@ -169,10 +201,7 @@ jobs:
           profile: pixel_4
           emulator-options: -cores 2 -memory 4096 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: |
-            python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk
-            python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
-            python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
-            python scripts/android-hardcover-smoke.py --apk dist/apk/bookmarkit-android-test.apk
+            if [ '${{ steps.prefix.outputs.reused }}' = 'true' ]; then adb install -r dist/apk/bookmarkit-android-test.apk; else python scripts/android-cover-smoke.py --apk dist/apk/bookmarkit-android-test.apk --baseline-apk dist/baseline/bookmarkit-android-test.apk && python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk && python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk && python scripts/android-hardcover-smoke.py --apk dist/apk/bookmarkit-android-test.apk; fi
             python scripts/android-cache-smoke.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
@@ -183,5 +212,6 @@ jobs:
             dist/android-result
             dist/android-hardcover
             dist/android-cache
+            dist/native-prefix-reuse.json
           if-no-files-found: warn
           retention-days: 30
