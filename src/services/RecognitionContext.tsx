@@ -2,6 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useSt
 import { AppState, BackHandler } from 'react-native';
 import { getNetworkStateAsync } from 'expo-network';
 import { router } from 'expo-router';
+import { reviewedClassification } from '../utils/classification';
 import { BookResult } from '../models/book';
 import { RecognitionRequest } from '../recognition/types';
 import { interpretCover } from '../recognition/coverParser';
@@ -19,9 +20,9 @@ interface Session {
 }
 const Context = createContext<Session | null>(null);
 export function RecognitionProvider({ children }: { children: ReactNode }) {
-  const { catalog } = useOfflineCatalog();
+  const { catalog, save } = useOfflineCatalog();
   const dependencies = useMemo(() => {
-    const progressive = createProgressiveLookup(async isbn => (await catalog.search({ isbn }))[0] || null);
+    const progressive = createProgressiveLookup(async isbn => { const books = await catalog.search({ isbn }); return books.length === 1 ? books[0] : null; });
     return { enrich: createBookEnricher(progressive.enrich), catalog, search: createCachedSearch(), isbn: progressive.lookup,
       online: async () => { try { const state = await getNetworkStateAsync(); return state.isConnected !== false && state.isInternetReachable !== false; } catch { return true; } }
     };
@@ -42,10 +43,13 @@ export function RecognitionProvider({ children }: { children: ReactNode }) {
   }, [loading]);
   useEffect(() => () => { gate.current.cancel(); controller.current?.abort(); }, []);
   function choose(value: BookResult) {
+    value = reviewedClassification(value);
     const id = ++selection.current; const signal = controller.current?.signal;
     setBook(value); setState('result'); router.replace('/result');
+    const active = () => id === selection.current && !signal?.aborted;
+    void save(value, active);
     void dependencies.online().then(online => online ? dependencies.enrich(value, signal) : value).then(enriched => {
-      if (id === selection.current && !signal?.aborted) setBook(enriched);
+      if (active()) { const reviewed = reviewedClassification(enriched); setBook(reviewed); void save(reviewed, active); }
     }).catch(() => {});
   }
   async function run(request: (signal: AbortSignal) => Promise<RecognitionRequest>, phase: ScanState) {

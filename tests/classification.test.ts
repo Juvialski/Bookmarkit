@@ -52,3 +52,16 @@ test('unavailable optional proxy adds at most the 2.5 second deadline to OL succ
   const book = await pending;
   assert.equal(primaryRating(book.ratings)?.provider, 'Open Library'); assert.equal(book.warnings.length, 0);
 });
+
+
+test('Warbreaker planned sequel is evidence-backed across editions without altering other series', async () => {
+ const { reviewedClassification } = await import('../src/utils/classification');
+ const base = {title:'Warbreaker',authors:['Brandon Sanderson'],seriesStatus:'series' as const,seriesName:'Warbreaker',seriesPosition:'1',ratings:[],warnings:[]};
+ for (const isbn of ['9780765320308','9780765360038',undefined]) {
+  const result=reviewedClassification({...base,isbn});assert.equal(result.seriesStatus,'unknown');assert.equal(result.plannedSequel,true);assert.ok(result.classificationEvidence);
+ }
+ for (const title of ['The Way of Kings','The Hunger Games','Confirmed standalone']) {
+  const result={...base,title};assert.equal(reviewedClassification(result),result);
+ }
+ assert.equal(reviewedClassification({...base,authors:['Other author']}).plannedSequel,undefined);
+});

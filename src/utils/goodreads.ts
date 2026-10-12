@@ -5,7 +5,7 @@ export function verifiedGoodreadsUrl(value: unknown): value is string {
 }
 export function goodreadsReviewsUrl(book: BookResult) {
   const rating = book.ratings.find(r => r.provider === 'Goodreads' && r.verified && verifiedGoodreadsUrl(r.url));
-  return rating?.url || goodreadsSearchUrl(book);
+  return rating?.url || (verifiedGoodreadsUrl(book.goodreadsUrl) ? book.goodreadsUrl : goodreadsSearchUrl(book));
 }
 export function goodreadsSearchUrl(value: string | { isbn?: string; title: string; authors: string[] }) {
   const isbn = normalizeIsbn(typeof value === 'string' ? value : value.isbn || '');

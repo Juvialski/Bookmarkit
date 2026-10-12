@@ -75,7 +75,8 @@ def tap(text=None, resource=None, description=None):
                 (description and attr.get('content-desc') == description)):
                 x1,y1,x2,y2 = map(int, re.findall(r'\d+', attr['bounds']))
                 if x2 > x1 and y2 > y1:
-                    shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2)); return
+                    moment = time.monotonic()
+                    shell('input', 'tap', str((x1+x2)//2), str((y1+y2)//2)); return moment
         bounds = root.find('node').attrib['bounds']
         _,_,width,height = map(int, re.findall(r'\d+', bounds))
         shell('input', 'swipe', str(width//2), str(height*3//4), str(width//2), str(height//3), '300')
@@ -99,8 +100,11 @@ def lookup(isbn, title, name):
         shell('input', 'keyevent', '67')
     shell('input', 'text', isbn.replace(' ', '%s'))
     shell('input', 'keyevent', '4')
-    tap('Look up book')
-    return wait(title, name=name)
+    start = tap('Look up book')
+    result = wait(title, name=name)
+    global lookup_latency
+    lookup_latency = time.monotonic() - start
+    return result
 
 def texts(root):
     return [n.attrib['text'] for n in root.iter('node') if n.attrib.get('text')]
@@ -179,6 +183,9 @@ try:
     if args.baseline_apk:
         adb('install', '-r', str(Path(args.baseline_apk).resolve()))
         report['baseline_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
+        network(True); launch(); tap('Offline books'); wait('Download'); tap('Download')
+        wait('Delete expanded catalog',timeout=90,name='baseline-catalog-installed')
+        network(False)
     installed = subprocess.run([args.adb, '-s', args.serial, 'install', '-r', str(apk.resolve())], capture_output=True, text=True)
     report['install'] = installed.stdout + installed.stderr
     if installed.returncode:
@@ -188,6 +195,8 @@ try:
     assert report['installed_version'] == expected_version, report
     if args.baseline_apk:
         assert int(report['installed_version']) > int(report['baseline_version']), 'Upgrade did not increase versionCode'
+        launch(); tap('Offline books'); wait('Delete expanded catalog',name='upgrade-catalog-retained')
+        report['v120_offline_download_survives_upgrade']='passed'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     # Cold CI emulators can finish radio initialization during APK installation.

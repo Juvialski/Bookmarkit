@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFreeGemini, parseFreeProjects, readFreeProjects, verifyFreeConfiguration } from '../src/freeGemini.mjs';
+import { createFreeGemini, parseFreeProjects, readFreeProjects, verifyFreeConfiguration, quotaResetSeconds } from '../src/freeGemini.mjs';
 import { createGoogleFreeChecks } from '../src/googleFreeChecks.mjs';
 const project = (id='authorized-one',number='123',key='fixture-key-one') => ({ id,number,keys:[key,'fixture-backup-'+id],authorized:true,billingEnabled:false,models:[{id:'gemini-2.5-flash-lite',grounding:true,freeEligible:true,verifiedAt:new Date().toISOString(),dailyLimit:5,freeRpd:500,externalUsage:0}] });
 const checks={billingCheck:async()=>true,keyProjectCheck:async()=>true,modelCheck:async()=>true};
@@ -104,11 +104,11 @@ test('multiple keys share one project reservation; requests deduplicate without 
 test('429 stops immediately; neither backup keys nor other projects bypass it',async()=>{
  let calls=0,cooldowns=[];
  const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,reserve:async()=>true,cooldown:async(...args)=>cooldowns.push(args),fetcher:async()=>{calls++;return new Response('',{status:429});}});
- assert.equal((await search('Warbreaker')).status,'quota');assert.equal(calls,1);assert.equal(cooldowns[0][3],3600);
+ assert.equal((await search('Warbreaker')).status,'quota');assert.equal(calls,1);assert.equal(cooldowns[0][3],quotaResetSeconds(Date.now()));
 });
-test('existing verified capacity can select an independent project before any Google request',async()=>{
+test('preflight can select an eligible authorized project before any quota reservation',async()=>{
  let selected;
- const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,reserve:async id=>id==='authorized-two',fetcher:async(_url,init)=>{selected=init.headers['x-goog-api-key'];return answer();}});
+ const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,billingCheck:async id=>id==='authorized-two',reserve:async()=>true,fetcher:async(_url,init)=>{selected=init.headers['x-goog-api-key'];return answer();}});
  assert.equal((await search('Warbreaker')).status,'ok');assert.equal(selected,'fixture-key-two');
 });
 test('unverified billing, project binding, model access and missing credentials fail closed',async()=>{
@@ -134,4 +134,41 @@ test('timeouts, unavailable models and ungrounded answers never fabricate eviden
  assert.equal((await createFreeGemini({...base,fetcher:async()=>{throw new Error('timeout');}})('Warbreaker')).status,'timeout');
  assert.equal((await createFreeGemini({...base,fetcher:async()=>new Response('',{status:404})})('Warbreaker')).status,'unavailable');
  assert.equal((await createFreeGemini({...base,fetcher:async()=>Response.json({candidates:[{content:{parts:[{text:'uncited'}]}}]})})('Warbreaker')).status,'empty');
+});
+
+
+test('grounding failure is isolated from text; provider Retry-After is honored', async()=>{
+ const p=project();p.models.push({...p.models[0],id:'gemini-3.5-flash-lite',grounding:false});
+ let time=0,calls=0;const cooldowns=[];
+ const search=createFreeGemini({projects:[p],...checks,now:()=>time,reserve:async()=>true,
+ cooldown:async(...args)=>cooldowns.push(args),fetcher:async url=>{
+  calls++;return url.includes('2.5')?new Response('{}',{status:429,headers:{'Retry-After':'120'}}):answer();
+ }});
+ assert.equal((await search('Warbreaker','grounding')).status,'quota');
+ assert.equal((await search('Warbreaker','text')).status,'ok');
+ time=119000;assert.equal((await search('Other book','grounding')).status,'unavailable');assert.equal(calls,2);
+ time=120001;assert.equal((await search('Other book','grounding')).status,'quota');assert.equal(calls,3);
+ assert.equal(cooldowns[0][2],'grounding');assert.equal(cooldowns[0][3],120);
+});
+test('configuration failures persist only for affected operation, no timed retry', async()=>{
+ const p=project();p.models.push({...p.models[0],id:'gemini-3.5-flash-lite',grounding:false});let time=0,calls=0;
+ const search=createFreeGemini({projects:[p],...checks,now:()=>time,reserve:async()=>true,fetcher:async url=>{
+ calls++;return url.includes('2.5')?new Response('{}',{status:400}):answer();}});
+ assert.equal((await search('Warbreaker')).status,'unavailable');time=1000000000;
+ assert.equal((await search('Other book')).status,'unavailable');assert.equal(calls,1);
+ assert.equal((await search('Warbreaker','text')).status,'ok');assert.equal(calls,2);
+});
+
+test('configuration fingerprint is private and stable; credentials are never sent to quota storage', async()=>{
+ const p=project();p.models=[{...p.models[0],id:'gemini-3.5-flash-lite',grounding:false}];const fingerprints=[];
+ const search=createFreeGemini({projects:[p],...checks,reserve:async(...args)=>{fingerprints.push(args[4]);return true;},fetcher:async()=>answer()});
+ await search('Warbreaker','text');await search('Another book','text');
+ assert.match(fingerprints[0],/^[a-f0-9]{64}$/);assert.equal(fingerprints[0],fingerprints[1]);assert.equal(fingerprints[0].includes('fixture-key'),false);
+});
+
+test('a persisted denied reservation never falls through to another project', async()=>{
+ const reserved=[];
+ const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,
+ reserve:async id=>{reserved.push(id);return false;},fetcher:async()=>assert.fail('Generation forbidden')});
+ assert.equal((await search('Warbreaker')).status,'disabled');assert.deepEqual(reserved,['authorized-one']);
 });

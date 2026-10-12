@@ -3,16 +3,32 @@ import { openDatabaseAsync, SQLiteDatabase, useSQLiteContext } from 'expo-sqlite
 import * as FS from 'expo-file-system/legacy';
 import { File } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
+import { createPersonalCache } from './personalCache';
+import { BookResult } from '../models/book';
 import { BookCatalog } from '../recognition/types';
 import { createLocalSearch } from './localCatalog';
 import { CATALOG_KEY, SUPABASE_URL } from './providers/centralCatalog';
 import { CatalogManifest, validateManifest } from './catalogManifest';
-interface OfflineState { catalog: BookCatalog; bundled: number; installed: CatalogManifest | null; available: CatalogManifest | null; progress: number | null; error: string; refresh: () => Promise<void>; download: () => Promise<void>; cancel: () => void; remove: () => Promise<void> }
+interface OfflineState { catalog: BookCatalog; save: (book: BookResult, active?: () => boolean) => Promise<void>; bundled: number; installed: CatalogManifest | null; available: CatalogManifest | null; progress: number | null; error: string; refresh: () => Promise<void>; download: () => Promise<void>; cancel: () => void; remove: () => Promise<void> }
 const Context = createContext<OfflineState | null>(null);
 export function OfflineCatalogProvider({ children }: { children: ReactNode }) {
+  const personal = useMemo(() => (async () => {
+    const open = async (name: string) => {
+      const db = await openDatabaseAsync(name);
+      try {
+        const check = await db.getFirstAsync<{ integrity_check: string }>('PRAGMA integrity_check');
+        if (check?.integrity_check !== 'ok') throw new Error('Damaged personal cache');
+        const cache = createPersonalCache(db); await cache.ready; return cache;
+      } catch (error) { await db.closeAsync(); throw error; }
+    };
+    try { return await open('personal-books-v1.db'); }
+    catch { return open('personal-books-recovery-v1.db'); } // Preserve damaged file for recovery; never delete downloads.
+  })(), []);
+  const save = async (book: BookResult, active?: () => boolean) => { try { await (await personal).save(book, active); } catch { setError('Could not save this book offline. Please search again.'); } };
   const bundledDb = useSQLiteContext(), [bundled, setBundled] = useState(0);
   const [installed, setInstalled] = useState<CatalogManifest | null>(null), [available, setAvailable] = useState<CatalogManifest | null>(null);
   const [progress, setProgress] = useState<number | null>(null), [error, setError] = useState('');
+  useEffect(() => { void personal.catch(() => setError('Personal offline cache could not be opened. Existing files retained.')); }, [personal]);
   const current = useRef<CatalogManifest | null>(null), operation = useRef<FS.DownloadResumable | null>(null), generation = useRef(0), busy = useRef(false);
   const directory = `${FS.documentDirectory}catalogs/`, name = (m: CatalogManifest) => `${m.sha256}.db`;
   async function select(manifest: CatalogManifest | null) {
@@ -84,6 +100,8 @@ export function OfflineCatalogProvider({ children }: { children: ReactNode }) {
   function cancel() { generation.current++; void operation.current?.pauseAsync().catch(() => {}); }
   async function remove() { if (busy.current) return; const previous = current.current; await select(null); if (previous) await FS.deleteAsync(`${directory}${name(previous)}`, { idempotent: true }); }
   const catalog: BookCatalog = useMemo(() => ({ async search(query) {
+    const saved = await personal.then(cache => cache.search(query)).catch(() => []);
+    if (saved.length) return saved;
     const m = current.current;
     if (m) {
       try { const db = await openDatabaseAsync(name(m), {}, directory); try { const books = await createLocalSearch(db).search(query); if (books.length) return books; } finally { await db.closeAsync(); } }
@@ -91,6 +109,6 @@ export function OfflineCatalogProvider({ children }: { children: ReactNode }) {
     }
     return createLocalSearch(bundledDb).search(query);
   } }), [bundledDb]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <Context.Provider value={{ catalog, bundled, installed, available, progress, error, refresh, download, cancel, remove }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ catalog, save, bundled, installed, available, progress, error, refresh, download, cancel, remove }}>{children}</Context.Provider>;
 }
 export function useOfflineCatalog() { const value = useContext(Context); if (!value) throw new Error('Catalog context missing'); return value; }

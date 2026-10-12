@@ -1,7 +1,7 @@
 import { ProviderBook } from '../../models/book';
 import { Fetcher, json, object, rating, string, strings, ProviderError } from './shared';
 import { mergeClassification, seriesPosition } from '../../utils/classification';
-import { isValidIsbn } from '../../utils/isbn';
+import { isValidIsbn, normalizeIsbn } from '../../utils/isbn';
 
 export function parseSeriesStatement(value: string): { name: string; position: string } | null {
   const match = value.trim().match(/^(.+?)(?:\s*[;,:-]\s*|\s+)(?:\((?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?)\)|(?:#\s*|(?:book|vol\.?|volume|no\.?)\s+)(\d+(?:\.\d+)?))\s*[.;]?$/i);
@@ -28,7 +28,10 @@ export function normalizeOpenLibrary(edition: unknown, work: unknown, authors: u
   const classification = parsed.length && parsed.every(Boolean) ? mergeClassification(parsed.map(s => ({ seriesStatus: 'series', seriesName: s!.name, seriesPosition: s!.position, classificationSource: 'open-library', classificationConfidence: 'explicit' }))) : { seriesStatus: 'unknown' as const, classificationSource: 'unknown' as const };
   const summary = object(object(ratings).summary);
   const workId = Array.isArray(e.works) ? string(object(e.works[0]).key) : undefined;
-  return { isbn, title, authors: authors.map(a => string(object(a).name)).filter((a): a is string => !!a),
+  const mapped = strings(object(e.identifiers).goodreads);
+  const exactEdition = [...strings(e.isbn_13), ...strings(e.isbn_10)].some(value => normalizeIsbn(value) === normalizeIsbn(isbn));
+  const goodreadsId = exactEdition && mapped.length === 1 && /^[1-9]\d{0,15}$/.test(mapped[0]) ? mapped[0] : undefined;
+  return { goodreadsId, goodreadsUrl: goodreadsId ? `https://www.goodreads.com/book/show/${goodreadsId}` : undefined, isbn, title, authors: authors.map(a => string(object(a).name)).filter((a): a is string => !!a),
     coverUrl: coverUrls[0], coverUrls,
     workId, ...classification,
     rating: { provider: 'Open Library', ...rating(summary.average, summary.count) } };

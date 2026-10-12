@@ -6,6 +6,7 @@ import argparse
 import json
 import subprocess
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from catalog_publish import BASE
 
@@ -24,7 +25,7 @@ def main(live_text=False):
     def call(path, body=None):
         req = urllib.request.Request(BASE+path, data=json.dumps(body).encode() if body is not None else None, headers=headers)
         with urllib.request.urlopen(req, timeout=30) as response: return json.load(response)
-    circuit = call('/rest/v1/gemini_circuit?select=cooldown_until')
+    circuit = call('/rest/v1/gemini_operation_circuit?select=model,task,cooldown_until,disabled')
     usage = call('/rest/v1/gemini_project_usage?select=model,task,day,attempts,tokens&order=day.desc')
     check = call('/functions/v1/book-search', {'task':'verify'})
     grounding = call('/functions/v1/book-search', {'query':''})
@@ -32,11 +33,11 @@ def main(live_text=False):
     if check.get('status') != 'verified': raise RuntimeError('Free-only configuration verification failed')
     if grounding.get('status') != 'disabled': raise RuntimeError('Grounding must remain disabled')
     if not live_text: return
-    if any(r.get('cooldown_until') and datetime.fromisoformat(r['cooldown_until'].replace('Z','+00:00')) > datetime.now(timezone.utc) for r in circuit):
+    if any(r.get('task') == 'text' and (r.get('disabled') or (r.get('cooldown_until') and datetime.fromisoformat(r['cooldown_until'].replace('Z','+00:00')) > datetime.now(timezone.utc))) for r in circuit):
         raise RuntimeError('Existing cooldown is active; no generation request made')
     # One attempt only. No provider/model/key rotation, retries or paid API activation.
     answer = call('/functions/v1/book-search', {'task':'text','query':'Warbreaker by Brandon Sanderson'})
-    print(json.dumps(dict(text_status=answer.get('status'), has_text=bool(answer.get('text')))))
+    print(json.dumps(dict(text_status=answer.get('status'), has_text=bool(answer.get('text')), normalized_text=answer.get('text'))))
     print(json.dumps(dict(usage_after=call('/rest/v1/gemini_project_usage?select=model,task,day,attempts,tokens&order=day.desc'))))
     if answer.get('status') != 'ok' or not answer.get('text'): raise RuntimeError('Live text verification did not succeed; do not retry')
 
@@ -45,7 +46,8 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--live-text',action='store_true')
     try: main(parser.parse_args().live_text)
-    except Exception:
-        # urllib/subprocess exception strings can contain credential-bearing URLs.
-        print('Verification stopped safely. Check configuration/cooldown; no automatic retry.')
+    except Exception as error:
+        # Never print URL-bearing provider/subprocess exceptions or response bodies.
+        category = f'HTTP_{error.code}' if isinstance(error, urllib.error.HTTPError) else str(error) if isinstance(error, RuntimeError) else type(error).__name__
+        print('Verification stopped safely: ' + category + '; no automatic retry.')
         raise SystemExit(1) from None

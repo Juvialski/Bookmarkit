@@ -18,7 +18,7 @@ export function BookResultScreen({ book, onScanAnother }: { book: BookResult; on
   const [evidence, setEvidence] = useState<SearchEvidence | null>(null), [searching, setSearching] = useState(false);
   const [groundingEnabled, setGroundingEnabled] = useState(false);
   useEffect(() => { let active = true; void groundingAvailable().then(enabled => { if (active) setGroundingEnabled(enabled); }); return () => { active = false; }; }, []);
-  const series = book.seriesStatus === 'series' && book.seriesName ? `${book.seriesName}${book.seriesPosition ? ` · #${book.seriesPosition}` : ''}` : book.seriesStatus === 'standalone' ? 'Standalone' : 'Series unknown';
+  const series = book.plannedSequel ? 'Sequel planned' : book.seriesStatus === 'series' && book.seriesName ? `${book.seriesName}${book.seriesPosition ? ` · #${book.seriesPosition}` : ''}` : book.seriesStatus === 'standalone' ? 'Standalone' : 'Series unknown';
   return <SafeAreaView style={styles.page}><ScrollView contentContainerStyle={styles.content}>
     <Brand />
     <BookCover key={coverIdentity(book)} book={book} compact={height <= 700} />

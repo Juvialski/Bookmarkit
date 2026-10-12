@@ -50,12 +50,20 @@ export function parseFreeProjects(serialized) {
     return project;
   });
 }
+export function quotaResetSeconds(now) {
+  const parts = new Intl.DateTimeFormat('en-US', {timeZone:'America/Los_Angeles',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(now));
+  const value = type => Number(parts.find(p => p.type === type).value);
+  let next = Date.UTC(value('year'),value('month')-1,value('day')+1,8);
+  const hour = Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',hourCycle:'h23'}).format(new Date(next)));
+  next -= hour * 3600000;
+  return Math.max(1, Math.ceil((next-now)/1000));
+}
 export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck, modelCheck, reserve, cooldown, recordUsage, fetcher = fetch, now = Date.now, timeoutMs = 6000 } = {}) {
   const pending = new Map();
-  let blockedUntil = 0;
+  const blocks = new Map();
   async function run(query, task) {
     if (typeof query !== 'string' || query.length < 2 || query.length > 240) return { status: 'invalid' };
-    if (now() < blockedUntil) return { status: 'unavailable' };
+    if (now() < (blocks.get(task) || 0)) return { status: 'unavailable' };
     // Only one legitimately eligible project is selected. No retry on another
     // project after quota/restriction enforcement; keys are never rotated.
     for (const project of projects) {
@@ -64,7 +72,9 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
       try {
         if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id, project.number)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
         const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
-        if (!reserve || !(await reserve(project.id, model.id, task, limit))) continue;
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([project.number, model.id, task, project.keys[0]])));
+        const configuration = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+        if (!reserve || !(await reserve(project.id, model.id, task, limit, configuration))) return { status: 'disabled' };
         // Recheck after reservation, immediately before generation. An owner can
         // change billing externally; no once-only confirmation is authoritative.
         if (!(await billingCheck(project.id, project.number))) return { status: 'disabled' };
@@ -72,13 +82,20 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
         if (task === 'grounding') request.tools = [{ google_search: {} }];
         const response = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': project.keys[0] }, body: JSON.stringify(request), signal: AbortSignal.timeout(timeoutMs) });
         if ([429,400,401,403,404].includes(response.status)) {
-          const seconds = response.status === 429 ? 3600 : 86400;
-          blockedUntil = now() + seconds * 1000;
-          try { await cooldown?.(project.id, model.id, task, seconds); } catch { /* retain the in-instance circuit */ }
+          let error;
+          try { error = await response.json(); } catch { error = {}; }
+          const retry = response.headers.get('retry-after');
+          const delay = error.error?.details?.find(d => d['@type']?.endsWith('RetryInfo'))?.retryDelay;
+          const seconds = response.status === 429
+            ? Math.max(1, Number(retry) || (retry ? Math.ceil((Date.parse(retry) - now()) / 1000) : 0) || parseFloat(delay) || quotaResetSeconds(now()))
+            : 0; // zero denotes configuration failure; no arbitrary timed retry
+          blocks.set(task, seconds ? now() + seconds * 1000 : Infinity);
+          try { await cooldown?.(project.id, model.id, task, seconds, configuration); } catch { /* retain operation circuit */ }
           return { status: response.status === 429 ? 'quota' : 'unavailable' };
         }
         if (!response.ok) return { status: 'unavailable' };
-        const data = await response.json(); await recordUsage?.(project.id, model.id, task, data.usageMetadata?.totalTokenCount || 0);
+        const data = await response.json();
+        try { await recordUsage?.(project.id, model.id, task, data.usageMetadata?.totalTokenCount || 0); } catch { /* provider response remains useful; reservation already counted */ }
         const candidate = data.candidates?.[0], text = candidate?.content?.parts?.map(p => p.text || '').join('') || '';
         if (task === 'text') return text ? { status: 'ok', text } : { status: 'empty' };
         const metadata = candidate?.groundingMetadata, html = metadata?.searchEntryPoint?.renderedContent;

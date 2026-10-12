@@ -11,8 +11,8 @@ let projects = [];
 try { projects=readFreeProjects(name=>Deno.env.get(name)); } catch { projects=[]; }
 const checks=createGoogleFreeChecks({ serviceAccount:Deno.env.get('GOOGLE_VERIFIER_SERVICE_ACCOUNT_JSON'),accessToken:Deno.env.get('GOOGLE_VERIFIER_ACCESS_TOKEN') });
 const search=createFreeGemini({projects,...checks,
- reserve:async (project: string,model: string,task: string,limit: number)=>rpc('reserve_free_gemini',{p_project:project,p_model:model,p_task:task,p_limit:limit}),
- cooldown:async (project: string,model: string,task: string,seconds: number)=>rpc('cooldown_free_gemini',{p_project:project,p_model:model,p_task:task,p_seconds:seconds}),
+ reserve:async (project: string,model: string,task: string,limit: number,configuration: string)=>rpc('reserve_free_gemini',{p_project:project,p_model:model,p_task:task,p_limit:limit,p_configuration:configuration}),
+ cooldown:async (project: string,model: string,task: string,seconds: number,configuration: string)=>rpc('cooldown_free_gemini',{p_project:project,p_model:model,p_task:task,p_seconds:seconds,p_configuration:configuration}),
  recordUsage:async (project: string,model: string,task: string,tokens: number)=>rpc('record_free_gemini',{p_project:project,p_model:model,p_task:task,p_tokens:tokens})
 });
 Deno.serve(async req => {
