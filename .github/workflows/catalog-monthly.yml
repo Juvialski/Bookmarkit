@@ -23,7 +23,8 @@ jobs:
           path: dist/catalog
           key: catalog-${{ github.run_id }}
           restore-keys: catalog-
-      - run: python scripts/expanded_catalog.py --works 25000
+      - run: python -m unittest discover -s scripts -p 'test_smart_catalog.py'
+      - run: python scripts/smart_catalog.py
       - name: Optional bounded Hardcover queue and snapshot
         env:
           HARDCOVER_ENABLED: ${{ vars.HARDCOVER_ENABLED }}
@@ -42,6 +43,8 @@ jobs:
             dist/catalog/source.json
             dist/catalog/authors.json
             dist/catalog/checkpoint.sqlite
+            dist/catalog/*progress.sqlite
+            dist/catalog/validation.json
           if-no-files-found: error
       - name: Publish validated catalog
         env:

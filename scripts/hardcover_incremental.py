@@ -19,7 +19,11 @@ def main():
   # Scanned jobs already have priority 0; stale verified jobs retain their queue
   # identity. Seed only 20 popular/stored-rated ISBNs, never all catalog works.
   with sqlite3.connect('file:dist/catalog/expanded.db?mode=ro',uri=True) as db:
-   seeds=db.execute('select isbn13 from books where authors<>\'[]\' order by coalesce(rating_count,0) desc,isbn13 limit 20').fetchall()
+   columns={r[1] for r in db.execute('pragma table_info(books)')}
+   missing="and (hardcover_json is null or hardcover_json='[]')" if 'hardcover_json' in columns else ''
+   seeds=db.execute(f"select min(isbn13) from books where authors<>'[]' {missing} group by work_id order by max(coalesce(rating_count,0)) desc,work_id limit 20").fetchall()
+  capacity=max(0,2000-len(api('hardcover_jobs?select=cache_key&limit=2001')))
+  seeds=seeds[:capacity]
   for (isbn,) in seeds:
    cache_key=hashlib.sha256(('isbn:'+isbn).encode()).hexdigest()
    existing=api('hardcover_jobs?select=cache_key&cache_key=eq.'+cache_key)

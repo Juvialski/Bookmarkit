@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CacheDatabase, createPersonalCache } from '../src/services/personalCache';
@@ -84,4 +84,38 @@ test('progressive work identity replaces provisional text key atomically', async
  await cache.save({...book,isbn:undefined,workId:'/works/OL123W'});
  assert.equal(db.prepare('SELECT count(*) n FROM personal_books').get()!.n,1);
  assert.equal((await cache.search({title:book.title,author:book.authors[0]}))[0].workId,'/works/OL123W');db.close();
+});
+
+test('v1 migration indexes 100 to 10000 real SQLite records with bounded JSON retrieval', async () => {
+ const benchmarks: unknown[]=[];
+ for (const size of [100,1000,5000,10000]) {
+  const db=new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE personal_books(identity TEXT PRIMARY KEY,isbn TEXT,metadata TEXT NOT NULL,retrieved_at TEXT NOT NULL); PRAGMA user_version=1; BEGIN');
+  const insert=db.prepare('INSERT INTO personal_books VALUES (?,?,?,?)');
+  for (let i=0;i<size;i++) insert.run(`hc:${i+1}`,'',JSON.stringify({...book,isbn:undefined,hardcoverId:String(i+1),title:`Indexed novel ${i}`}), '2026-10-01');
+  db.exec('COMMIT');let decoded=0;
+  const real=adapter(db),cache=createPersonalCache({...real,async getAllAsync<T>(sql:string,...params:string[]) {
+   const rows=await real.getAllAsync<T>(sql,...params);if(sql.includes('SELECT metadata')||sql.includes('SELECT b.metadata'))decoded+=rows.length;return rows;
+  }});
+  const begin=performance.now();await cache.ready;const migrationMs=performance.now()-begin;
+  assert.equal(db.prepare('SELECT count(*) n FROM personal_books').get()!.n,size);
+  assert.equal(db.prepare('PRAGMA user_version').get()!.user_version,2);
+  const times:number[]=[];
+  for(let i=0;i<30;i++) {const start=performance.now();assert.equal((await cache.search({title:`Indexed novel ${size-1}`,author:book.authors[0]})).length,1);times.push(performance.now()-start);}
+  assert.equal(decoded,30,'One indexed metadata row per exact search');
+  assert.match(String(db.prepare('EXPLAIN QUERY PLAN SELECT identity FROM personal_titles WHERE title=?').get('indexed novel 0')!.detail),/personal_normalized_title/);
+  benchmarks.push({size,migrationMs,searchMedianMs:times.sort((a,b)=>a-b)[15],searchP95Ms:times[28],jsonRowsPerSearch:decoded/30});
+  assert.equal((await cache.search({author:book.authors[0]})).length,0,'Truncated set cannot silently select a work');db.close();
+ }
+ mkdirSync('dist/v5',{recursive:true});writeFileSync('dist/v5/personal-benchmarks.json',JSON.stringify(benchmarks,null,2)+'\n');
+});
+
+test('failed v1 backfill rolls back schema/version and retains every personal record', async () => {
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE personal_books(identity TEXT PRIMARY KEY,isbn TEXT,metadata TEXT NOT NULL,retrieved_at TEXT NOT NULL);PRAGMA user_version=1');
+ db.prepare('INSERT INTO personal_books VALUES (?,?,?,?)').run('isbn:'+book.isbn,book.isbn!,JSON.stringify(book),'2026-10-01');
+ const real=adapter(db);const failed=createPersonalCache({...real,async runAsync(){throw Error('Interrupted migration');}});
+ await assert.rejects(failed.ready,/Interrupted migration/);
+ assert.equal(db.prepare('PRAGMA user_version').get()!.user_version,1);
+ assert.equal(db.prepare('SELECT count(*) n FROM personal_books').get()!.n,1);
+ const recovered=createPersonalCache(real);await recovered.ready;assert.equal((await recovered.search({isbn:book.isbn})).length,1);db.close();
 });

@@ -1,0 +1,41 @@
+{
+  "scope": "Synthetic public-safe records; desktop Node SQLite, actual v1.3.0 code vs v5",
+  "rows": [
+    {
+      "books": 100,
+      "beforeMedianMs": 1.9247000000000298,
+      "beforeP95Ms": 4.886300000000006,
+      "afterMedianMs": 0.06369999999998299,
+      "afterP95Ms": 0.490600000000029,
+      "beforeJsonRows": 100,
+      "afterJsonRows": 1
+    },
+    {
+      "books": 1000,
+      "beforeMedianMs": 17.71320000000003,
+      "beforeP95Ms": 20.668799999999976,
+      "afterMedianMs": 0.02940000000000964,
+      "afterP95Ms": 0.16769999999996799,
+      "beforeJsonRows": 1000,
+      "afterJsonRows": 1
+    },
+    {
+      "books": 5000,
+      "beforeMedianMs": 81.70339999999999,
+      "beforeP95Ms": 89.88490000000002,
+      "afterMedianMs": 0.02959999999984575,
+      "afterP95Ms": 0.1550999999999476,
+      "beforeJsonRows": 5000,
+      "afterJsonRows": 1
+    },
+    {
+      "books": 10000,
+      "beforeMedianMs": 243.47879999999986,
+      "beforeP95Ms": 252.92370000000028,
+      "afterMedianMs": 0.030999999999039574,
+      "afterP95Ms": 0.38800000000082946,
+      "beforeJsonRows": 10000,
+      "afterJsonRows": 1
+    }
+  ]
+}

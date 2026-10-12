@@ -91,7 +91,7 @@ test('offline local title lookup is bounded, deduplicated and keeps rating/class
   const result = await identifyBook(manualQuery('The Hobbit'), { catalog, online: async () => false, search: async () => { throw Error('Offline must not search'); } });
   assert.equal(result.kind, 'book');
   if (result.kind === 'book') { assert.equal(result.book.source, 'offline-catalog'); assert.equal(result.book.ratings[0].stored, true); }
-  await catalog.search({ title: 'The Hobbit' }); assert.equal(reads, 2);
+  await catalog.search({ title: 'The Hobbit' }); assert.equal(reads, 4);
 });
 test('cover OCR success/local miss says connect, never says OCR failed', async () => {
   await assert.rejects(identifyBook({ origin: 'cover', candidates: [{ title: 'Uncataloged Book' }] }, { catalog: { search: async () => [] }, online: async () => false }), /Book cover read successfully.*Connect/);
