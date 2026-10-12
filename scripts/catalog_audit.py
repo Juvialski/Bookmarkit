@@ -1,5 +1,5 @@
 """Paginated public catalog inventory and a fixed, reproducible coverage cohort."""
-import argparse, json, sqlite3, time, urllib.request, urllib.error
+import argparse, json, re, sqlite3, time, unicodedata, urllib.request, urllib.error
 from pathlib import Path
 from contextlib import closing
 from goodreads_snapshot import BASE, PUBLIC_KEY
@@ -43,15 +43,19 @@ def summarize(data, package):
     cases=[]
     with closing(sqlite3.connect(f'file:{Path(package).as_posix()}?mode=ro',uri=True)) as db:
         db.row_factory=sqlite3.Row
+        work_only=bool(db.execute("select 1 from sqlite_master where name='work_only_books'").fetchone())
+        def search_title(value):
+            value=''.join(c for c in unicodedata.normalize('NFKD',value).lower() if not unicodedata.combining(c))
+            return ' '.join(re.sub(r'[^\w]+',' ',re.sub(r"[’‘`'.]",'',value)).split())
         for case in cohort():
             matching=[w for w in titles.get(normalize(case['title']),[]) if any(normalize(a)==normalize(case['author']) for a in w['authors'])]
             hit=by_id.get(mapped.get(case['isbn']))
             isbn_hit=bool(hit and normalize(hit['title'])==normalize(case['title']) and any(normalize(a)==normalize(case['author']) for a in hit['authors']))
             start=time.perf_counter(); offline=db.execute('select title,authors,work_id from books where isbn13=?',(case['isbn'],)).fetchone()
             elapsed=(time.perf_counter()-start)*1000
-            offline_text=db.execute('select b.title,b.authors from works w join books b on b.isbn13=w.isbn13 where w.normalized_title=?',(normalize(case['title']),)).fetchall()
-            if db.execute("select 1 from sqlite_master where name='work_only_books'").fetchone():
-                offline_text+=db.execute('select b.title,b.authors from works w join work_only_books b on b.work_id=w.id where w.normalized_title=?',(normalize(case['title']),)).fetchall()
+            offline_text=db.execute('select b.title,b.authors from works w join books b on b.isbn13=w.isbn13 where w.normalized_title=?',(search_title(case['title']),)).fetchall()
+            if work_only:
+                offline_text+=db.execute('select b.title,b.authors from works w join work_only_books b on b.work_id=w.id where w.normalized_title=?',(search_title(case['title']),)).fetchall()
             cases.append({**case,'shared_isbn':isbn_hit,'shared_title_author':len(matching)==1,'shared_ambiguous':len(matching)>1,
                 'shared_open_library_rating':len(matching)==1 and matching[0]['id'] in rated,
                 'offline_isbn':bool(offline and normalize(offline['title'])==normalize(case['title']) and any(normalize(a)==normalize(case['author']) for a in json.loads(offline['authors']))),
@@ -61,6 +65,17 @@ def summarize(data, package):
             'works':'select count(*) from works','isbns':'select count(*) from books',
             'with_authors':"select count(distinct work_id) from books where authors<>'[]'",
             'rated_open_library':'select count(distinct work_id) from books where rating is not null'}.items()}
+        if work_only:offline_counts['with_authors']=db.execute("select count(*) from (select work_id from books where authors<>'[]' union select work_id from work_only_books where authors<>'[]')").fetchone()[0]
+        provider_works={'Hardcover':set(),'Goodreads':set()}
+        columns={r[1] for r in db.execute('pragma table_info(books)')}
+        offline_counts['goodreads_edition_links']=db.execute('select count(*) from books where goodreads_url is not null').fetchone()[0] if 'goodreads_url' in columns else 0
+        for provider,column in [('Hardcover','hardcover_json'),('Goodreads','goodreads_json')]:
+            if column in columns:
+                for table in ['books']+(['work_only_books'] if work_only else []):
+                    if column not in {r[1] for r in db.execute(f'pragma table_info({table})')}:continue
+                    for r in db.execute(f'select work_id,{column} from {table} where {column} is not null'):
+                        if any(v.get('rating' if provider=='Hardcover' else 'average') is not None for v in json.loads(r[1])):provider_works[provider].add(r[0])
+        offline_counts['rating_sources']={p:len(v) for p,v in provider_works.items()}
     rating_sources={s:len({r['work_id'] for r in data['catalog_ratings'] if r['source']==s}) for s in {r['source'] for r in data['catalog_ratings']}}
     return dict(works=len(works),editions=len(editions),isbns=len(mapped),with_authors=sum(bool(w['authors']) for w in works),
         missing_authors=sum(not w['authors'] for w in works),missing_open_library_rating=len(works)-len(rated),

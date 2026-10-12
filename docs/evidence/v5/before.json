@@ -14,6 +14,9 @@
   "providers": {
     "open-library": 25266
   },
+  "rating_sources": {
+    "Open Library": 1703
+  },
   "hardcover_cache_rows": 30,
   "hardcover_rated_works": 24,
   "offline": {
@@ -21,6 +24,11 @@
     "isbns": 26464,
     "with_authors": 4160,
     "rated_open_library": 1703,
+    "goodreads_edition_links": 0,
+    "rating_sources": {
+      "Hardcover": 0,
+      "Goodreads": 0
+    },
     "bytes": 31838208
   },
   "cohort": [
@@ -34,7 +42,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 1.5572999836876988
+      "offline_isbn_ms": 0.678999989759177
     },
     {
       "title": "The Way of Kings",
@@ -46,7 +54,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3062000032514334
+      "offline_isbn_ms": 0.39850000757724047
     },
     {
       "title": "Warbreaker",
@@ -58,7 +66,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.2550000208429992
+      "offline_isbn_ms": 0.15330000314861536
     },
     {
       "title": "Harry Potter and the Philosopher's Stone",
@@ -70,7 +78,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.28420001035556197
+      "offline_isbn_ms": 0.14420005027204752
     },
     {
       "title": "Dune",
@@ -82,7 +90,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.28580002253875136
+      "offline_isbn_ms": 0.1534000039100647
     },
     {
       "title": "The Road",
@@ -94,7 +102,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.30690000858157873
+      "offline_isbn_ms": 0.26219995925202966
     },
     {
       "title": "Project Hail Mary",
@@ -106,7 +114,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.31889998354017735
+      "offline_isbn_ms": 0.5287000094540417
     },
     {
       "title": "The Night Circus",
@@ -118,7 +126,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3226000117138028
+      "offline_isbn_ms": 0.1852000132203102
     },
     {
       "title": "It",
@@ -130,7 +138,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.768599973525852
+      "offline_isbn_ms": 0.15000003622844815
     },
     {
       "title": "To Kill a Mockingbird",
@@ -142,7 +150,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3139000036753714
+      "offline_isbn_ms": 0.1829999964684248
     },
     {
       "title": "Piranesi",
@@ -154,7 +162,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3285999991931021
+      "offline_isbn_ms": 0.33629999961704016
     },
     {
       "title": "Tress of the Emerald Sea",
@@ -166,7 +174,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3285999991931021
+      "offline_isbn_ms": 0.242199981585145
     },
     {
       "title": "Yumi and the Nightmare Painter",
@@ -178,7 +186,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3203999949619174
+      "offline_isbn_ms": 0.13529998250305653
     },
     {
       "title": "Babel",
@@ -190,7 +198,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3076999564655125
+      "offline_isbn_ms": 0.16489997506141663
     },
     {
       "title": "Fantastic Mr. Fox",
@@ -202,7 +210,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.2972999936901033
+      "offline_isbn_ms": 0.20920002134516835
     },
     {
       "title": "The Hobbit",
@@ -214,7 +222,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.26329996762797236
+      "offline_isbn_ms": 0.3263000398874283
     },
     {
       "title": "The Shining",
@@ -226,7 +234,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.2503000432625413
+      "offline_isbn_ms": 0.13409997336566448
     },
     {
       "title": "The Name of the Wind",
@@ -238,7 +246,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.13190001482143998
+      "offline_isbn_ms": 0.2479000249877572
     },
     {
       "title": "The Martian",
@@ -250,7 +258,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.1218999968841672
+      "offline_isbn_ms": 0.1588000450283289
     },
     {
       "title": "Gone Girl",
@@ -262,7 +270,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.12610002886503935
+      "offline_isbn_ms": 0.23849995341151953
     },
     {
       "title": "Outlander",
@@ -274,7 +282,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.12240000069141388
+      "offline_isbn_ms": 0.13110000872984529
     },
     {
       "title": "Tomorrow, and Tomorrow, and Tomorrow",
@@ -286,7 +294,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.12440001592040062
+      "offline_isbn_ms": 0.13099994976073503
     },
     {
       "title": "Intermezzo",
@@ -298,7 +306,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.3432000521570444
+      "offline_isbn_ms": 0.14669995289295912
     },
     {
       "title": "Onyx Storm",
@@ -310,7 +318,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.2957000397145748
+      "offline_isbn_ms": 0.13290002243593335
     },
     {
       "title": "The Mysterious Mr. Quin",
@@ -322,7 +330,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.29880000511184335
+      "offline_isbn_ms": 0.15889998758211732
     },
     {
       "title": "Pride and Prejudice",
@@ -334,7 +342,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.46009995276108384
+      "offline_isbn_ms": 0.12969999806955457
     },
     {
       "title": "Emma",
@@ -346,7 +354,7 @@
       "shared_open_library_rating": false,
       "offline_isbn": false,
       "offline_title_author": false,
-      "offline_isbn_ms": 0.2747999969869852
+      "offline_isbn_ms": 0.13350002700462937
     }
   ]
 }

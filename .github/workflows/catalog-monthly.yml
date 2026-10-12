@@ -34,6 +34,8 @@ jobs:
           python -c "from pathlib import Path; import sys; sys.path.insert(0,'scripts'); from hardcover_snapshot import attach,cached_summaries; attach(Path('dist/catalog/expanded.db'),cached_summaries())"
           python scripts/refresh_catalog_manifest.py
       - run: python scripts/validate_expanded.py
+      - name: Measure the same public coverage cohort
+        run: python scripts/catalog_audit.py --output dist/catalog/audit --package dist/catalog/expanded.db
       - uses: actions/upload-artifact@v4
         with:
           name: expanded-offline-catalog
@@ -45,6 +47,7 @@ jobs:
             dist/catalog/checkpoint.sqlite
             dist/catalog/*progress.sqlite
             dist/catalog/validation.json
+            dist/catalog/audit/audit.json
           if-no-files-found: error
       - name: Publish validated catalog
         env:

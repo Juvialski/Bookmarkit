@@ -123,10 +123,14 @@ def publish():
         record_ingestion(manifest, m)
         print('Catalog unchanged; publication skipped');return
     tables = payloads()  # Validate all composite keys before the first mutation.
+    records=json.loads((staging/'source.json').read_text('utf-8'))['records']
+    references=[{'id':r['key'],'refs':r['author_refs']} for r in records if r.get('author_refs') and r['key'].startswith('/works/OL')]
     for table, rows in tables:
         for offset in range(0,len(rows),500):
             request('/rest/v1/'+table,json.dumps(rows[offset:offset+500]).encode(), context=f'{table} batch {offset//500+1}')
         print(table, len(rows), 'rows uploaded', flush=True)
+    for offset in range(0,len(references),500):
+        request('/rest/v1/rpc/retain_catalog_author_refs',json.dumps({'records':references[offset:offset+500]}).encode(),context='catalog author reference checkpoint')
     try: request('/storage/v1/object/book-catalogs/'+path,raw,'application/octet-stream')
     except PublicationError as e:
         if e.status not in (400,409): raise

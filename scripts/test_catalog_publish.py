@@ -72,6 +72,7 @@ class PublisherTests(unittest.TestCase):
         def upload(path, data, content='application/json', method='POST', **options):
             nonlocal fail
             calls.append(path)
+            if path=='/rest/v1/rpc/retain_catalog_author_refs':return b'0'
             if method == 'GET':
                 if '/public/book-catalogs/' in path: return self.raw
                 table = path.split('/')[3].split('?')[0]

@@ -21,12 +21,20 @@ do $$ declare k text:=repeat('9',64); r jsonb; n integer; begin
  update public.hardcover_cache set title='Different work',payload=r||'{"title":"Different work"}'::jsonb where cache_key=k;
  if public.accept_hardcover_catalog(k) then raise exception 'identity conflict accepted'; end if;
  if not exists(select 1 from public.catalog_works where id='hardcover:999999999999999' and title='Bookmarkit synthetic enrichment fixture') then raise exception 'previous metadata lost'; end if;
+ insert into public.catalog_works(id,title,authors,normalized_title,source,source_updated)
+ values('/works/OL999999999999W','Reference fixture','[]','reference fixture','open-library',now());
+ if public.retain_catalog_author_refs('[{"id":"/works/OL999999999999W","refs":["/authors/OL999999A"]}]')<>1 then raise exception 'reference checkpoint missing';end if;
+ if public.retain_catalog_author_refs('[{"id":"/works/OL999999999999W","refs":["/authors/OL1A"]}]')<>0 then raise exception 'existing refs replaced';end if;
+ begin
+  perform public.retain_catalog_author_refs('[{}]');raise exception 'malformed references accepted';
+ exception when raise_exception then if sqlerrm<>'invalid author reference' then raise;end if;end;
 end $$;
 set local role anon;
 do $$ begin
  if not exists(select 1 from public.catalog_provider_works where provider_id='999999999999999') then raise exception 'public mapping unreadable'; end if;
  begin perform public.accept_hardcover_catalog(repeat('9',64));raise exception 'public ingestion callable';exception when insufficient_privilege then null;end;
  begin delete from public.catalog_provider_works;raise exception 'anonymous writes allowed';exception when insufficient_privilege then null;end;
+ begin perform public.retain_catalog_author_refs('[]');raise exception 'anonymous references allowed';exception when insufficient_privilege then null;end;
 end $$;
 set local role authenticated;
 do $$ begin

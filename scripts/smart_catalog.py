@@ -16,6 +16,7 @@ def preserve(data, previous):
     for w in works.values():
         old=originals.get(w['id'],{})
         records[w['id']]={**old,'key':w['id'],'title':w['title'],'author_name':w['authors'] or old.get('author_name',[]),
+            'author_refs':w.get('author_refs') or old.get('author_refs',[]),
             'isbn':[],'isbn_editions':{},'source_provider':w['source'],'series_status':w['series_status'],
             'series_name':w['series_name'],'series_position':w['series_position'],'classification_source':w['classification_source'],
             'source_updated':w['source_updated']}
@@ -59,7 +60,7 @@ def resolve_authors(records, staging, seconds=480):
         refs=r.get('author_refs',[])
         resolved=[names[a] for a in refs if names.get(a)]
         # Partial resolution cannot replace an already complete/correct author list.
-        if refs and len(resolved)==len(refs):r['author_name']=list(dict.fromkeys(resolved))
+        if refs and len(resolved)==len(refs) and len(set(resolved))>=len(previous_authors):r['author_name']=list(dict.fromkeys(resolved))
         elif not r.get('author_name'):r['author_name']=list(dict.fromkeys(resolved))
         if r.get('author_name')!=previous_authors:r['source_updated']=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())
     temporary=staging/'authors.json.part';temporary.write_text(json.dumps(names,sort_keys=True),encoding='utf-8');temporary.replace(staging/'authors.json')

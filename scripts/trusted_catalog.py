@@ -11,9 +11,17 @@ def credential():
     return next(r['api_key'] for r in rows if r.get('name')=='service_role')
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('operation',choices=['publish','enrich','authorization']);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('operation',choices=['publish','enrich','authorization','references']);args=parser.parse_args()
     os.environ['SUPABASE_SERVICE_ROLE_KEY']=credential()
     if args.operation=='publish':publish();return
+    if args.operation=='references':
+        from pathlib import Path
+        from catalog_publish import request
+        records=json.loads(Path('dist/catalog/source.json').read_text('utf-8'))['records']
+        rows=[{'id':r['key'],'refs':r['author_refs']} for r in records if r.get('author_refs') and r['key'].startswith('/works/OL')]
+        accepted=0
+        for offset in range(0,len(rows),500):accepted+=json.loads(request('/rest/v1/rpc/retain_catalog_author_refs',json.dumps({'records':rows[offset:offset+500]}).encode()))
+        print(json.dumps({'retained_author_reference_sets':accepted}));return
     if args.operation=='enrich':
         os.environ['HARDCOVER_ENABLED']='1'
         from hardcover_incremental import main as enrich
