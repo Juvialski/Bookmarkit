@@ -21,7 +21,9 @@ def cached_summaries():
     try:
         request=urllib.request.Request(BASE+'/rest/v1/catalog_provider_works?select=provider_id,work_id&order=provider_id&limit=5000',headers={'apikey':PUBLIC_KEY})
         with urllib.request.urlopen(request,timeout=4) as response:mappings={r['provider_id']:r['work_id'] for r in json.load(response)}
-        for r in rows:r['catalog_work_id']=mappings.get(r.get('book_id'),r.get('ol_work_id'))
+        for r in rows:
+            r['catalog_work_id']=mappings.get(r.get('book_id'))
+            r['catalog_accepted']=r.get('book_id') in mappings
     except (OSError,ValueError):pass
     return rows
 
@@ -29,6 +31,7 @@ def attach(path,records):
     by_work={}
     fields=['found','identity','isbn','title','authors','hardcoverId','url','rating','ratingsCount','seriesName','seriesPosition','verified','ratingScope','retrievedAt']
     for row in records:
+        if row.get('catalog_accepted') is False:continue
         payload=row.get('payload',{})
         work_id=row.get('catalog_work_id') or row.get('ol_work_id')
         if not work_id or payload.get('verified') is not True or payload.get('ratingScope')!='work': continue

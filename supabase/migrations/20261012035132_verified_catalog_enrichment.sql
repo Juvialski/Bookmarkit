@@ -48,6 +48,8 @@ begin
   target:=coalesce(target,'hardcover:'||c.book_id);
  end if;
  if claimed is not null and claimed<>target then return false; end if;
+ perform pg_advisory_xact_lock(hashtextextended('catalog:'||target,0));
+ if exists(select 1 from public.catalog_provider_works where work_id=target and provider_id<>c.book_id) then return false;end if;
  select * into w from public.catalog_works where id=target;
  if found and (lower(trim(w.title))<>lower(trim(c.title)) or not exists(select 1 from jsonb_array_elements_text(w.authors) a where lower(trim(a.value))=lower(trim(c.primary_author)))) then return false; end if;
  edition:=case when c.isbn13 is not null and c.payload->>'hardcoverEditionId' ~ '^[1-9][0-9]{0,15}$' then 'hardcover-edition:'||(c.payload->>'hardcoverEditionId') end;

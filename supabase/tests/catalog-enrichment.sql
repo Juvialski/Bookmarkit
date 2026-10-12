@@ -13,6 +13,9 @@ do $$ declare k text:=repeat('9',64); r jsonb; n integer; begin
  perform public.accept_hardcover_catalog(k);perform public.accept_hardcover_catalog(k);
  select count(*) into n from public.catalog_provider_works where provider_id='999999999999999';
  if n<>1 then raise exception 'non-idempotent acceptance'; end if;
+ insert into public.hardcover_cache(cache_key,book_id,title,primary_author,payload,retrieved_at,expires_at)
+ values(repeat('8',64),'999999999999998',r->>'title','Synthetic Author',r||'{"hardcoverId":"999999999999998","rating":1,"ratingsCount":1}'::jsonb,now(),now()+interval '7 days');
+ if public.accept_hardcover_catalog(repeat('8',64)) or exists(select 1 from public.catalog_provider_works where provider_id='999999999999998') then raise exception 'competing canonical provider work accepted';end if;
  update public.hardcover_cache set payload=r||'{"seriesName":"Fixture Series","seriesPosition":"1"}'::jsonb where cache_key=k;
  if not exists(select 1 from public.catalog_works where id='hardcover:999999999999999' and series_status='series' and classification_source='hardcover') then raise exception 'independent series metadata lost'; end if;
  update public.hardcover_cache set payload=r||jsonb_build_object('rating',3.2,'ratingsCount',12,'retrievedAt',now()-interval '1 day'),retrieved_at=now()-interval '1 day' where cache_key=k;

@@ -20,7 +20,7 @@ def reviewed_metadata(records):
 
 def snapshot_observations(data):
     mappings={r['provider_id']:r for r in data['catalog_provider_works']}
-    observations=[{**r,'catalog_work_id':mappings.get(r['book_id'],{}).get('work_id',r.get('ol_work_id'))} for r in data['hardcover_cache']]
+    observations=[{**r,'catalog_work_id':mappings[r['book_id']]['work_id']} for r in data['hardcover_cache'] if r['book_id'] in mappings]
     positive={r['book_id'] for r in observations if r['payload'].get('rating') is not None}
     ratings={r['work_id']:r for r in data['catalog_ratings'] if r['source']=='Hardcover'}
     works={w['id']:w for w in data['catalog_works']}

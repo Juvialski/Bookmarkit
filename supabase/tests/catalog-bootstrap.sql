@@ -11,4 +11,5 @@ create table storage.buckets(id text primary key,name text,public boolean,file_s
 \ir ../migrations/20261012040939_verified_catalog_series.sql
 \ir ../migrations/20261012042437_persistent_catalog_author_references.sql
 \ir ../migrations/20261012043652_preserve_catalog_publication_metadata.sql
+\ir ../migrations/20261012052441_canonical_catalog_provider_mapping.sql
 \ir catalog-enrichment.sql
