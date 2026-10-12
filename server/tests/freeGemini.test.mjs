@@ -158,3 +158,10 @@ test('configuration failures persist only for affected operation, no timed retry
  assert.equal((await search('Other book')).status,'unavailable');assert.equal(calls,1);
  assert.equal((await search('Warbreaker','text')).status,'ok');assert.equal(calls,2);
 });
+
+test('configuration fingerprint is private and stable; credentials are never sent to quota storage', async()=>{
+ const p=project();p.models=[{...p.models[0],id:'gemini-3.5-flash-lite',grounding:false}];const fingerprints=[];
+ const search=createFreeGemini({projects:[p],...checks,reserve:async(...args)=>{fingerprints.push(args[4]);return true;},fetcher:async()=>answer()});
+ await search('Warbreaker','text');await search('Another book','text');
+ assert.match(fingerprints[0],/^[a-f0-9]{64}$/);assert.equal(fingerprints[0],fingerprints[1]);assert.equal(fingerprints[0].includes('fixture-key'),false);
+});

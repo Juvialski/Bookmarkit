@@ -6,6 +6,7 @@ import argparse
 import json
 import subprocess
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from catalog_publish import BASE
 
@@ -45,7 +46,8 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--live-text',action='store_true')
     try: main(parser.parse_args().live_text)
-    except Exception:
-        # urllib/subprocess exception strings can contain credential-bearing URLs.
-        print('Verification stopped safely. Check configuration/cooldown; no automatic retry.')
+    except Exception as error:
+        # Never print URL-bearing provider/subprocess exceptions or response bodies.
+        category = f'HTTP_{error.code}' if isinstance(error, urllib.error.HTTPError) else str(error) if isinstance(error, RuntimeError) else type(error).__name__
+        print('Verification stopped safely: ' + category + '; no automatic retry.')
         raise SystemExit(1) from None

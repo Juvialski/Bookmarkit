@@ -14,7 +14,7 @@ Read-only production checks verified billing disabled, project/key ownership and
 
 Google Search grounding remains disabled: the authorized unbilled project previously rejected it. Current [pricing](https://ai.google.dev/gemini-api/docs/pricing) lists Search grounding as unavailable in the Gemini 3.5 Flash-Lite free tier. Free allowances in the paid tier do not establish unbilled project eligibility. No billing or model/project/key rotation was performed.
 
-Both worker memory and durable cooldown are operation scoped. Provider Retry-After / RetryInfo is honored. A 429 without reset evidence conservatively blocks until the next Pacific daily reset; it does not trigger a retry or failover. Unsupported/configuration failures disable the affected operation indefinitely. After correcting configuration, an operator must reverify it and clear that operation's disabled flag with service-only access; timed provider backoff must remain intact. Reservation limits and 15-second spacing remain enforced. Usage-recording failure cannot discard valid provider text after an attempt has already been reserved.
+Both worker memory and durable cooldown are operation scoped. Provider Retry-After / RetryInfo is honored. A 429 without reset evidence conservatively blocks until the next Pacific daily reset; it does not trigger a retry or failover. Unsupported/configuration failures disable the affected operation indefinitely. A backend-only configuration fingerprint allows corrected, reverified configuration to clear only its unsupported-operation flag. Timed provider backoff and project/model daily usage remain intact across configuration changes. Reservation limits and 15-second spacing remain enforced. Usage-recording failure cannot discard valid provider text after an attempt has already been reserved.
 
 ## Series
 
@@ -22,7 +22,7 @@ Warbreaker displays `Sequel planned` using exact title/author reviewed evidence 
 
 ## Evidence
 
-- Local: 107 mobile/service tests and 47 backend tests passed; lint/typecheck required at final head.
+- Local: 107 mobile/service tests and 48 backend tests passed; lint/typecheck required at final head.
 - Hosted: additive operation-circuit migration applied; service-role rollback contract proved blocked grounding and independently eligible text. RLS enabled; anonymous/authenticated writes and anonymous reservation denied. `book-search` deployed.
 - Android: CI builds version 1.3.0 / versionCode 5 using the established APK signing pipeline. Native acceptance tests exercise actual SQLite, new live books, restart, APK replacement, monthly catalog download/replacement, Goodreads intent and provider attribution. Results and timing are recorded in the workflow artifacts; pending until CI completes.
 - Latency reporting measures complete UI automation, including typing and accessibility polling, and is not a pure provider or lookup benchmark.

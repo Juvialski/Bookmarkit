@@ -8,6 +8,11 @@ do $$ begin
  if public.reserve_free_gemini('contract','gemini-3.5-flash-lite','text',1) then raise exception 'Daily quota ignored'; end if;
  perform public.cooldown_free_gemini('config-contract','gemini-3.5-flash-lite','text',0);
  if public.reserve_free_gemini('config-contract','gemini-3.5-flash-lite','text',5) then raise exception 'Configuration block ignored'; end if;
+ perform public.cooldown_free_gemini('fingerprint','gemini-3.5-flash-lite','text',0,repeat('a',64));
+ if public.reserve_free_gemini('fingerprint','gemini-3.5-flash-lite','text',5,repeat('a',64)) then raise exception 'Unchanged config retried'; end if;
+ if not public.reserve_free_gemini('fingerprint','gemini-3.5-flash-lite','text',5,repeat('b',64)) then raise exception 'Changed verified config still disabled'; end if;
+ perform public.cooldown_free_gemini('backoff-fingerprint','gemini-3.5-flash-lite','text',120,repeat('a',64));
+ if public.reserve_free_gemini('backoff-fingerprint','gemini-3.5-flash-lite','text',5,repeat('b',64)) then raise exception 'Changed config bypassed timed backoff'; end if;
 end $$;
 reset role;
 do $$ begin

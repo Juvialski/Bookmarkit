@@ -72,7 +72,9 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
       try {
         if (!billingCheck || !keyProjectCheck || !modelCheck || !(await billingCheck(project.id, project.number)) || !(await keyProjectCheck(project.keys[0], project.number)) || !(await modelCheck(project.keys[0], model.id))) continue;
         const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
-        if (!reserve || !(await reserve(project.id, model.id, task, limit))) continue;
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([project.number, model.id, task, project.keys[0]])));
+        const configuration = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+        if (!reserve || !(await reserve(project.id, model.id, task, limit, configuration))) continue;
         // Recheck after reservation, immediately before generation. An owner can
         // change billing externally; no once-only confirmation is authoritative.
         if (!(await billingCheck(project.id, project.number))) return { status: 'disabled' };
@@ -88,7 +90,7 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
             ? Math.max(1, Number(retry) || (retry ? Math.ceil((Date.parse(retry) - now()) / 1000) : 0) || parseFloat(delay) || quotaResetSeconds(now()))
             : 0; // zero denotes configuration failure; no arbitrary timed retry
           blocks.set(task, seconds ? now() + seconds * 1000 : Infinity);
-          try { await cooldown?.(project.id, model.id, task, seconds); } catch { /* retain operation circuit */ }
+          try { await cooldown?.(project.id, model.id, task, seconds, configuration); } catch { /* retain operation circuit */ }
           return { status: response.status === 429 ? 'quota' : 'unavailable' };
         }
         if (!response.ok) return { status: 'unavailable' };
