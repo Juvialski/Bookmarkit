@@ -106,9 +106,9 @@ test('429 stops immediately; neither backup keys nor other projects bypass it',a
  const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,reserve:async()=>true,cooldown:async(...args)=>cooldowns.push(args),fetcher:async()=>{calls++;return new Response('',{status:429});}});
  assert.equal((await search('Warbreaker')).status,'quota');assert.equal(calls,1);assert.equal(cooldowns[0][3],quotaResetSeconds(Date.now()));
 });
-test('existing verified capacity can select an independent project before any Google request',async()=>{
+test('preflight can select an eligible authorized project before any quota reservation',async()=>{
  let selected;
- const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,reserve:async id=>id==='authorized-two',fetcher:async(_url,init)=>{selected=init.headers['x-goog-api-key'];return answer();}});
+ const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,billingCheck:async id=>id==='authorized-two',reserve:async()=>true,fetcher:async(_url,init)=>{selected=init.headers['x-goog-api-key'];return answer();}});
  assert.equal((await search('Warbreaker')).status,'ok');assert.equal(selected,'fixture-key-two');
 });
 test('unverified billing, project binding, model access and missing credentials fail closed',async()=>{
