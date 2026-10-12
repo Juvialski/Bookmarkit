@@ -1,5 +1,5 @@
 """Paginated public catalog inventory and a fixed, reproducible coverage cohort."""
-import argparse, json, sqlite3, time, statistics, urllib.request
+import argparse, json, sqlite3, time, urllib.request, urllib.error
 from pathlib import Path
 from contextlib import closing
 from goodreads_snapshot import BASE, PUBLIC_KEY
@@ -61,18 +61,38 @@ def summarize(data, package):
             'works':'select count(*) from works','isbns':'select count(*) from books',
             'with_authors':"select count(distinct work_id) from books where authors<>'[]'",
             'rated_open_library':'select count(distinct work_id) from books where rating is not null'}.items()}
+    rating_sources={s:len({r['work_id'] for r in data['catalog_ratings'] if r['source']==s}) for s in {r['source'] for r in data['catalog_ratings']}}
     return dict(works=len(works),editions=len(editions),isbns=len(mapped),with_authors=sum(bool(w['authors']) for w in works),
         missing_authors=sum(not w['authors'] for w in works),missing_open_library_rating=len(works)-len(rated),
         missing_series=sum(w['series_status']=='unknown' for w in works),missing_covers=sum(not w.get('cover_url') for w in works),
         cover_validation='No images are distributed. Non-null cover URLs require separate live validation.',
         duplicate_title_groups=sum(len(v)>1 for v in titles.values()),conflicting_edition_links=sum(e['work_id'] not in by_id for e in editions.values()),
         searchable_without_isbn=len(set(by_id)-set(mapped.values())),providers={s:sum(w['source']==s for w in works) for s in set(w['source'] for w in works)},
-        hardcover_cache_rows=len(data['hardcover_cache']),hardcover_rated_works=len({r['book_id'] for r in data['hardcover_cache'] if r['payload'].get('rating') is not None}),
+        rating_sources=rating_sources,hardcover_cache_rows=len(data['hardcover_cache']),hardcover_rated_works=len({r['book_id'] for r in data['hardcover_cache'] if r['payload'].get('rating') is not None}),
         offline={**offline_counts,'bytes':Path(package).stat().st_size},cohort=cases)
 
+def online_cohort(out):
+    results=[]
+    for case in cohort():
+        queries=([{'isbn':case['isbn']}] if case['isbn'] else [])+[{'title':case['title'],'author':case['author']}]
+        for query in queries:
+            request=urllib.request.Request(BASE+'/functions/v1/hardcover',data=json.dumps(query).encode(),headers={'apikey':PUBLIC_KEY,'Content-Type':'application/json'})
+            start=time.perf_counter()
+            try:
+                with urllib.request.urlopen(request,timeout=10) as response:value=json.load(response);status=response.status
+            except urllib.error.HTTPError as error:value={};status=error.code
+            row={**case,'method':'isbn' if 'isbn' in query else 'title_author','status':status,'ms':(time.perf_counter()-start)*1000,
+                'found':bool(value.get('found') and normalize(value.get('title',''))==normalize(case['title']) and any(normalize(a)==normalize(case['author']) for a in value.get('authors',[]))),
+                'cache_hit':value.get('cacheHit') is True,'rated':value.get('rating') is not None,'hardcover_id':value.get('hardcoverId'),
+                'average':value.get('rating'),'count':value.get('ratingsCount'),'scope':value.get('ratingScope')}
+            results.append(row);(out/'online.json').write_text(json.dumps(results,indent=2)+'\n')
+            if status in (401,403,404,429,503):return
+            if not value.get('cacheHit'):time.sleep(3 if 'isbn' in query else 9)
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--output',required=True);parser.add_argument('--package',default='catalog/packages/expanded.db');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--output',required=True);parser.add_argument('--package',default='catalog/packages/expanded.db');parser.add_argument('--online-only',action='store_true');args=parser.parse_args()
     out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
+    if args.online_only:online_cohort(out);return
     data=inventory();(out/'public-inventory.json').write_text(json.dumps(data),encoding='utf-8')
     report=summarize(data,args.package);(out/'audit.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({k:v for k,v in report.items() if k!='cohort'},indent=2))

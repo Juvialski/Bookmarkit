@@ -67,10 +67,9 @@ export function createLocalSearch(db: CatalogDatabase & { getAllAsync<T>(sql: st
     const tokens = [...new Set(text.split(' '))].slice(0, 16);
     const placeholders = tokens.map(() => '?').join(',');
     const select = 'SELECT b.* FROM books b JOIN works w ON w.isbn13=b.isbn13';
-    const ids = `(SELECT work_id FROM search_tokens WHERE token IN (${placeholders}) GROUP BY work_id ORDER BY COUNT(*) DESC, work_id LIMIT 81)`;
+    const ids = `(SELECT work_id FROM search_tokens WHERE token IN (${placeholders}) GROUP BY work_id ORDER BY COUNT(*) DESC, work_id LIMIT 80)`;
     let values = await db.getAllAsync<Record<string, unknown>>(`${select} WHERE w.id IN ${ids}`, ...tokens);
     try { values.push(...await db.getAllAsync<Record<string, unknown>>(`SELECT b.* FROM work_only_books b WHERE b.work_id IN ${ids}`, ...tokens)); } catch { /* Older v3 snapshots have no work-only table. */ }
-    if (new Set(values.map(row => row.work_id)).size > 80) return [];
     let books = values.flatMap(row => {
       const book = normalizeLocalRecord(row, String(row.isbn13), true);
       return book ? [{ ...book, isbn: undefined, identity: 'work' as const, ratings: book.ratings.filter(r => r.provider !== 'Goodreads' || r.scope === 'work') }] : [];
