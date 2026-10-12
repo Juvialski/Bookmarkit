@@ -74,7 +74,7 @@ export function createFreeGemini({ projects = [], billingCheck, keyProjectCheck,
         const limit = Math.min(model.dailyLimit, model.freeRpd - model.externalUsage, 20);
         const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify([project.number, model.id, task, project.keys[0]])));
         const configuration = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
-        if (!reserve || !(await reserve(project.id, model.id, task, limit, configuration))) continue;
+        if (!reserve || !(await reserve(project.id, model.id, task, limit, configuration))) return { status: 'disabled' };
         // Recheck after reservation, immediately before generation. An owner can
         // change billing externally; no once-only confirmation is authoritative.
         if (!(await billingCheck(project.id, project.number))) return { status: 'disabled' };

@@ -165,3 +165,10 @@ test('configuration fingerprint is private and stable; credentials are never sen
  await search('Warbreaker','text');await search('Another book','text');
  assert.match(fingerprints[0],/^[a-f0-9]{64}$/);assert.equal(fingerprints[0],fingerprints[1]);assert.equal(fingerprints[0].includes('fixture-key'),false);
 });
+
+test('a persisted denied reservation never falls through to another project', async()=>{
+ const reserved=[];
+ const search=createFreeGemini({projects:[project(),project('authorized-two','456','fixture-key-two')],...checks,
+ reserve:async id=>{reserved.push(id);return false;},fetcher:async()=>assert.fail('Generation forbidden')});
+ assert.equal((await search('Warbreaker')).status,'disabled');assert.deepEqual(reserved,['authorized-one']);
+});

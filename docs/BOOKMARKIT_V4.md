@@ -22,7 +22,7 @@ Warbreaker displays `Sequel planned` using exact title/author reviewed evidence 
 
 ## Evidence
 
-- Local: 107 mobile/service tests and 48 backend tests passed; lint/typecheck required at final head.
+- Local: 107 mobile/service tests and 49 backend tests passed; lint/typecheck required at final head.
 - Hosted: additive operation-circuit migration applied; service-role rollback contract proved blocked grounding and independently eligible text. RLS enabled; anonymous/authenticated writes and anonymous reservation denied. `book-search` deployed.
 - Android: CI builds version 1.3.0 / versionCode 5 using the established APK signing pipeline. Native acceptance tests exercise actual SQLite, new live books, restart, APK replacement, monthly catalog download/replacement, Goodreads intent and provider attribution. Results and timing are recorded in the workflow artifacts; pending until CI completes.
 - Latency reporting measures lookup-button tap to title, including accessibility polling but excluding typing, and is not a pure provider or lookup benchmark.
