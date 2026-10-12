@@ -18,6 +18,20 @@ def reviewed_metadata(records):
                 record.update(series_status=rule['series_status'],series_name=None,series_position=None,classification_source='curated',
                     planned_sequel=rule.get('planned_sequel',False),classification_evidence=rule['evidence'])
 
+def snapshot_observations(data):
+    mappings={r['provider_id']:r for r in data['catalog_provider_works']}
+    observations=[{**r,'catalog_work_id':mappings.get(r['book_id'],{}).get('work_id',r.get('ol_work_id'))} for r in data['hardcover_cache']]
+    positive={r['book_id'] for r in observations if r['payload'].get('rating') is not None}
+    ratings={r['work_id']:r for r in data['catalog_ratings'] if r['source']=='Hardcover'}
+    works={w['id']:w for w in data['catalog_works']}
+    for identity,mapping in mappings.items():
+        work=works[mapping['work_id']];rating=ratings.get(work['id'])
+        if identity not in positive and rating and work['authors']:
+            # Separate last-good aggregate provenance from newer metadata-only reads.
+            observations.append({'book_id':identity,'catalog_work_id':work['id'],'payload':dict(found=True,identity='work',title=work['title'],authors=work['authors'],
+                hardcoverId=identity,url=mapping.get('url'),verified=True,ratingScope='work',rating=float(rating['average']),ratingsCount=rating['count'],retrievedAt=rating['source_updated'])})
+    return observations
+
 def preserve(data, previous):
     originals={r['key']:r for r in previous}
     works={w['id']:w for w in data['catalog_works']}
@@ -167,8 +181,7 @@ def main():
     from goodreads_snapshot import attach as attach_goodreads,cached_summaries as goodreads_summaries
     from hardcover_snapshot import attach, cached_summaries
     goodreads=goodreads_summaries()
-    mapping={r['provider_id']:r['work_id'] for r in data['catalog_provider_works']}
-    hardcover=[{**r,'catalog_work_id':mapping.get(r['book_id'],r.get('ol_work_id'))} for r in data['hardcover_cache']]
+    hardcover=snapshot_observations(data)
     source={'version':time.strftime('%Y-%m',time.gmtime()),'generated_date':time.strftime('%Y-%m-%d',time.gmtime()),'source':BASE.format('editions'),'records':[records[k] for k in sorted(records)]}
     fingerprint=hashlib.sha256(json.dumps([source['records'],goodreads,hardcover],sort_keys=True,ensure_ascii=False).encode()+
         (ROOT/'scripts/catalog.py').read_bytes()+(ROOT/'scripts/hardcover_snapshot.py').read_bytes()).hexdigest()
