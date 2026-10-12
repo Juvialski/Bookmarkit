@@ -50,5 +50,10 @@ def attach(path,records):
             # Prefer one latest observation per canonical provider work, deterministically.
             latest={}
             for value in sorted(values,key=lambda r:(r.get('retrievedAt',''),json.dumps(r,sort_keys=True))):latest[value['hardcoverId']]=value
-            for table in tables:db.execute(f'UPDATE {table} SET hardcover_json=? WHERE work_id=?',(json.dumps(list(latest.values()),separators=(',',':')),work))
+            for table in tables:
+                values=list(latest.values())
+                columns={r[1] for r in db.execute(f'pragma table_info({table})')}
+                if 'classification_source' in columns and db.execute(f"select 1 from {table} where work_id=? and classification_source='curated' limit 1",(work,)).fetchone():
+                    values=[{k:v for k,v in value.items() if k not in ('seriesName','seriesPosition')} for value in values]
+                db.execute(f'UPDATE {table} SET hardcover_json=? WHERE work_id=?',(json.dumps(values,separators=(',',':')),work))
         assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'

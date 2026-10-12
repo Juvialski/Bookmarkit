@@ -1,12 +1,22 @@
 """Preserve hosted identities, enrich from official dumps, build an atomic snapshot."""
 import argparse, gzip, hashlib, json, sqlite3, time, urllib.request
+from datetime import datetime,timezone
 from contextlib import closing
 from pathlib import Path
 from catalog import build, isbn13
 from catalog_audit import inventory
+from goodreads_historical import normalize
 from bulk_cache import download, lines, BASE, AGENT
 
 ROOT=Path(__file__).resolve().parents[1]
+
+def reviewed_metadata(records):
+    reviewed=json.loads((ROOT/'docs/catalog-classifications.json').read_text('utf-8'))
+    for record in records.values():
+        for rule in reviewed:
+            if normalize(record['title'])==normalize(rule['title']) and any(normalize(a)==normalize(rule['author']) for a in record.get('author_name',[])):
+                record.update(series_status=rule['series_status'],series_name=None,series_position=None,classification_source='curated',
+                    planned_sequel=rule.get('planned_sequel',False),classification_evidence=rule['evidence'])
 
 def preserve(data, previous):
     originals={r['key']:r for r in previous}
@@ -24,7 +34,7 @@ def preserve(data, previous):
         e=editions[i['edition_id']];r=records[e['work_id']]
         r['isbn'].append(i['isbn13']);r['isbn_editions'][i['isbn13']]=e['id'];r.setdefault('edition_key',e['id'])
     for r in data['catalog_ratings']:
-        if r['source']=='Open Library':records[r['work_id']].update(ratings_average=float(r['average']),ratings_count=r['count'])
+        if r['source']=='Open Library':records[r['work_id']].update(ratings_average=float(r['average']),ratings_count=r['count'],rating_retrieved_at=r['source_updated'])
     return records
 
 def resolve_authors(records, staging, seconds=480):
@@ -87,7 +97,7 @@ def popular_targets(path, limit=2000):
         db.execute('insert or replace into progress values (?,?)',(marker,offset));db.commit()
         return {w:(total/n,n) for w,n,total in db.execute('select work,n,total from counts order by n desc,work limit ?',(limit,))},database
 
-def select_popular(records, targets, edition_path, staging, seconds=180, marker=None, iterator=None):
+def select_popular(records, targets, edition_path, staging, seconds=180, marker=None, iterator=None, rating_retrieved_at=None):
     marker=marker or json.dumps(json.loads(edition_path.with_suffix('.json').read_text()),sort_keys=True)
     with closing(sqlite3.connect(staging/'popular-progress.sqlite')) as db:
         db.execute('create table if not exists progress(marker text primary key,offset integer)')
@@ -104,6 +114,7 @@ def select_popular(records, targets, edition_path, staging, seconds=180, marker=
                 if not isbns or any(i in claimed for i in isbns) or not e.get('title') or not e.get('key','').startswith('/books/OL'):continue
                 refs=[a['key'] for a in e.get('authors',[]) if a.get('key','').startswith('/authors/OL')]
                 r=dict(key=key,title=e['title'],isbn=isbns,edition_key=e['key'],isbn_editions={i:e['key'] for i in isbns},author_refs=refs,author_name=[],series=e.get('series',[]),source_provider='open-library',ratings_average=targets[key][0],ratings_count=targets[key][1],goodreads_ids={i:e.get('identifiers',{}).get('goodreads',[]) for i in isbns})
+                if rating_retrieved_at:r['rating_retrieved_at']=rating_retrieved_at
                 records[key]=r;wanted.remove(key);claimed.update(isbns);db.execute('insert or ignore into accepted values (?,?)',(key,json.dumps(r)))
             except (ValueError,KeyError,TypeError):pass
             finally:
@@ -130,10 +141,13 @@ def main():
     if not args.skip_popular:
         try:
             ratings=download('ratings',staging/'bulk',seconds=120);targets,counts=popular_targets(ratings)
+            observed=datetime.fromtimestamp(ratings.with_suffix('.json').stat().st_mtime,timezone.utc).isoformat()
             with closing(sqlite3.connect(counts)) as db:
                 for key,r in records.items():
                     rating=db.execute('select total,n from counts where work=?',(key,)).fetchone()
-                    if rating:r.update(ratings_average=rating[0]/rating[1],ratings_count=rating[1])
+                    if rating:
+                        if r.get('ratings_average')!=rating[0]/rating[1] or r.get('ratings_count')!=rating[1]:r['rating_retrieved_at']=observed
+                        r.update(ratings_average=rating[0]/rating[1],ratings_count=rating[1])
             request=urllib.request.Request(BASE.format('editions'),method='HEAD',headers={'User-Agent':AGENT})
             with urllib.request.urlopen(request,timeout=30) as response:
                 url=response.url;marker=json.dumps([url,response.headers.get('ETag'),response.headers.get('Last-Modified')])
@@ -146,12 +160,15 @@ def main():
                             offset+=len(raw)
                             if time.monotonic()>deadline:return
                             if offset>after:yield offset,raw.decode('utf-8')
-            select_popular(records,targets,None,staging,marker=marker,iterator=streamed)
+            select_popular(records,targets,None,staging,marker=marker,iterator=streamed,rating_retrieved_at=observed)
         except (OSError,TimeoutError):print('Popular bulk checkpoint retained; preserving catalog',flush=True)
     resolve_authors(records,staging,args.author_seconds)
+    reviewed_metadata(records)
     from goodreads_snapshot import attach as attach_goodreads,cached_summaries as goodreads_summaries
     from hardcover_snapshot import attach, cached_summaries
-    goodreads=goodreads_summaries();hardcover=cached_summaries()
+    goodreads=goodreads_summaries()
+    mapping={r['provider_id']:r['work_id'] for r in data['catalog_provider_works']}
+    hardcover=[{**r,'catalog_work_id':mapping.get(r['book_id'],r.get('ol_work_id'))} for r in data['hardcover_cache']]
     source={'version':time.strftime('%Y-%m',time.gmtime()),'generated_date':time.strftime('%Y-%m-%d',time.gmtime()),'source':BASE.format('editions'),'records':[records[k] for k in sorted(records)]}
     fingerprint=hashlib.sha256(json.dumps([source['records'],goodreads,hardcover],sort_keys=True,ensure_ascii=False).encode()+
         (ROOT/'scripts/catalog.py').read_bytes()+(ROOT/'scripts/hardcover_snapshot.py').read_bytes()).hexdigest()

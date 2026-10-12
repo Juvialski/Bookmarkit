@@ -98,12 +98,14 @@ def build(source=SOURCE, output=OUTPUT):
                 rows[isbn] = (isbn, title, json.dumps(authors, ensure_ascii=False), record.get('key'),
                               'series' if parsed else 'standalone' if override.get('series_status') == 'standalone' else 'unknown', parsed[0] if parsed else None,
                               parsed[1] if parsed else None, average, count, 'curated' if override else 'open-library' if parsed else 'unknown')
-                if record.get('classification_source') in ('curated','open-library','hardcover') and record.get('series_status') in ('series','standalone'):
+                if record.get('classification_source') in ('curated','open-library') and record.get('series_status') in ('series','standalone','unknown'):
                     status=record['series_status'];name=record.get('series_name');position=record.get('series_position')
-                    if (status=='series' and name and position) or (status=='standalone' and record['classification_source']=='curated'):
+                    if (status=='series' and name and position) or (status in ('standalone','unknown') and record['classification_source']=='curated'):
                         row=rows[isbn];rows[isbn]=row[:4]+(status,name,position)+row[7:9]+(record['classification_source'],)
         if not any(isbn13(v) for v in record.get('isbn',[])) and record.get('key') and authors:
             work_only[record['key']]=('',title,json.dumps(authors,ensure_ascii=False),record['key'],'unknown',None,None,average,count,'unknown')
+            if record.get('classification_source')=='curated' and record.get('series_status') in ('standalone','unknown'):
+                row=work_only[record['key']];work_only[record['key']]=row[:4]+(record['series_status'],None,None)+row[7:9]+('curated',)
     output = Path(output)
     if output.exists(): output.unlink()
     with closing(sqlite3.connect(output)) as db:
@@ -118,6 +120,16 @@ def build(source=SOURCE, output=OUTPUT):
         db.execute('ALTER TABLE work_only_books ADD COLUMN edition_id TEXT')
         db.execute('ALTER TABLE books ADD COLUMN goodreads_url TEXT')
         db.execute('ALTER TABLE work_only_books ADD COLUMN goodreads_url TEXT')
+        for table in ['books','work_only_books']:
+            db.execute(f'ALTER TABLE {table} ADD COLUMN rating_scope TEXT')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN rating_retrieved_at TEXT')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN planned_sequel INTEGER NOT NULL DEFAULT 0')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN classification_evidence TEXT')
+            for record in data['records']:
+                db.execute(f"UPDATE {table} SET rating_scope='work',rating_retrieved_at=? WHERE work_id=? AND rating IS NOT NULL",
+                    (record.get('rating_retrieved_at',data['generated_date']),record.get('key')))
+                db.execute(f'UPDATE {table} SET planned_sequel=?,classification_evidence=? WHERE work_id=?',
+                    (int(record.get('planned_sequel') is True),record.get('classification_evidence'),record.get('key')))
         for record in data['records']:
             for value in record.get('isbn',[]):
                 normalized_isbn=isbn13(value)

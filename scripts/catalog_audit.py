@@ -11,14 +11,14 @@ def pages(table, columns='*'):
     for offset in range(0, 200000, 500):
         request = urllib.request.Request(f'{BASE}/rest/v1/{table}?select={columns}&order='+
             ('cache_key' if table=='hardcover_cache' else 'isbn13' if table=='catalog_isbns' else
-             'work_id,source' if table=='catalog_ratings' else 'id')+f'&limit=500&offset={offset}', headers={'apikey':PUBLIC_KEY})
+             'provider_id' if table=='catalog_provider_works' else 'work_id,source' if table=='catalog_ratings' else 'id')+f'&limit=500&offset={offset}', headers={'apikey':PUBLIC_KEY})
         with urllib.request.urlopen(request, timeout=30) as response: page = json.load(response)
         rows.extend(page)
         if len(page)<500: return rows
     raise ValueError('Inventory bound exceeded; refusing partial inventory')
 
 def inventory():
-    return {table: pages(table) for table in ['catalog_works','catalog_authors','catalog_editions','catalog_isbns','catalog_ratings','hardcover_cache']}
+    return {table: pages(table) for table in ['catalog_works','catalog_authors','catalog_editions','catalog_isbns','catalog_ratings','hardcover_cache','catalog_provider_works']}
 
 def cohort():
     source=json.loads(Path('catalog/source.json').read_text('utf-8'))['records']

@@ -33,6 +33,8 @@ jobs:
           python scripts/hardcover_incremental.py
           python -c "from pathlib import Path; import sys; sys.path.insert(0,'scripts'); from hardcover_snapshot import attach,cached_summaries; attach(Path('dist/catalog/expanded.db'),cached_summaries())"
           python scripts/refresh_catalog_manifest.py
+      - name: Include newly accepted shared works after the bounded queue
+        run: python scripts/smart_catalog.py --skip-popular --author-seconds 0
       - run: python scripts/validate_expanded.py
       - name: Measure the same public coverage cohort
         run: python scripts/catalog_audit.py --output dist/catalog/audit --package dist/catalog/expanded.db

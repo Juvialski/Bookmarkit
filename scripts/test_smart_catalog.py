@@ -2,10 +2,20 @@ import gzip,json,sqlite3,tempfile,unittest
 from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
-from smart_catalog import preserve,resolve_authors,popular_targets,select_popular
+from smart_catalog import preserve,resolve_authors,popular_targets,select_popular,reviewed_metadata
 from catalog import build
+from bulk_cache import download
+from catalog_audit import summarize
 
 class SmartTests(unittest.TestCase):
+ def test_reviewed_standalone_and_planned_sequel_are_independent_of_ratings(self):
+  records={'t':dict(title='Tress of the Emerald Sea',author_name=['Brandon Sanderson'],series_status='series',series_name="Hoid's Travails",ratings_average=4.2),
+   'w':dict(title='Warbreaker',author_name=['Brandon Sanderson'],series_status='series'),
+   'other':dict(title='Warbreaker',author_name=['Other Writer'],series_status='series')}
+  reviewed_metadata(records)
+  self.assertEqual(records['t']['series_status'],'standalone');self.assertEqual(records['t']['ratings_average'],4.2)
+  self.assertEqual(records['w']['series_status'],'unknown');self.assertTrue(records['w']['planned_sequel'])
+  self.assertEqual(records['other']['series_status'],'series')
  def test_preserve_all_editions_names_and_classification(self):
   data={'catalog_works':[dict(id='/works/OL1W',title='Known',authors=['Verified Writer'],series_status='unknown',series_name=None,series_position=None,classification_source='unknown',source='open-library',source_updated='2026-10-01')],
    'catalog_editions':[dict(id='/books/OL1M',work_id='/works/OL1W'),dict(id='/books/OL2M',work_id='/works/OL1W')],
@@ -57,5 +67,28 @@ class SmartTests(unittest.TestCase):
     self.assertEqual(db.execute('select count(*) from books').fetchone()[0],1)
     self.assertEqual(db.execute('select goodreads_url from books').fetchone()[0],'https://www.goodreads.com/book/show/123')
     self.assertEqual(db.execute('pragma integrity_check').fetchone()[0],'ok')
+
+ def test_dump_mirror_change_retains_byte_checkpoint_and_validates_gzip(self):
+  with tempfile.TemporaryDirectory() as folder:
+   staging=Path(folder);raw=gzip.compress(b'complete official fixture\n');offset=10
+   (staging/'authors.part').write_bytes(raw[:offset])
+   (staging/'authors.json').write_text(json.dumps(dict(url='https://mirror-one.example/dump.gz',etag='same',modified='date',bytes=len(raw))))
+   class Response:
+    def __init__(self,head):self.head=head;self.status=200 if head else 206;self.url='https://mirror-two.example/dump.gz';self.position=offset;self.headers={'ETag':'same','Last-Modified':'date','Content-Length':str(len(raw)),'Content-Range':f'bytes {offset}-{len(raw)-1}/{len(raw)}'}
+    def __enter__(self):return self
+    def __exit__(self,*args):pass
+    def read1(self,size):chunk=raw[self.position:self.position+size];self.position+=len(chunk);return chunk
+   with patch('bulk_cache.urllib.request.urlopen',side_effect=[Response(True),Response(False)]):path=download('authors',staging)
+   self.assertEqual(path.read_bytes(),raw)
+
+ def test_coverage_title_normalization_matches_actual_snapshot_index(self):
+  with tempfile.TemporaryDirectory() as folder:
+   source=Path(folder)/'source.json';output=Path(folder)/'catalog.db'
+   source.write_text(json.dumps(dict(version='test',generated_date='2026-10-12',source='fixture',records=[dict(key='/works/OL1W',title='The Common Title',author_name=['An Author'],isbn=['9780140328721'])])))
+   build(source,output)
+   data={'catalog_works':[dict(id='/works/OL1W',title='The Common Title',authors=['An Author'],series_status='unknown',source='open-library')],
+    'catalog_editions':[dict(id='/books/OL1M',work_id='/works/OL1W')],'catalog_isbns':[dict(isbn13='9780140328721',edition_id='/books/OL1M')],'catalog_ratings':[],'hardcover_cache':[]}
+   with patch('catalog_audit.cohort',return_value=[dict(title='The Common Title',author='An Author',isbn='9780140328721')]):report=summarize(data,output)
+   self.assertTrue(report['cohort'][0]['offline_title_author']);self.assertTrue(report['cohort'][0]['shared_isbn'])
 
 if __name__=='__main__':unittest.main()

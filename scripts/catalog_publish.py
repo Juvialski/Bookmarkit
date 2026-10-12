@@ -91,7 +91,7 @@ def payloads():
                 nine=isbn[3:12]; check=(-sum((10-i)*int(c) for i,c in enumerate(nine)))%11
                 isbn10=nine+('X' if check==10 else str(check))
             isbns.append(dict(isbn13=isbn,isbn10=isbn10,edition_id=eid))
-        if row['rating'] and row['rating_count']: ratings.append(dict(work_id=r['key'],source='Open Library',average=row['rating'],count=row['rating_count'],source_updated=stamp))
+        if row['rating'] and row['rating_count']: ratings.append(dict(work_id=r['key'],source='Open Library',average=row['rating'],count=row['rating_count'],source_updated=r.get('rating_retrieved_at',stamp)))
     return [(table, unique_rows(table, values)) for table, values in
             [('catalog_works',works),('catalog_authors',list(authors.values())),('catalog_work_authors',links),('catalog_editions',editions),('catalog_isbns',isbns),('catalog_ratings',ratings)]]
 
@@ -127,7 +127,9 @@ def publish():
     references=[{'id':r['key'],'refs':r['author_refs']} for r in records if r.get('author_refs') and r['key'].startswith('/works/OL')]
     for table, rows in tables:
         for offset in range(0,len(rows),500):
-            request('/rest/v1/'+table,json.dumps(rows[offset:offset+500]).encode(), context=f'{table} batch {offset//500+1}')
+            batch=rows[offset:offset+500]
+            rpc={'catalog_works':'merge_catalog_works','catalog_ratings':'merge_catalog_ratings'}.get(table)
+            request('/rest/v1/'+('rpc/'+rpc if rpc else table),json.dumps({'records':batch} if rpc else batch).encode(), context=f'{table} batch {offset//500+1}')
         print(table, len(rows), 'rows uploaded', flush=True)
     for offset in range(0,len(references),500):
         request('/rest/v1/rpc/retain_catalog_author_refs',json.dumps({'records':references[offset:offset+500]}).encode(),context='catalog author reference checkpoint')

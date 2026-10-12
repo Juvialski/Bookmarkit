@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createHardcoverService,normalizeCandidates,queryKey,validateQuery} from '../../supabase/functions/_shared/hardcover-service.mjs';
+import {createHardcoverService,normalizeCandidates,queryKey,validateQuery,publicClassification} from '../../supabase/functions/_shared/hardcover-service.mjs';
 const isbn='9780765326355';
 const book={id:123,title:'The Way of Kings',slug:'the-way-of-kings',rating:4.56,ratings_count:18432,
  contributions:[{contribution:'author',author:{name:'Brandon Sanderson'}}],featured_book_series:{compilation:false,position:1,series:{name:'Stormlight'}}};
@@ -11,6 +11,14 @@ function memoryStore(time=()=>0) {
   put:async(key,query,payload)=>{events.push(['put']);rows.set(key,{payload,expires_at:new Date(time()+604800000).toISOString()});},
   finish:async(...args)=>events.push(['finish',...args]),cooldown:async seconds=>events.push(['cooldown',seconds])};
 }
+test('reviewed standalone/planned-sequel evidence excludes provider grouping without changing ratings',()=>{
+ for(const title of ['Tress of the Emerald Sea','Yumi and the Nightmare Painter','Warbreaker']) {
+  const raw={title,authors:['Brandon Sanderson'],seriesName:"Hoid's Travails",seriesPosition:'1',rating:4.2,ratingsCount:1234,ratingScope:'work',retrievedAt:'2026-10-12'};
+  const result=publicClassification(raw);assert.equal(result.seriesName,undefined);assert.equal(result.seriesPosition,undefined);
+  assert.equal(result.rating,raw.rating);assert.equal(result.ratingsCount,raw.ratingsCount);assert.equal(result.retrievedAt,raw.retrievedAt);
+  assert.equal(raw.seriesName,"Hoid's Travails");assert.equal(publicClassification({...raw,authors:['Another Writer']}).seriesName,"Hoid's Travails");
+ }
+});
 test('ISBN edition parent, exact work pair, persistent cache and deduplication',async()=>{
  let calls=0;const store=memoryStore();
  const lookup=createHardcoverService({token:'test-only',store,now:()=>0,fetcher:async()=>{calls++;return Response.json({data:{editions:[edition]}});}});

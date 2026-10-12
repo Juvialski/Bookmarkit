@@ -8,7 +8,13 @@ begin
  select work_id into target from public.catalog_provider_works where provider_id=provider_identity;
  if target is null then return; end if;
  select * into c from public.hardcover_cache where book_id=provider_identity order by retrieved_at desc,cache_key limit 1;
- if lower(trim(c.title))='warbreaker' and lower(trim(c.primary_author))='brandon sanderson' then return; end if;
+ if lower(trim(c.primary_author))='brandon sanderson' then
+  if lower(trim(c.title)) in ('tress of the emerald sea','yumi and the nightmare painter') then
+   update public.catalog_works set series_status='standalone',series_name=null,series_position=null,classification_source='curated' where id=target;return;
+  elsif lower(trim(c.title))='warbreaker' then
+   update public.catalog_works set series_status='unknown',series_name=null,series_position=null,classification_source='curated' where id=target;return;
+  end if;
+ end if;
  if not exists(select 1 from public.catalog_works w where w.id=target and lower(trim(w.title))=lower(trim(c.title))
   and exists(select 1 from jsonb_array_elements_text(w.authors) a where lower(trim(a.value))=lower(trim(c.primary_author)))) then return; end if;
  select count(distinct (payload->>'seriesName')||'|'||(payload->>'seriesPosition')) into variants

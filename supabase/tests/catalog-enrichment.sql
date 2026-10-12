@@ -28,6 +28,13 @@ do $$ declare k text:=repeat('9',64); r jsonb; n integer; begin
  begin
   perform public.retain_catalog_author_refs('[{}]');raise exception 'malformed references accepted';
  exception when raise_exception then if sqlerrm<>'invalid author reference' then raise;end if;end;
+ perform public.merge_catalog_works(jsonb_build_array(jsonb_build_object('id','/works/OL999999999999W','title','Reference fixture',
+  'authors',jsonb_build_array('First Writer','Second Writer'),'normalized_title','reference fixture','source','open-library',
+  'source_updated',now(),'series_status','unknown','classification_source','unknown')));
+ perform public.merge_catalog_works(jsonb_build_array(jsonb_build_object('id','/works/OL999999999999W','title','Reference fixture',
+  'authors','[]'::jsonb,'normalized_title','reference fixture','source','open-library','source_updated',now()+interval '1 hour',
+  'series_status','unknown','classification_source','unknown')));
+ if not exists(select 1 from public.catalog_works where id='/works/OL999999999999W' and jsonb_array_length(authors)=2) then raise exception 'resumed publication erased authors';end if;
 end $$;
 set local role anon;
 do $$ begin
@@ -35,6 +42,7 @@ do $$ begin
  begin perform public.accept_hardcover_catalog(repeat('9',64));raise exception 'public ingestion callable';exception when insufficient_privilege then null;end;
  begin delete from public.catalog_provider_works;raise exception 'anonymous writes allowed';exception when insufficient_privilege then null;end;
  begin perform public.retain_catalog_author_refs('[]');raise exception 'anonymous references allowed';exception when insufficient_privilege then null;end;
+ begin perform public.merge_catalog_works('[]');raise exception 'anonymous publication allowed';exception when insufficient_privilege then null;end;
 end $$;
 set local role authenticated;
 do $$ begin
