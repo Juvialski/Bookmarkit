@@ -21,7 +21,7 @@ try:
     report['isbn']={'initial_ui_seconds':round(initial,3),'rating':rating_evidence(root),'source_record':record}
     assert any('Stormlight' in t for t in texts(root)),texts(root)
     shell('am','force-stop','com.android.chrome');tap('Read Goodreads Reviews');time.sleep(2)
-    assert 'goodreads.com/search?q=9780765326355' in shell('dumpsys','activity','activities')
+    assert expected_reviews('9780765326355') in shell('dumpsys','activity','activities')
     report['reviews_isbn']='passed'
     launch();lookup('The Way of Kings Brandon Sanderson','The Way of Kings','title-initial')
     root=description(label,name='title-hardcover');report['without_barcode']=rating_evidence(root)
@@ -33,7 +33,7 @@ try:
     goodreads=f"{reviewed['average']:.2f} out of 5 stars, {reviewed['rating_count']:,} ratings, Goodreads."
     description(goodreads,name='goodreads-priority');report['goodreads_priority']='passed'
     network(False);launch();lookup('9780765326355','The Way of Kings','offline-fallback')
-    root=description('ratings, Open Library',name='offline-fallback');report['offline']=rating_evidence(root)
+    root=description('ratings, Hardcover',name='offline-fallback');report['offline']=rating_evidence(root)
     errors=shell('logcat','-d','-s','AndroidRuntime:E','ReactNativeJS:E')
     (out/'errors.log').write_text(errors,encoding='utf-8');assert 'FATAL EXCEPTION' not in errors
     report['result']='passed'

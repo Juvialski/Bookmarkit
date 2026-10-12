@@ -53,7 +53,7 @@ export function rankBooks(queries: BookQuery[], books: BookResult[]): Identifica
     else {
       const a = existing.book, b = row.book;
       existing.book = { ...a, isbn: a.isbn || b.isbn, workId: a.workId || b.workId, hardcoverId: a.hardcoverId || b.hardcoverId,
-        hardcoverUrl: a.hardcoverUrl || b.hardcoverUrl, coverUrl: coverCandidates(a, b)[0], coverUrls: coverCandidates(a, b),
+        hardcoverUrl: a.hardcoverUrl || b.hardcoverUrl, goodreadsUrl: a.goodreadsUrl || (a.isbn && a.isbn === b.isbn ? b.goodreadsUrl : undefined), goodreadsId: a.goodreadsId || (a.isbn && a.isbn === b.isbn ? b.goodreadsId : undefined), coverUrl: coverCandidates(a, b)[0], coverUrls: coverCandidates(a, b),
         ...mergeClassification([a, b]), ratings: [...a.ratings, ...b.ratings.filter(r => !a.ratings.some(x => x.provider === r.provider && x.stored === r.stored))] };
     }
   }

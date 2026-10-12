@@ -33,7 +33,8 @@ export async function identifyBook(request: RecognitionRequest, dependencies: Re
     const isbn = normalizeIsbn(request.isbn);
     if (dependencies.online && !(await dependencies.online()) && dependencies.catalog) {
       const books = await dependencies.catalog.search({ isbn });
-      if (books[0]) return { kind: 'book', book: books[0] };
+      if (books.length === 1) return { kind: 'book', book: books[0] };
+      if (books.length > 1) return { kind: 'candidates', books };
       throw new Error('This ISBN is not in the offline catalog. Connect to the internet to look it up.');
     }
     return { kind: 'book', book: await byIsbn(isbn) };

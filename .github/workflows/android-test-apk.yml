@@ -134,7 +134,7 @@ jobs:
     needs: [mobile-scope, apk]
     if: ${{ always() && (needs.apk.result == 'success' || needs.mobile-scope.outputs.apk_run_id != '' || (github.event_name == 'workflow_dispatch' && inputs.apk_run_id != '')) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
@@ -173,6 +173,7 @@ jobs:
             python scripts/android-result-smoke.py --apk dist/apk/bookmarkit-android-test.apk
             python scripts/android-v2-layout.py --apk dist/apk/bookmarkit-android-test.apk
             python scripts/android-hardcover-smoke.py --apk dist/apk/bookmarkit-android-test.apk
+            python scripts/android-cache-smoke.py --apk dist/apk/bookmarkit-android-test.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -181,5 +182,6 @@ jobs:
             dist/android-phase8
             dist/android-result
             dist/android-hardcover
+            dist/android-cache
           if-no-files-found: warn
           retention-days: 30

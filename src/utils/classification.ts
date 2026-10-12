@@ -14,3 +14,15 @@ export function mergeClassification(books: Classification[]): Classification {
   if (known.some(b => b.seriesStatus !== first.seriesStatus || (b.seriesStatus === 'series' && (nameKey(b.seriesName!) !== nameKey(first.seriesName!) || seriesPosition(b.seriesPosition) !== seriesPosition(first.seriesPosition))))) return unknownClassification;
   return { seriesStatus: first.seriesStatus, seriesName: first.seriesName, seriesPosition: seriesPosition(first.seriesPosition), classificationSource: first.classificationSource, classificationConfidence: first.classificationConfidence };
 }
+
+
+// Reviewed author evidence, not an inference from Hardcover's numbered series.
+// State of the Sanderson 2025: Warbreaker sequels remain to be written eventually.
+export function reviewedClassification(book: BookResult): BookResult {
+  if (book.title.trim().toLowerCase() === 'warbreaker' && book.authors.some(a => a.trim().toLowerCase() === 'brandon sanderson')) {
+    return { ...book, seriesStatus: 'unknown', seriesName: undefined, seriesPosition: undefined,
+      plannedSequel: true, classificationSource: 'curated', classificationConfidence: 'curated',
+      classificationEvidence: 'https://www.brandonsanderson.com/blogs/blog/state-of-the-sanderson-2025' };
+  }
+  return book;
+}

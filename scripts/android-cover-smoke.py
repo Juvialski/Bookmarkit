@@ -179,6 +179,9 @@ try:
     if args.baseline_apk:
         adb('install', '-r', str(Path(args.baseline_apk).resolve()))
         report['baseline_version'] = re.search(r'versionCode=(\d+)', shell('dumpsys', 'package', package)).group(1)
+        network(True); launch(); tap('Offline books'); wait('Download'); tap('Download')
+        wait('Delete expanded catalog',timeout=90,name='baseline-catalog-installed')
+        network(False)
     installed = subprocess.run([args.adb, '-s', args.serial, 'install', '-r', str(apk.resolve())], capture_output=True, text=True)
     report['install'] = installed.stdout + installed.stderr
     if installed.returncode:
@@ -188,6 +191,8 @@ try:
     assert report['installed_version'] == expected_version, report
     if args.baseline_apk:
         assert int(report['installed_version']) > int(report['baseline_version']), 'Upgrade did not increase versionCode'
+        launch(); tap('Offline books'); wait('Delete expanded catalog',name='upgrade-catalog-retained')
+        report['v120_offline_download_survives_upgrade']='passed'
     shell('pm', 'clear', package)
     shell('logcat', '-c')
     # Cold CI emulators can finish radio initialization during APK installation.

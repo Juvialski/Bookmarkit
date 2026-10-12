@@ -44,6 +44,9 @@ jobs:
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261011011808_hardcover_cache.sql
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261011022322_hardcover_search_budget.sql
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/hardcover.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261010052716_free_gemini_projects.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261012013924_operation_circuits.sql
+          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f supabase/tests/gemini.sql
       - run: python scripts/validate_expanded.py catalog/packages
       - run: npm run typecheck
       - run: npm run lint

@@ -20,6 +20,19 @@ def description(fragment, timeout=50, name=None):
 def rating_evidence(root):
     return next(n.attrib['content-desc'] for n in root.iter('node') if 'out of 5 stars' in n.attrib.get('content-desc', ''))
 
+def expected_reviews(isbn):
+    import urllib.request
+    summaries=json.loads(Path('catalog/goodreads.json').read_text('utf-8'))
+    known=next((r['url'] for r in summaries if r['isbn13']==isbn),None)
+    if known: return known
+    try:
+        edition=json.load(urllib.request.urlopen('https://openlibrary.org/isbn/'+isbn+'.json',timeout=10))
+        ids=edition.get('identifiers',{}).get('goodreads',[])
+        if isbn in edition.get('isbn_13',[]) and len(ids)==1 and re.fullmatch(r'[1-9]\d{0,15}',ids[0]):
+            return 'https://www.goodreads.com/book/show/'+ids[0]
+    except Exception: pass
+    return 'https://www.goodreads.com/search?q='+isbn
+
 original_font = shell('settings', 'get', 'system', 'font_scale').strip()
 try:
     shell('wm', 'size', '1080x1920'); shell('wm', 'density', '480')
@@ -53,7 +66,7 @@ try:
     tap('Read Goodreads Reviews'); time.sleep(2)
     activities = shell('dumpsys', 'activity', 'activities')
     (out / 'goodreads-isbn.txt').write_text(activities, encoding='utf-8')
-    assert 'goodreads.com/search?q=9780765320308' in activities
+    assert expected_reviews('9780765320308') in activities
     report['goodreads_isbn'] = 'passed'
     launch(); pick('warbreaker-real.jpg')
     # book_result uses the global report only if a candidate needs selection.

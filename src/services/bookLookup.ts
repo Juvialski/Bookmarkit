@@ -42,7 +42,7 @@ export async function lookupBook(value: string, providers = [centralCatalog, ope
   const selected = primaryRating(onlineRatings);
   const usedStoredRating = !!stored && (!selected || stored.ratings.some(r => r.provider === 'Goodreads' && r.verified));
   const coverUrls = coverCandidates(...books, ...(stored ? [stored] : []));
-  return { identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
+  return { goodreadsId: books.find(b => b.goodreadsId)?.goodreadsId, goodreadsUrl: books.find(b => b.goodreadsUrl)?.goodreadsUrl, identity: 'isbn', isbn, title: first.title, workId: books.find(b => b.workId)?.workId,
     hardcoverId: books.find(b => b.hardcoverId)?.hardcoverId, hardcoverUrl: books.find(b => b.hardcoverUrl)?.hardcoverUrl,
     incomplete: usedStoredRating || responses.some(r => r.status === 'rejected') || books.some(b => b.rating.unavailable),
     authors: books.find(b => b.authors.length)?.authors || [], coverUrl: coverUrls[0], coverUrls,

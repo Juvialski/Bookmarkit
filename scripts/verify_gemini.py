@@ -24,7 +24,7 @@ def main(live_text=False):
     def call(path, body=None):
         req = urllib.request.Request(BASE+path, data=json.dumps(body).encode() if body is not None else None, headers=headers)
         with urllib.request.urlopen(req, timeout=30) as response: return json.load(response)
-    circuit = call('/rest/v1/gemini_circuit?select=cooldown_until')
+    circuit = call('/rest/v1/gemini_operation_circuit?select=model,task,cooldown_until,disabled')
     usage = call('/rest/v1/gemini_project_usage?select=model,task,day,attempts,tokens&order=day.desc')
     check = call('/functions/v1/book-search', {'task':'verify'})
     grounding = call('/functions/v1/book-search', {'query':''})
@@ -32,11 +32,11 @@ def main(live_text=False):
     if check.get('status') != 'verified': raise RuntimeError('Free-only configuration verification failed')
     if grounding.get('status') != 'disabled': raise RuntimeError('Grounding must remain disabled')
     if not live_text: return
-    if any(r.get('cooldown_until') and datetime.fromisoformat(r['cooldown_until'].replace('Z','+00:00')) > datetime.now(timezone.utc) for r in circuit):
+    if any(r.get('task') == 'text' and (r.get('disabled') or (r.get('cooldown_until') and datetime.fromisoformat(r['cooldown_until'].replace('Z','+00:00')) > datetime.now(timezone.utc))) for r in circuit):
         raise RuntimeError('Existing cooldown is active; no generation request made')
     # One attempt only. No provider/model/key rotation, retries or paid API activation.
     answer = call('/functions/v1/book-search', {'task':'text','query':'Warbreaker by Brandon Sanderson'})
-    print(json.dumps(dict(text_status=answer.get('status'), has_text=bool(answer.get('text')))))
+    print(json.dumps(dict(text_status=answer.get('status'), has_text=bool(answer.get('text')), normalized_text=answer.get('text'))))
     print(json.dumps(dict(usage_after=call('/rest/v1/gemini_project_usage?select=model,task,day,attempts,tokens&order=day.desc'))))
     if answer.get('status') != 'ok' or not answer.get('text'): raise RuntimeError('Live text verification did not succeed; do not retry')
 
