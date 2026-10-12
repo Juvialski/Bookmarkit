@@ -40,6 +40,23 @@ try:
     tap('Delete expanded catalog'); wait('Download'); tap('Back to scanner')
     network(False); launch(); lookup(isbn, title, 'catalog-replacement-offline'); description(label)
     report['catalog_replacement_persistence'] = 'passed'
+    # Root is available on the disposable google_apis userdebug emulator.
+    # Deliberately damage ONLY this test app's personal cache, retaining a backup.
+    rooted = adb('root').decode('utf-8',errors='replace')
+    assert 'cannot run as root' not in rooted, rooted
+    adb('wait-for-device'); shell('am','force-stop',package)
+    paths=shell('find',f'/data/user/0/{package}','-name','personal-books-v1.db').splitlines()
+    assert len(paths)==1 and paths[0].startswith(f'/data/user/0/{package}/'), paths
+    personal=paths[0]
+    shell('cp',personal,'/data/local/tmp/bookmarkit-personal-original.db')
+    shell('sh','-c',f'"printf corrupted > {personal}"')
+    launch();lookup(isbn,'not in the offline catalog','corrupt-cache-unavailable')
+    network(True);launch();lookup(isbn,title,'recovery-online');description(label);time.sleep(8)
+    network(False);launch();lookup(isbn,title,'recovery-offline');description(label)
+    recovery=shell('find',f'/data/user/0/{package}','-name','personal-books-recovery-v1.db')
+    assert 'personal-books-recovery-v1.db' in recovery
+    assert shell('cat',personal).strip()=='corrupted', 'Damaged original was overwritten'
+    report['corrupt_native_database_recovery']='passed; original retained, independent recovery cache persists'
     assert 'FATAL EXCEPTION' not in shell('logcat', '-d', '-s', 'AndroidRuntime:E')
     report['result'] = 'passed'
 except Exception as error:
