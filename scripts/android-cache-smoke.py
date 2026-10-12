@@ -49,7 +49,12 @@ try:
     assert len(paths)==1 and paths[0].startswith(f'/data/user/0/{package}/'), paths
     personal=paths[0]
     shell('cp',personal,'/data/local/tmp/bookmarkit-personal-original.db')
+    # WAL can legitimately restore a damaged main file. Back it up and damage
+    # its header too so this fixture exercises the separate recovery database.
+    shell('sh','-c',f'"if [ -f {personal}-wal ]; then cp {personal}-wal /data/local/tmp/bookmarkit-personal-original.db-wal; printf corrupted > {personal}-wal; fi"')
     shell('sh','-c',f'"printf corrupted > {personal}"')
+    assert shell('cat',personal).strip()=='corrupted', 'Main-file corruption was not applied'
+    shell('sh','-c',f'"if [ -f {personal}-wal ]; then test $(cat {personal}-wal) = corrupted; fi"')
     launch();lookup(isbn,'not in the offline catalog','corrupt-cache-unavailable')
     network(True);launch();lookup(isbn,title,'recovery-online');description(label);time.sleep(8)
     network(False);launch();lookup(isbn,title,'recovery-offline');description(label)
