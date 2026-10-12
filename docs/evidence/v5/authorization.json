@@ -1,0 +1,7 @@
+{
+  "anonymous_catalog_ingestion": 401,
+  "anonymous_series_ingestion": 401,
+  "anonymous_catalog_write": 401,
+  "private_queue_read": 401,
+  "public_mapping_read": 200
+}

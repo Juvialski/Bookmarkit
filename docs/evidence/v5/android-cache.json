@@ -1,0 +1,15 @@
+{
+  "result": "passed",
+  "offline_records": 2,
+  "latency_scope": "Lookup button tap to title; includes accessibility polling, excludes typing",
+  "initial_lookup_seconds": 4.566,
+  "online_rating": "4.09 out of 5 stars, 2,618 ratings, Hardcover.",
+  "enriched_rating": "4.09 out of 5 stars, 2,618 ratings, Hardcover.",
+  "offline_lookup_seconds": 5.433,
+  "candidate_selections": [
+    "Intermezzo"
+  ],
+  "apk_replacement_persistence": "passed",
+  "catalog_replacement_persistence": "passed",
+  "corrupt_native_database_recovery": "passed; original retained, independent recovery cache persists"
+}

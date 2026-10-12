@@ -16,8 +16,25 @@ export const personalSchema = `PRAGMA journal_mode=WAL;
 BEGIN IMMEDIATE;
 CREATE TABLE IF NOT EXISTS personal_books (identity TEXT PRIMARY KEY, isbn TEXT, metadata TEXT NOT NULL, retrieved_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS personal_isbn ON personal_books(isbn);
-PRAGMA user_version=1;
+CREATE TABLE IF NOT EXISTS personal_titles (identity TEXT PRIMARY KEY, title TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS personal_normalized_title ON personal_titles(title,identity);
+CREATE TABLE IF NOT EXISTS personal_tokens (token TEXT NOT NULL, identity TEXT NOT NULL, PRIMARY KEY(token,identity)) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS personal_token_identity ON personal_tokens(identity);
+CREATE TABLE IF NOT EXISTS personal_grams (gram TEXT NOT NULL, identity TEXT NOT NULL, PRIMARY KEY(gram,identity)) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS personal_gram_identity ON personal_grams(identity);
+PRAGMA user_version=2;
 COMMIT;`;
+
+async function indexBook(db: CacheDatabase, identity: string, book: BookResult) {
+  await db.runAsync('INSERT INTO personal_titles VALUES (?,?) ON CONFLICT(identity) DO UPDATE SET title=excluded.title', identity, normalizeText(book.title));
+  await db.runAsync('DELETE FROM personal_tokens WHERE identity=?', identity);
+  const tokens = new Set(normalizeText([book.title, ...book.authors].join(' ')).slice(0, 1600).split(' ').filter(Boolean));
+  for (const token of tokens) await db.runAsync('INSERT OR IGNORE INTO personal_tokens VALUES (?,?)', token, identity);
+  await db.runAsync('DELETE FROM personal_grams WHERE identity=?', identity);
+  const title = normalizeText(book.title).slice(0, 240);
+  const grams = new Set(Array.from({length: Math.max(0, title.length - 2)}, (_, i) => title.slice(i, i + 3)));
+  for (const gram of grams) await db.runAsync('INSERT OR IGNORE INTO personal_grams VALUES (?,?)', gram, identity);
+}
 
 // Edition identities never collapse into work identities, even with identical text.
 export function cacheIdentity(book: BookResult): string | null {
@@ -44,8 +61,25 @@ export function reusableBook(book: BookResult, previous?: BookResult): BookResul
 export function createPersonalCache(db: CacheDatabase) {
   const ready = (async () => {
     const version = await db.getFirstAsync<{user_version: number}>('PRAGMA user_version');
-    if ((version?.user_version || 0) > 1) throw new Error('Personal cache needs a newer app');
-    await db.execAsync(personalSchema);
+    if ((version?.user_version || 0) > 2) throw new Error('Personal cache needs a newer app');
+    // Keep the v1 file and records. Index backfill and schema version commit together.
+    await db.execAsync(personalSchema.replace('PRAGMA user_version=2;\nCOMMIT;', ''));
+    try {
+      if ((version?.user_version || 0) < 2) {
+        let after = '';
+        while (true) {
+          const rows = await db.getAllAsync<{ identity: string; metadata: string }>('SELECT identity,metadata FROM personal_books WHERE identity>? ORDER BY identity LIMIT 200', after);
+          if (!rows.length) break;
+          for (const row of rows) {
+            let book: BookResult;
+            try { book = JSON.parse(row.metadata); if (!cacheIdentity(book)) continue; } catch { continue; }
+            await indexBook(db, row.identity, book);
+          }
+          after = rows[rows.length - 1].identity;
+        }
+      }
+      await db.execAsync('PRAGMA user_version=2; COMMIT;');
+    } catch (error) { await db.execAsync('ROLLBACK').catch(() => {}); throw error; }
   })();
   void ready.catch(() => {});
   let queue: Promise<unknown> = ready;
@@ -71,7 +105,13 @@ export function createPersonalCache(db: CacheDatabase) {
         try {
           await db.runAsync('INSERT INTO personal_books(identity,isbn,metadata,retrieved_at) VALUES (?,?,?,?) ON CONFLICT(identity) DO UPDATE SET metadata=excluded.metadata,retrieved_at=excluded.retrieved_at',
             key, saved.isbn || '', JSON.stringify(saved), saved.retrievedAt!);
-          if (alias && provisional) await db.runAsync('DELETE FROM personal_books WHERE identity=?', provisional);
+          await indexBook(db, key, saved);
+          if (alias && provisional) {
+            await db.runAsync('DELETE FROM personal_books WHERE identity=?', provisional);
+            await db.runAsync('DELETE FROM personal_titles WHERE identity=?', provisional);
+            await db.runAsync('DELETE FROM personal_tokens WHERE identity=?', provisional);
+            await db.runAsync('DELETE FROM personal_grams WHERE identity=?', provisional);
+          }
           await db.execAsync('COMMIT');
         } catch (error) { await db.execAsync('ROLLBACK').catch(() => {}); throw error; }
       });
@@ -80,8 +120,23 @@ export function createPersonalCache(db: CacheDatabase) {
     },
     async search(query: BookQuery): Promise<BookResult[]> {
       await ready; await queue.catch(() => {});
-      const rows = query.isbn ? await db.getAllAsync<{metadata: string}>('SELECT metadata FROM personal_books WHERE isbn=?', normalizeIsbn(query.isbn))
-        : await db.getAllAsync<{metadata: string}>('SELECT metadata FROM personal_books');
+      let rows: {metadata: string}[];
+      if (query.isbn) rows = await db.getAllAsync('SELECT metadata FROM personal_books WHERE isbn=?', normalizeIsbn(query.isbn));
+      else {
+        const text = normalizeText(query.title || query.text || '').slice(0, 240);
+        rows = text ? await db.getAllAsync('SELECT b.metadata FROM personal_books b JOIN personal_titles t ON t.identity=b.identity WHERE t.title=? ORDER BY b.identity LIMIT 81', text) : [];
+        if (!rows.length) {
+          const tokens = [...new Set(normalizeText(query.text || [query.title, query.author].filter(Boolean).join(' ')).slice(0, 400).split(' ').filter(Boolean))].slice(0, 16);
+          if (!tokens.length) return [];
+          rows = await db.getAllAsync(`SELECT metadata FROM personal_books WHERE identity IN (SELECT identity FROM personal_tokens WHERE token IN (${tokens.map(() => '?').join(',')}) GROUP BY identity ORDER BY COUNT(*) DESC,identity LIMIT 81)`, ...tokens);
+          if ((!rows.length || rows.length > 80) && text) {
+            const grams = [...new Set(Array.from({length: Math.max(0, text.length - 2)}, (_, i) => text.slice(i, i + 3)))].slice(0, 40);
+            if (grams.length) rows = await db.getAllAsync(`SELECT metadata FROM personal_books WHERE identity IN (SELECT identity FROM personal_grams WHERE gram IN (${grams.map(() => '?').join(',')}) GROUP BY identity ORDER BY COUNT(*) DESC,identity LIMIT 81)`, ...grams);
+          }
+        }
+        // Never claim certainty when a bounded candidate set was truncated.
+        if (rows.length > 80) return [];
+      }
       return rows.flatMap(row => {
         try {
           const book: BookResult = JSON.parse(row.metadata);

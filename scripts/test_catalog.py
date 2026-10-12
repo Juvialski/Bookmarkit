@@ -49,7 +49,8 @@ class CatalogTests(unittest.TestCase):
             build(SOURCE, rebuilt)
             with closing(sqlite3.connect(OUTPUT)) as db, closing(sqlite3.connect(rebuilt)) as fresh:
                 self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
-                self.assertEqual(db.execute('SELECT * FROM books ORDER BY isbn13').fetchall(), fresh.execute('SELECT * FROM books ORDER BY isbn13').fetchall())
+                columns=','.join(r[1] for r in db.execute('pragma table_info(books)'))
+                self.assertEqual(db.execute(f'SELECT {columns} FROM books ORDER BY isbn13').fetchall(), fresh.execute(f'SELECT {columns} FROM books ORDER BY isbn13').fetchall())
                 self.assertEqual(db.execute('SELECT * FROM metadata ORDER BY key').fetchall(), fresh.execute('SELECT * FROM metadata ORDER BY key').fetchall())
                 count = db.execute('SELECT count(DISTINCT work_id) FROM books').fetchone()[0]
                 self.assertGreaterEqual(count, 1000); self.assertLessEqual(count, 10000)

@@ -49,6 +49,12 @@ export async function queryKey(query) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2,'0')).join('');
 }
+// Reviewed author evidence is independent of the selected rating provider.
+export function publicClassification(record) {
+  if (normalizeIdentity(record.authors?.[0]) !== normalizeIdentity('Brandon Sanderson') ||
+      !['Tress of the Emerald Sea','Yumi and the Nightmare Painter','Warbreaker'].some(title => normalizeIdentity(title)===normalizeIdentity(record.title))) return record;
+  const result={...record};delete result.seriesName;delete result.seriesPosition;return result;
+}
 /** @param {{token?: string, store?: any, fetcher?: typeof fetch, now?: ()=>number, timeoutMs?: number}} options */
 export function createHardcoverService({ token='', store, fetcher=fetch, now=Date.now, timeoutMs=2200 }={}) {
   const pending = new Map();
@@ -74,7 +80,7 @@ export function createHardcoverService({ token='', store, fetcher=fetch, now=Dat
     if (pending.has(key)) return pending.get(key);
     const operation=(async () => {
       const cached=await store.get(key,query);
-      if (cached && Date.parse(cached.expires_at)>now()) return {...cached.payload,cacheHit:true};
+      if (cached && Date.parse(cached.expires_at)>now()) return {...publicClassification(cached.payload),cacheHit:true};
       if (!token.trim()) throw new LookupError(503);
       // One persistent budget across isolates; reservation also leases this key.
       if (!await store.reserve(key,query,query.isbn ? 1 : 3)) throw new LookupError(429);
@@ -118,7 +124,7 @@ export function createHardcoverService({ token='', store, fetcher=fetch, now=Dat
           await store.put(key,query,result);
         }
         await store.finish(key,result.found ? 7*86400 : 300);
-        return {...result,cacheHit:false};
+        return {...publicClassification(result),cacheHit:false};
       } catch(error) {
         await store.finish(key,3600).catch(()=>{});
         throw error instanceof LookupError ? error : new LookupError();

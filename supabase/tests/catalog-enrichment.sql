@@ -1,0 +1,64 @@
+-- All synthetic rows are rolled back; no provider calls or quota reservations.
+begin;
+set local role service_role;
+do $$ declare k text:=repeat('9',64); r jsonb; n integer; begin
+ r:=jsonb_build_object('found',true,'verified',true,'identity','work','hardcoverId','999999999999999',
+  'title','Bookmarkit synthetic enrichment fixture','authors',jsonb_build_array('Synthetic Author'),
+  'rating',4.21,'ratingsCount',1234,'ratingScope','work','retrievedAt',now());
+ insert into public.hardcover_cache(cache_key,book_id,title,primary_author,payload,retrieved_at,expires_at)
+ values(k,r->>'hardcoverId',r->>'title','Synthetic Author',r,now(),now()+interval '7 days');
+ if not exists(select 1 from public.catalog_works where id='hardcover:999999999999999' and authors='["Synthetic Author"]'::jsonb) then raise exception 'verified title-only metadata not accepted'; end if;
+ if not exists(select 1 from public.catalog_ratings where work_id='hardcover:999999999999999' and source='Hardcover' and average=4.21 and count=1234) then raise exception 'source pair changed'; end if;
+ if exists(select 1 from public.catalog_editions where work_id='hardcover:999999999999999') then raise exception 'work-only observation invented edition'; end if;
+ perform public.accept_hardcover_catalog(k);perform public.accept_hardcover_catalog(k);
+ select count(*) into n from public.catalog_provider_works where provider_id='999999999999999';
+ if n<>1 then raise exception 'non-idempotent acceptance'; end if;
+ insert into public.hardcover_cache(cache_key,book_id,title,primary_author,payload,retrieved_at,expires_at)
+ values(repeat('8',64),'999999999999998',r->>'title','Synthetic Author',r||'{"hardcoverId":"999999999999998","rating":1,"ratingsCount":1}'::jsonb,now(),now()+interval '7 days');
+ if public.accept_hardcover_catalog(repeat('8',64)) or exists(select 1 from public.catalog_provider_works where provider_id='999999999999998') then raise exception 'competing canonical provider work accepted';end if;
+ update public.hardcover_cache set payload=r||'{"seriesName":"Fixture Series","seriesPosition":"1"}'::jsonb where cache_key=k;
+ if not exists(select 1 from public.catalog_works where id='hardcover:999999999999999' and series_status='series' and classification_source='hardcover') then raise exception 'independent series metadata lost'; end if;
+ update public.hardcover_cache set payload=r||jsonb_build_object('rating',3.2,'ratingsCount',12,'retrievedAt',now()-interval '1 day'),retrieved_at=now()-interval '1 day' where cache_key=k;
+ if not exists(select 1 from public.catalog_ratings where work_id='hardcover:999999999999999' and average=4.21 and count=1234) then raise exception 'older observation replaced newer'; end if;
+ -- A conflicting same canonical provider identity cannot alter existing catalog.
+ update public.hardcover_cache set title='Different work',payload=r||'{"title":"Different work"}'::jsonb where cache_key=k;
+ if public.accept_hardcover_catalog(k) then raise exception 'identity conflict accepted'; end if;
+ if not exists(select 1 from public.catalog_works where id='hardcover:999999999999999' and title='Bookmarkit synthetic enrichment fixture') then raise exception 'previous metadata lost'; end if;
+ insert into public.catalog_works(id,title,authors,normalized_title,source,source_updated)
+ values('/works/OL999999999999W','Reference fixture','[]','reference fixture','open-library',now());
+ if public.retain_catalog_author_refs('[{"id":"/works/OL999999999999W","refs":["/authors/OL999999A"]}]')<>1 then raise exception 'reference checkpoint missing';end if;
+ if public.retain_catalog_author_refs('[{"id":"/works/OL999999999999W","refs":["/authors/OL1A"]}]')<>0 then raise exception 'existing refs replaced';end if;
+ begin
+  perform public.retain_catalog_author_refs('[{}]');raise exception 'malformed references accepted';
+ exception when raise_exception then if sqlerrm<>'invalid author reference' then raise;end if;end;
+ perform public.merge_catalog_works(jsonb_build_array(jsonb_build_object('id','/works/OL999999999999W','title','Reference fixture',
+  'authors',jsonb_build_array('First Writer','Second Writer'),'normalized_title','reference fixture','source','open-library',
+  'source_updated',now(),'series_status','unknown','classification_source','unknown')));
+ perform public.merge_catalog_works(jsonb_build_array(jsonb_build_object('id','/works/OL999999999999W','title','Reference fixture',
+  'authors','[]'::jsonb,'normalized_title','reference fixture','source','open-library','source_updated',now()+interval '1 hour',
+  'series_status','unknown','classification_source','unknown')));
+ if not exists(select 1 from public.catalog_works where id='/works/OL999999999999W' and jsonb_array_length(authors)=2) then raise exception 'resumed publication erased authors';end if;
+ insert into public.hardcover_cache(cache_key,book_id,isbn13,title,primary_author,payload,retrieved_at,expires_at)
+ values(repeat('7',64),'777999','9780000000002','Alias contract fixture','Synthetic Author',
+  r||jsonb_build_object('hardcoverId','777999','hardcoverEditionId','777999','isbn','9780000000002','title','Alias contract fixture'),now(),now()+interval '7 days');
+ insert into public.catalog_works(id,title,authors,normalized_title,source,source_updated)
+ values('/works/OL777999W','Alias contract fixture','["Synthetic Author"]','alias contract fixture','open-library',now());
+ if not public.accept_catalog_work_link(repeat('7',64),'{"key":"/books/OL777999M","work_id":"/works/OL777999W","title":"Alias contract fixture","isbn13":"9780000000002"}') then raise exception 'exact ISBN link refused';end if;
+ if public.accept_catalog_work_link(repeat('7',64),'{"key":"/books/OL777999M","work_id":"/works/OL777999W","title":"Alias contract fixture","isbn13":"9780140328721"}') then raise exception 'wrong ISBN link accepted';end if;
+end $$;
+set local role anon;
+do $$ begin
+ if not exists(select 1 from public.catalog_provider_works where provider_id='999999999999999') then raise exception 'public mapping unreadable'; end if;
+ begin perform public.accept_hardcover_catalog(repeat('9',64));raise exception 'public ingestion callable';exception when insufficient_privilege then null;end;
+ begin delete from public.catalog_provider_works;raise exception 'anonymous writes allowed';exception when insufficient_privilege then null;end;
+ begin perform public.retain_catalog_author_refs('[]');raise exception 'anonymous references allowed';exception when insufficient_privilege then null;end;
+ begin perform public.merge_catalog_works('[]');raise exception 'anonymous publication allowed';exception when insufficient_privilege then null;end;
+ begin perform public.accept_catalog_work_link(repeat('7',64),'{}');raise exception 'anonymous links allowed';exception when insufficient_privilege then null;end;
+end $$;
+set local role authenticated;
+do $$ begin
+ begin perform public.accept_hardcover_catalog(repeat('9',64));raise exception 'authenticated ingestion callable';exception when insufficient_privilege then null;end;
+end $$;
+reset role;
+select 'catalog metadata, pairing, stale preservation, conflict, idempotency and RLS passed' as result;
+rollback;

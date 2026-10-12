@@ -95,10 +95,21 @@ def lookup(isbn, title, name):
     if not any(n.attrib.get('content-desc') == 'Title, author, or ISBN' for n in root.iter('node')):
         tap('Search')
     tap(description='Title, author, or ISBN')
-    shell('input', 'keyevent', '123')
-    for _ in range(100):
-        shell('input', 'keyevent', '67')
-    shell('input', 'text', isbn.replace(' ', '%s'))
+    # React Native's controlled field can drop a burst of injected key events
+    # on a busy software-rendered emulator. Verify the actual input before lookup.
+    for attempt in range(2):
+        state=screen()
+        field=next(n for n in state.iter('node') if n.attrib.get('content-desc')=='Title, author, or ISBN')
+        previous=field.attrib.get('text','')
+        if previous=='Title, author, or ISBN':previous=''
+        shell('input','keyevent','123')
+        for _ in range(len(previous)+2):shell('input','keyevent','67')
+        for character in isbn:
+            shell('input','text',character.replace(' ','%s'));time.sleep(0.12 if attempt==0 else 0.3)
+        state=screen()
+        value=next(n.attrib.get('text','') for n in state.iter('node') if n.attrib.get('content-desc')=='Title, author, or ISBN')
+        if value==isbn:break
+    assert value==isbn, f'Emulator text injection incomplete: expected {isbn!r}, actual {value!r}'
     shell('input', 'keyevent', '4')
     start = tap('Look up book')
     result = wait(title, name=name)

@@ -81,7 +81,7 @@ def refresh():
 def build(source=SOURCE, output=OUTPUT):
     data = json.loads(Path(source).read_text(encoding='utf-8'))
     curated = json.loads((ROOT / 'catalog/curated.json').read_text(encoding='utf-8')) if Path(source) == SOURCE else {}
-    rows = {}
+    rows = {}; work_only = {}
     for record in data['records']:
         title = text(record.get('title'))
         authors = list(dict.fromkeys(text(a) for a in record.get('author_name', []) if text(a)))
@@ -89,7 +89,7 @@ def build(source=SOURCE, output=OUTPUT):
         average, count = record.get('ratings_average'), record.get('ratings_count')
         count = count if type(count) is int and count >= 0 else None
         average = average if type(average) in (float, int) and 0 < average <= 5 and count != 0 else None
-        for isbn in sorted({isbn13(value) for value in record.get('isbn', [])} - {None})[:8]:
+        for isbn in sorted({isbn13(value) for value in record.get('isbn', [])} - {None}):
             if isbn and isbn not in rows:
                 override = curated.get(isbn, {})
                 if override and (not override.get('source', '').startswith('https://') or not text(override.get('evidence'))):
@@ -98,6 +98,14 @@ def build(source=SOURCE, output=OUTPUT):
                 rows[isbn] = (isbn, title, json.dumps(authors, ensure_ascii=False), record.get('key'),
                               'series' if parsed else 'standalone' if override.get('series_status') == 'standalone' else 'unknown', parsed[0] if parsed else None,
                               parsed[1] if parsed else None, average, count, 'curated' if override else 'open-library' if parsed else 'unknown')
+                if record.get('classification_source') in ('curated','open-library') and record.get('series_status') in ('series','standalone','unknown'):
+                    status=record['series_status'];name=record.get('series_name');position=record.get('series_position')
+                    if (status=='series' and name and position) or (status in ('standalone','unknown') and record['classification_source']=='curated'):
+                        row=rows[isbn];rows[isbn]=row[:4]+(status,name,position)+row[7:9]+(record['classification_source'],)
+        if not any(isbn13(v) for v in record.get('isbn',[])) and record.get('key') and authors:
+            work_only[record['key']]=('',title,json.dumps(authors,ensure_ascii=False),record['key'],'unknown',None,None,average,count,'unknown')
+            if record.get('classification_source')=='curated' and record.get('series_status') in ('standalone','unknown'):
+                row=work_only[record['key']];work_only[record['key']]=row[:4]+(record['series_status'],None,None)+row[7:9]+('curated',)
     output = Path(output)
     if output.exists(): output.unlink()
     with closing(sqlite3.connect(output)) as db:
@@ -105,6 +113,30 @@ def build(source=SOURCE, output=OUTPUT):
         db.execute('CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID')
         db.executemany('INSERT INTO books VALUES (?,?,?,?,?,?,?,?,?,?)', [rows[k] for k in sorted(rows)])
         db.execute('CREATE INDEX books_work_id ON books(work_id)')
+        db.execute('CREATE TABLE work_only_books AS SELECT * FROM books WHERE 0')
+        db.execute('CREATE UNIQUE INDEX work_only_identity ON work_only_books(work_id)')
+        db.executemany('INSERT INTO work_only_books VALUES (?,?,?,?,?,?,?,?,?,?)',[work_only[k] for k in sorted(work_only)])
+        db.execute('ALTER TABLE books ADD COLUMN edition_id TEXT')
+        db.execute('ALTER TABLE work_only_books ADD COLUMN edition_id TEXT')
+        db.execute('ALTER TABLE books ADD COLUMN goodreads_url TEXT')
+        db.execute('ALTER TABLE work_only_books ADD COLUMN goodreads_url TEXT')
+        for table in ['books','work_only_books']:
+            db.execute(f'ALTER TABLE {table} ADD COLUMN rating_scope TEXT')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN rating_retrieved_at TEXT')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN planned_sequel INTEGER NOT NULL DEFAULT 0')
+            db.execute(f'ALTER TABLE {table} ADD COLUMN classification_evidence TEXT')
+            for record in data['records']:
+                db.execute(f"UPDATE {table} SET rating_scope='work',rating_retrieved_at=? WHERE work_id=? AND rating IS NOT NULL",
+                    (record.get('rating_retrieved_at',data['generated_date']),record.get('key')))
+                db.execute(f'UPDATE {table} SET planned_sequel=?,classification_evidence=? WHERE work_id=?',
+                    (int(record.get('planned_sequel') is True),record.get('classification_evidence'),record.get('key')))
+        for record in data['records']:
+            for value in record.get('isbn',[]):
+                normalized_isbn=isbn13(value)
+                if normalized_isbn:db.execute('UPDATE books SET edition_id=? WHERE isbn13=? AND work_id=?',(record.get('isbn_editions',{}).get(normalized_isbn,record.get('edition_key')),normalized_isbn,record.get('key')))
+                ids=record.get('goodreads_ids',{}).get(normalized_isbn,[])
+                if normalized_isbn and len(ids)==1 and re.fullmatch(r'[1-9]\d{0,15}',str(ids[0])):
+                    db.execute('update books set goodreads_url=? where isbn13=? and work_id=?',('https://www.goodreads.com/book/show/'+str(ids[0]),normalized_isbn,record.get('key')))
         db.executemany('INSERT INTO metadata VALUES (?,?)', [(k, data[k]) for k in ['version', 'generated_date', 'source']])
         db.execute('INSERT INTO metadata VALUES (?,?)', ('catalog_schema', 'v3'))
         db.execute('CREATE TABLE works (id TEXT PRIMARY KEY, isbn13 TEXT NOT NULL, normalized_title TEXT NOT NULL) WITHOUT ROWID')
@@ -116,6 +148,7 @@ def build(source=SOURCE, output=OUTPUT):
             value = re.sub(r"[’‘`'.]", '', value)
             return ' '.join(re.sub(r'[^\w]+', ' ', value, flags=re.UNICODE).split())
         works = {}
+        works.update(work_only)
         for row in sorted(rows.values(), key=lambda r: (r[9] != 'curated', r[0])):
             key = row[3] or row[1] + row[2]
             works.setdefault(key, row)

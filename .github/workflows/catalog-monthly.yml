@@ -23,7 +23,8 @@ jobs:
           path: dist/catalog
           key: catalog-${{ github.run_id }}
           restore-keys: catalog-
-      - run: python scripts/expanded_catalog.py --works 25000
+      - run: python -m unittest discover -s scripts -p 'test_smart_catalog.py'
+      - run: python scripts/smart_catalog.py
       - name: Optional bounded Hardcover queue and snapshot
         env:
           HARDCOVER_ENABLED: ${{ vars.HARDCOVER_ENABLED }}
@@ -32,7 +33,15 @@ jobs:
           python scripts/hardcover_incremental.py
           python -c "from pathlib import Path; import sys; sys.path.insert(0,'scripts'); from hardcover_snapshot import attach,cached_summaries; attach(Path('dist/catalog/expanded.db'),cached_summaries())"
           python scripts/refresh_catalog_manifest.py
+      - name: Include newly accepted shared works after the bounded queue
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.BOOKMARKIT_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/catalog_work_links.py
+          python scripts/smart_catalog.py --skip-popular --author-seconds 0
       - run: python scripts/validate_expanded.py
+      - name: Measure the same public coverage cohort
+        run: python scripts/catalog_audit.py --output dist/catalog/audit --package dist/catalog/expanded.db
       - uses: actions/upload-artifact@v4
         with:
           name: expanded-offline-catalog
@@ -42,6 +51,9 @@ jobs:
             dist/catalog/source.json
             dist/catalog/authors.json
             dist/catalog/checkpoint.sqlite
+            dist/catalog/*progress.sqlite
+            dist/catalog/validation.json
+            dist/catalog/audit/audit.json
           if-no-files-found: error
       - name: Publish validated catalog
         env:
@@ -54,3 +66,13 @@ jobs:
           python scripts/catalog_publish.py
           # Confirm the same immutable catalog cleanly skips repeat publication.
           python scripts/catalog_publish.py
+      - name: Measure published coverage
+        run: python scripts/catalog_audit.py --output dist/catalog/published-audit --package dist/catalog/expanded.db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-catalog-evidence
+          path: |
+            dist/catalog/manifest.json
+            dist/catalog/validation.json
+            dist/catalog/published-audit/audit.json
+          if-no-files-found: error

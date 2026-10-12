@@ -56,20 +56,24 @@ def payloads():
     with closing(sqlite3.connect(staging / 'expanded.db')) as db:
         db.row_factory = sqlite3.Row
         rows = list(db.execute('SELECT b.*,w.normalized_title FROM books b JOIN works w ON w.isbn13=b.isbn13 ORDER BY w.id'))
+        if db.execute("select 1 from sqlite_master where name='work_only_books'").fetchone():
+            rows.extend(db.execute('SELECT b.*,w.normalized_title FROM work_only_books b JOIN works w ON w.id=b.work_id ORDER BY w.id'))
         work_isbns = {}
         for isbn,work_id in db.execute('SELECT isbn13,work_id FROM books ORDER BY isbn13'):
             work_isbns.setdefault(work_id,[]).append(isbn)
     records = {r['key']:r for r in unique_rows('catalog_works', [dict(id=r['key'], **r) for r in source['records']])}
-    with closing(sqlite3.connect(staging/'checkpoint.sqlite')) as checkpoint:
-        original_records = {r[0]:json.loads(r[1]) for r in checkpoint.execute('SELECT work,data FROM records')}
+    original_records={}
+    if (staging/'checkpoint.sqlite').exists():
+        with closing(sqlite3.connect(staging/'checkpoint.sqlite')) as checkpoint:
+            original_records = {r[0]:json.loads(r[1]) for r in checkpoint.execute('SELECT work,data FROM records')}
     stamp = source['generated_date']+'T00:00:00Z'
     works, editions, isbns, ratings, authors, links = [], [], [], [], {}, []
     author_names = json.loads((staging/'authors.json').read_text('utf-8'))
     for row in rows:
         r=records[row['work_id']]
         title = row['normalized_title']
-        works.append(dict(id=row['work_id'],title=row['title'],authors=json.loads(row['authors']),normalized_title=title,source='open-library',source_updated=stamp,series_status=row['series_status'],series_name=row['series_name'],series_position=row['series_position'],classification_source=row['classification_source']))
-        editions.append(dict(id=r['edition_key'],work_id=r['key'],title=r['title'],source_updated=stamp))
+        if r.get('source_provider')=='hardcover':continue  # accepted atomically by the server, never re-imported as OL
+        works.append(dict(id=row['work_id'],title=row['title'],authors=json.loads(row['authors']),normalized_title=title,source='open-library',source_updated=r.get('source_updated',stamp),series_status=row['series_status'],series_name=row['series_name'],series_position=row['series_position'],classification_source=row['classification_source']))
         refs = r.get('author_refs', [])
         if not refs:
             # Checkpoint retains original references even for an interrupted author pass.
@@ -78,13 +82,16 @@ def payloads():
             if author_names.get(ref):
                 authors[ref]=dict(id=ref,name=author_names[ref],source_updated=stamp)
                 links.append(dict(work_id=r['key'],author_id=ref))
-        for isbn in work_isbns[row['work_id']]:
+        for isbn in work_isbns.get(row['work_id'],[]):
+            eid=r.get('isbn_editions',{}).get(isbn,r.get('edition_key'))
+            if not eid:raise ValueError('No independently established edition for ISBN')
+            editions.append(dict(id=eid,work_id=r['key'],title=r['title'],source_updated=stamp))
             isbn10=None
             if isbn.startswith('978'):
                 nine=isbn[3:12]; check=(-sum((10-i)*int(c) for i,c in enumerate(nine)))%11
                 isbn10=nine+('X' if check==10 else str(check))
-            isbns.append(dict(isbn13=isbn,isbn10=isbn10,edition_id=r['edition_key']))
-        if row['rating'] and row['rating_count']: ratings.append(dict(work_id=r['key'],source='Open Library',average=row['rating'],count=row['rating_count'],source_updated=stamp))
+            isbns.append(dict(isbn13=isbn,isbn10=isbn10,edition_id=eid))
+        if row['rating'] and row['rating_count']: ratings.append(dict(work_id=r['key'],source='Open Library',average=row['rating'],count=row['rating_count'],source_updated=r.get('rating_retrieved_at',stamp)))
     return [(table, unique_rows(table, values)) for table, values in
             [('catalog_works',works),('catalog_authors',list(authors.values())),('catalog_work_authors',links),('catalog_editions',editions),('catalog_isbns',isbns),('catalog_ratings',ratings)]]
 
@@ -116,10 +123,16 @@ def publish():
         record_ingestion(manifest, m)
         print('Catalog unchanged; publication skipped');return
     tables = payloads()  # Validate all composite keys before the first mutation.
+    records=json.loads((staging/'source.json').read_text('utf-8'))['records']
+    references=[{'id':r['key'],'refs':r['author_refs']} for r in records if r.get('author_refs') and r['key'].startswith('/works/OL')]
     for table, rows in tables:
         for offset in range(0,len(rows),500):
-            request('/rest/v1/'+table,json.dumps(rows[offset:offset+500]).encode(), context=f'{table} batch {offset//500+1}')
+            batch=rows[offset:offset+500]
+            rpc={'catalog_works':'merge_catalog_works','catalog_ratings':'merge_catalog_ratings'}.get(table)
+            request('/rest/v1/'+('rpc/'+rpc if rpc else table),json.dumps({'records':batch} if rpc else batch).encode(), context=f'{table} batch {offset//500+1}')
         print(table, len(rows), 'rows uploaded', flush=True)
+    for offset in range(0,len(references),500):
+        request('/rest/v1/rpc/retain_catalog_author_refs',json.dumps({'records':references[offset:offset+500]}).encode(),context='catalog author reference checkpoint')
     try: request('/storage/v1/object/book-catalogs/'+path,raw,'application/octet-stream')
     except PublicationError as e:
         if e.status not in (400,409): raise
